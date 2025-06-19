@@ -97,6 +97,14 @@ const allProviders: Record<string, Provider[]> = {
 			reviews: 120
 		},
 		{
+			name: 'CleanPro Services',
+			photo: 'https://placehold.co/200x200/0C3B2E/FFFFFF?text=CP&font=roboto',
+			rating: 4.9,
+			price: 18,
+			description: 'Limpieza profesional para empresas y hogares.',
+			reviews: 156
+		},
+		{
 			name: 'Carlos Pérez',
 			photo: '/img/cleaning.png',
 			rating: 4.7,
@@ -111,6 +119,14 @@ const allProviders: Record<string, Provider[]> = {
 			price: 14,
 			description: 'Limpieza profesional de departamentos y oficinas.',
 			reviews: 110
+		},
+		{
+			name: 'SparkleClean Co.',
+			photo: 'https://placehold.co/200x200/6D9773/FFFFFF?text=SC&font=roboto',
+			rating: 4.8,
+			price: 20,
+			description: 'Limpieza premium con productos eco-friendly.',
+			reviews: 134
 		},
 		{
 			name: 'Luis Fernández',
@@ -135,6 +151,14 @@ const allProviders: Record<string, Provider[]> = {
 			price: 11,
 			description: 'Limpieza básica y mantenimiento semanal.',
 			reviews: 76
+		},
+		{
+			name: 'FreshStart Cleaning',
+			photo: 'https://placehold.co/200x200/BB8A52/FFFFFF?text=FS&font=roboto',
+			rating: 4.7,
+			price: 16,
+			description: 'Limpieza post-mudanza y renovación.',
+			reviews: 98
 		},
 		{
 			name: 'Valeria Torres',
@@ -179,6 +203,14 @@ const allProviders: Record<string, Provider[]> = {
 			reviews: 80
 		},
 		{
+			name: 'MovePro Express',
+			photo: 'https://placehold.co/200x200/0C3B2E/FFFFFF?text=MP&font=roboto',
+			rating: 4.9,
+			price: 25,
+			description: 'Mudanzas express con seguro completo incluido.',
+			reviews: 145
+		},
+		{
 			name: 'Juan Pérez',
 			photo: '/img/moving.png',
 			rating: 4.7,
@@ -201,6 +233,14 @@ const allProviders: Record<string, Provider[]> = {
 			price: 21,
 			description: 'Mudanzas familiares y de oficinas.',
 			reviews: 88
+		},
+		{
+			name: 'Relocate Solutions',
+			photo: 'https://placehold.co/200x200/6D9773/FFFFFF?text=RS&font=roboto',
+			rating: 4.8,
+			price: 28,
+			description: 'Mudanzas corporativas y residenciales premium.',
+			reviews: 167
 		},
 		{
 			name: 'Carlos Mendoza',
@@ -259,6 +299,14 @@ const allProviders: Record<string, Provider[]> = {
 			price: 18,
 			description: 'Jardines hermosos y bien cuidados. Experto en plantas.',
 			reviews: 65
+		},
+		{
+			name: 'GreenThumb Pro',
+			photo: 'https://placehold.co/200x200/0C3B2E/FFFFFF?text=GT&font=roboto',
+			rating: 4.9,
+			price: 22,
+			description: 'Diseño y mantenimiento profesional de jardines.',
+			reviews: 89
 		},
 		{
 			name: 'Laura Ramos',
@@ -343,6 +391,14 @@ const allProviders: Record<string, Provider[]> = {
 			reviews: 54
 		},
 		{
+			name: 'AssemblyPro Co.',
+			photo: 'https://placehold.co/200x200/0C3B2E/FFFFFF?text=AP&font=roboto',
+			rating: 4.9,
+			price: 21,
+			description: 'Ensamblaje profesional de muebles y equipos.',
+			reviews: 78
+		},
+		{
 			name: 'Mario Torres',
 			photo: '/img/assembly.png',
 			rating: 4.7,
@@ -425,12 +481,28 @@ const allProviders: Record<string, Provider[]> = {
 			reviews: 42
 		},
 		{
+			name: 'TechMount Pro',
+			photo: 'https://placehold.co/200x200/0C3B2E/FFFFFF?text=TM&font=roboto',
+			rating: 4.9,
+			price: 22,
+			description: 'Especialistas en montaje de TV y sistemas audiovisuales.',
+			reviews: 78
+		},
+		{
 			name: 'Sofía López',
 			photo: '/img/mounting.png',
 			rating: 4.8,
 			price: 17,
 			description: 'Montaje de estanterías y repisas.',
 			reviews: 45
+		},
+		{
+			name: 'HomeFix Solutions',
+			photo: 'https://placehold.co/200x200/6D9773/FFFFFF?text=HF&font=roboto',
+			rating: 4.8,
+			price: 20,
+			description: 'Montaje profesional de muebles y decoración.',
+			reviews: 65
 		},
 		{
 			name: 'Diego Ramírez',
@@ -449,6 +521,14 @@ const allProviders: Record<string, Provider[]> = {
 			reviews: 47
 		},
 		{
+			name: 'MountMaster Inc.',
+			photo: 'https://placehold.co/200x200/BB8A52/FFFFFF?text=MM&font=roboto',
+			rating: 4.9,
+			price: 25,
+			description: 'Montaje industrial y comercial especializado.',
+			reviews: 89
+		},
+		{
 			name: 'Martín Díaz',
 			photo: '/img/mounting.png',
 			rating: 4.7,
@@ -463,6 +543,14 @@ const allProviders: Record<string, Provider[]> = {
 			price: 18,
 			description: 'Montaje de cuadros y espejos.',
 			reviews: 48
+		},
+		{
+			name: 'QuickMount Services',
+			photo: 'https://placehold.co/200x200/FFBA00/0C3B2E?text=QM&font=roboto',
+			rating: 4.7,
+			price: 19,
+			description: 'Montaje rápido y eficiente para hogares.',
+			reviews: 72
 		},
 		{
 			name: 'Andrés Salas',
@@ -495,6 +583,14 @@ const allProviders: Record<string, Provider[]> = {
 			price: 18,
 			description: 'Montaje y organización de espacios.',
 			reviews: 49
+		},
+		{
+			name: 'Carlos Mendoza',
+			photo: '/img/mounting.png',
+			rating: 4.9,
+			price: 20,
+			description: 'Montaje de TV 65" en pared de concreto con cableado oculto.',
+			reviews: 62
 		}
 	]
 };
@@ -502,8 +598,18 @@ const allProviders: Record<string, Provider[]> = {
 // Obtener la categoría de la URL
 $: category = $page.params.category.charAt(0).toUpperCase() + $page.params.category.slice(1);
 
+// Mapeo de IDs a nombres de categoría
+const categoryMapping: { [key: string]: string } = {
+	'mounting': 'Montaje',
+	'cleaning': 'Limpieza',
+	'gardening': 'Jardinería',
+	'moving': 'Mudanzas',
+	'assembly': 'Ensamblaje'
+};
+
 onMount(() => {
-	providers = allProviders[category] ?? [];
+	const mappedCategory = categoryMapping[$page.params.category] || category;
+	providers = allProviders[mappedCategory] ?? [];
 });
 </script>
 
@@ -583,7 +689,7 @@ onMount(() => {
 		</div>
 	</aside>
 	<main class="providers-main">
-		<h1>Proveedores de {category}</h1>
+		<h1>Proveedores de {categoryMapping[$page.params.category] || category}</h1>
 		{#if providers.length === 0}
 			<p>No hay proveedores disponibles en esta categoría aún.</p>
 		{:else}
