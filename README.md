@@ -1,38 +1,72 @@
-# sv
+# Domify 🏠
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+Domify es una plataforma de servicios para el hogar que conecta a usuarios con profesionales calificados para diferentes tareas domésticas.
 
-## Creating a project
+## Servicios Disponibles
 
-If you're seeing this, you've probably already done this step. Congrats!
+- 🧹 Limpieza
+- 🪴 Jardinería
+- 🔧 Montaje y Reparaciones
+- 📦 Mudanzas
+- 🛠️ Ensamblaje
 
+## Requisitos Previos
+
+- Node.js (v18 o superior)
+- npm o pnpm
+- Supabase (cuenta y proyecto configurado)
+
+## Configuración
+
+1. Clona el repositorio:
 ```bash
-# create a new project in the current directory
-npx sv create
-
-# create a new project in my-app
-npx sv create my-app
+git clone https://github.com/Bymatt10/domify-landing-page.git
+cd domify-landing-page
 ```
 
-## Developing
+2. Instala las dependencias:
+```bash
+npm install
+# o
+pnpm install
+```
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+3. Copia el archivo de variables de entorno:
+```bash
+cp .env.example .env
+```
+
+4. Configura tus variables de entorno en el archivo `.env`
+
+## Ejecutar la Aplicación
+
+### Desarrollo
 
 ```bash
 npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
+# o
+pnpm dev
 ```
 
-## Building
+La aplicación estará disponible en `http://localhost:5173`
 
-To create a production version of your app:
+### Producción
 
 ```bash
 npm run build
+npm run preview
+# o
+pnpm build
+pnpm preview
 ```
 
-You can preview the production build with `npm run preview`.
+## Stack Tecnológico
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+- SvelteKit
+- Supabase
+- TypeScript
+- Tailwind CSS
+
+## Licencia
+
+MIT 
