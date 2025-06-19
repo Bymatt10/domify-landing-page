@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" href="%sveltekit.assets%/favicon.png" />
+		<meta name="viewport" content="width=device-width" />
+		<style>
+			:root {
+				/* Paleta de colores principal */
+				--color-primary: #0C3B2E;
+				--color-primary-light: #6D9773;
+				--color-accent: #BB8A52;
+				--color-highlight: #FFBA00;
+
+				/* Variantes y tonos */
+				--color-primary-hover: #0a2f25;
+				--color-primary-light-hover: #5d8163;
+				--color-accent-hover: #a67b47;
+
+				/* Colores de texto */
+				--color-text: #0C3B2E;
+				--color-text-light: #666666;
+				--color-text-white: #ffffff;
+
+				/* Colores de fondo */
+				--color-background: #f9f9f9;
+				--color-background-white: #ffffff;
+				--color-background-card: #ffffff;
+
+				/* Bordes y sombras */
+				--border-radius-sm: 6px;
+				--border-radius-md: 8px;
+				--border-radius-lg: 16px;
+				--border-radius-full: 9999px;
+
+				--shadow-sm: 0 2px 8px rgba(12, 59, 46, 0.07);
+				--shadow-md: 0 4px 16px rgba(12, 59, 46, 0.1);
+				--shadow-lg: 0 8px 24px rgba(12, 59, 46, 0.15);
+
+				/* Espaciado */
+				--spacing-xs: 0.25rem;
+				--spacing-sm: 0.5rem;
+				--spacing-md: 1rem;
+				--spacing-lg: 1.5rem;
+				--spacing-xl: 2rem;
+				--spacing-2xl: 2.5rem;
+				--spacing-3xl: 3rem;
+
+				/* Tipografía */
+				--font-size-xs: 0.75rem;
+				--font-size-sm: 0.875rem;
+				--font-size-base: 1rem;
+				--font-size-lg: 1.125rem;
+				--font-size-xl: 1.25rem;
+				--font-size-2xl: 1.5rem;
+				--font-size-3xl: 1.875rem;
+				--font-size-4xl: 2.25rem;
+			}
+
+			/* Estilos base */
+			body {
+				margin: 0;
+				font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+				color: var(--color-text);
+				background-color: var(--color-background);
+			}
+
+			/* Estilos de botones globales */
+			button {
+				font-family: inherit;
+			}
+		</style>
+		%sveltekit.head%
+	</head>
+	<body data-sveltekit-preload-data="hover">
+		<div style="display: contents">%sveltekit.body%</div>
+	</body>
+</html>

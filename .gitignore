@@ -1,0 +1,84 @@
+# Dependencies
+/node_modules
+/.pnp
+.pnp.js
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Testing
+/coverage
+.nyc_output
+
+# Production
+/build
+/dist
+/.svelte-kit
+/package
+
+# Development
+.env
+.env.*
+!.env.example
+.vercel
+.netlify
+.vscode/*
+!.vscode/extensions.json
+.idea
+*.sublime-project
+*.sublime-workspace
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Operating System
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temporary files
+*.swp
+*.swo
+*~
+*.tmp
+*.temp
+*.bak
+
+# Database
+*.sqlite
+*.sqlite3
+*.db
+
+# Supabase
+/supabase/.branches
+/supabase/.temp
+/supabase/.env
+/supabase/.env.*
+/supabase/volumes/*
+!/supabase/volumes/.gitkeep
+
+# Cache directories
+.cache
+.parcel-cache
+.npm
+.eslintcache
+.stylelintcache
+.rollup.cache
+
+# TypeScript
+*.tsbuildinfo
+
+# Misc
+.notes
+.todo
+.history
+*.pem
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
