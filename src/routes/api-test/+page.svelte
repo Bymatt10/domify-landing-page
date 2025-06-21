@@ -7,6 +7,14 @@
 	let servicesStatus = 'Not tested';
 	let categoriesStatus = 'Not tested';
 	let swaggerStatus = 'Not tested';
+	let testResults: Array<{
+		endpoint: string;
+		method: string;
+		status: number | string;
+		success: boolean;
+		data?: any;
+		error?: string;
+	}> = [];
 
 	async function testHealth() {
 		try {
@@ -74,6 +82,71 @@
 		}
 	}
 
+	async function testEndpoint(endpoint: string, method: string = 'GET', body: any = null) {
+		try {
+			const options: RequestInit = {
+				method,
+				headers: {
+					'Content-Type': 'application/json',
+					'Authorization': 'Bearer demo-token-12345'
+				}
+			};
+
+			if (body) {
+				options.body = JSON.stringify(body);
+			}
+
+			const response = await fetch(endpoint, options);
+			const data = await response.json();
+
+			return {
+				endpoint,
+				method,
+				status: response.status,
+				success: response.ok,
+				data
+			};
+		} catch (error: any) {
+			return {
+				endpoint,
+				method,
+				status: 'ERROR',
+				success: false,
+				error: error.message
+			};
+		}
+	}
+
+	async function runTests() {
+		testResults = [];
+		
+		// Test 1: Get all users (now customers)
+		testResults.push(await testEndpoint('/api/users'));
+		
+		// Test 2: Create a new user
+		testResults.push(await testEndpoint('/api/users', 'POST', {
+			email: 'test@example.com',
+			password: 'password123',
+			first_name: 'Test',
+			last_name: 'User',
+			role: 'customer'
+		}));
+
+		// Test 3: Get categories
+		testResults.push(await testEndpoint('/api/categories'));
+
+		// Test 4: Get current user profile
+		testResults.push(await testEndpoint('/api/me'));
+
+		// Test 5: Debug endpoint
+		testResults.push(await testEndpoint('/api/debug'));
+
+		// Test 6: Check status
+		testResults.push(await testEndpoint('/api/debug/check-status'));
+
+		testResults = testResults;
+	}
+
 	onMount(() => {
 		testHealth();
 		testCategories();
@@ -120,6 +193,35 @@
 			<p class="status">{swaggerStatus}</p>
 			<button on:click={testSwagger} class="btn-test">Test Swagger</button>
 		</div>
+
+		<div class="test-card full-width">
+			<h3>🔬 Automated API Tests</h3>
+			<button on:click={runTests} class="btn-test">Run All Tests</button>
+			
+			{#if testResults.length > 0}
+				<div class="test-results">
+					{#each testResults as result}
+						<div class="test-result" class:success={result.success} class:error={!result.success}>
+							<div class="result-header">
+								<span class="method">{result.method}</span>
+								<span class="endpoint">{result.endpoint}</span>
+								<span class="status-code" class:success={result.success} class:error={!result.success}>
+									{result.status}
+								</span>
+							</div>
+							{#if result.error}
+								<div class="error-details">{result.error}</div>
+							{:else if result.data}
+								<details class="response-details">
+									<summary>Response Data</summary>
+									<pre>{JSON.stringify(result.data, null, 2)}</pre>
+								</details>
+							{/if}
+						</div>
+					{/each}
+				</div>
+			{/if}
+		</div>
 	</div>
 
 	<div class="links-section">
@@ -154,13 +256,13 @@
 	}
 
 	.test-header h1 {
-		color: #333;
+		color: var(--color-text);
 		font-size: 2.5rem;
 		margin-bottom: 0.5rem;
 	}
 
 	.test-header p {
-		color: #666;
+		color: var(--color-text-light);
 		font-size: 1.1rem;
 	}
 
@@ -172,15 +274,19 @@
 	}
 
 	.test-card {
-		background: white;
+		background: var(--color-background-white);
 		padding: 2rem;
-		border-radius: 12px;
-		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+		border-radius: var(--border-radius-lg);
+		box-shadow: var(--shadow-md);
 		border: 1px solid #e1e5e9;
 	}
 
+	.test-card.full-width {
+		grid-column: 1 / -1;
+	}
+
 	.test-card h3 {
-		color: #333;
+		color: var(--color-text);
 		margin-bottom: 1rem;
 		font-size: 1.3rem;
 	}
@@ -188,26 +294,26 @@
 	.status {
 		margin-bottom: 1rem;
 		padding: 0.75rem;
-		border-radius: 6px;
+		border-radius: var(--border-radius-sm);
 		background: #f8f9fa;
-		border-left: 4px solid #667eea;
+		border-left: 4px solid var(--color-primary);
 		font-family: monospace;
 		font-size: 0.9rem;
 	}
 
 	.btn-test {
-		background: #667eea;
-		color: white;
+		background: var(--color-primary);
+		color: var(--color-text-white);
 		border: none;
 		padding: 0.75rem 1.5rem;
-		border-radius: 6px;
+		border-radius: var(--border-radius-sm);
 		cursor: pointer;
 		font-weight: 500;
 		transition: background 0.2s;
 	}
 
 	.btn-test:hover {
-		background: #5a6fd8;
+		background: var(--color-primary-hover);
 	}
 
 	.links-section {
@@ -216,7 +322,7 @@
 
 	.links-section h2 {
 		text-align: center;
-		color: #333;
+		color: var(--color-text);
 		margin-bottom: 2rem;
 		font-size: 2rem;
 	}
@@ -228,10 +334,10 @@
 	}
 
 	.link-card {
-		background: white;
+		background: var(--color-background-white);
 		padding: 2rem;
-		border-radius: 12px;
-		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+		border-radius: var(--border-radius-lg);
+		box-shadow: var(--shadow-md);
 		border: 1px solid #e1e5e9;
 		text-decoration: none;
 		color: inherit;
@@ -240,17 +346,17 @@
 
 	.link-card:hover {
 		transform: translateY(-2px);
-		box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+		box-shadow: var(--shadow-lg);
 	}
 
 	.link-card h3 {
-		color: #667eea;
+		color: var(--color-primary);
 		margin-bottom: 0.5rem;
 		font-size: 1.2rem;
 	}
 
 	.link-card p {
-		color: #666;
+		color: var(--color-text-light);
 		margin: 0;
 		font-size: 0.9rem;
 	}
@@ -267,5 +373,102 @@
 		.test-header h1 {
 			font-size: 2rem;
 		}
+	}
+
+	.test-results {
+		margin-top: 1rem;
+		max-height: 400px;
+		overflow-y: auto;
+		border: 1px solid #e1e5e9;
+		border-radius: var(--border-radius-sm);
+	}
+
+	.test-result {
+		padding: 1rem;
+		border-bottom: 1px solid #e1e5e9;
+		background: #f8f9fa;
+	}
+
+	.test-result:last-child {
+		border-bottom: none;
+	}
+
+	.test-result.success {
+		border-left: 4px solid #28a745;
+	}
+
+	.test-result.error {
+		border-left: 4px solid #dc3545;
+	}
+
+	.result-header {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		margin-bottom: 0.5rem;
+	}
+
+	.method {
+		background: var(--color-primary);
+		color: white;
+		padding: 0.25rem 0.5rem;
+		border-radius: 4px;
+		font-size: 0.8rem;
+		font-weight: bold;
+		min-width: 60px;
+		text-align: center;
+	}
+
+	.endpoint {
+		flex: 1;
+		font-family: monospace;
+		font-size: 0.9rem;
+	}
+
+	.status-code {
+		padding: 0.25rem 0.5rem;
+		border-radius: 4px;
+		font-weight: bold;
+		font-size: 0.8rem;
+	}
+
+	.status-code.success {
+		background: #d4edda;
+		color: #155724;
+	}
+
+	.status-code.error {
+		background: #f8d7da;
+		color: #721c24;
+	}
+
+	.error-details {
+		color: #dc3545;
+		font-size: 0.9rem;
+		font-family: monospace;
+		background: #f8d7da;
+		padding: 0.5rem;
+		border-radius: 4px;
+		margin-top: 0.5rem;
+	}
+
+	.response-details {
+		margin-top: 0.5rem;
+	}
+
+	.response-details summary {
+		cursor: pointer;
+		font-weight: bold;
+		color: var(--color-primary);
+	}
+
+	.response-details pre {
+		background: #f8f9fa;
+		padding: 1rem;
+		border-radius: 4px;
+		overflow-x: auto;
+		font-size: 0.8rem;
+		margin-top: 0.5rem;
+		border: 1px solid #e1e5e9;
 	}
 </style> 

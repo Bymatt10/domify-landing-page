@@ -67,11 +67,11 @@ export const GET: RequestHandler = async ({ locals, request }) => {
             }
         }
 
-        console.log('Fetching users from marketplace.users table...');
+        console.log('Fetching users from marketplace.customers table...');
 
         const { data: users, error } = await locals.supabase
-            .from('users')
-            .select('id, email, role, created_at')
+            .from('customers')
+            .select('id, user_id, first_name, last_name, role, created_at')
             .is('deleted_at', null);
 
         if (error) {
@@ -100,7 +100,7 @@ export const GET: RequestHandler = async ({ locals, request }) => {
  * /api/users:
  *   post:
  *     summary: Create a new user
- *     description: Create a new user in the system
+ *     description: Create a new user in the system using Supabase Auth
  *     tags: [Users]
  *     requestBody:
  *       required: true
@@ -111,6 +111,8 @@ export const GET: RequestHandler = async ({ locals, request }) => {
  *             required:
  *               - email
  *               - password
+ *               - first_name
+ *               - last_name
  *             properties:
  *               email:
  *                 type: string
@@ -120,11 +122,17 @@ export const GET: RequestHandler = async ({ locals, request }) => {
  *                 type: string
  *                 minLength: 6
  *                 description: User's password
+ *               first_name:
+ *                 type: string
+ *                 description: User's first name
+ *               last_name:
+ *                 type: string
+ *                 description: User's last name
  *               role:
  *                 type: string
- *                 enum: [provider, admin]
- *                 default: provider
- *                 description: User's role (defaults to provider)
+ *                 enum: [customer, provider, admin]
+ *                 default: customer
+ *                 description: User's role (defaults to customer)
  *     responses:
  *       201:
  *         description: User created successfully
@@ -153,34 +161,75 @@ export const GET: RequestHandler = async ({ locals, request }) => {
  */
 export const POST: RequestHandler = async ({ request, locals }) => {
     try {
-        const { email, password, role = 'provider' } = await request.json();
+        const { email, password, first_name, last_name, role = 'customer' } = await request.json();
 
         // Validate required fields
         validateRequired(email, 'Email');
         validateRequired(password, 'Password');
+        validateRequired(first_name, 'First name');
+        validateRequired(last_name, 'Last name');
         validateEmail(email);
         validatePassword(password);
 
-        // Ensure role is always provider by default
-        const userRole = role === 'admin' ? 'admin' : 'provider';
+        // Ensure role is valid
+        const validRoles = ['customer', 'provider', 'admin'];
+        const userRole = validRoles.includes(role) ? role : 'customer';
 
-        const { data: user, error } = await locals.supabase
-            .from('users')
-            .insert({
-                email,
-                password: password, // In real app, hash this
-                role: userRole
-            })
-            .select()
-            .single();
+        // Create user in Supabase Auth
+        const { data: authData, error: authError } = await locals.supabase.auth.signUp({
+            email,
+            password,
+            options: {
+                data: {
+                    first_name,
+                    last_name,
+                    role: userRole
+                }
+            }
+        });
 
-        if (error) {
-            const errorResponse = ExceptionHandler.handle(error);
+        if (authError) {
+            const errorResponse = ExceptionHandler.handle(authError);
             return json(errorResponse, { status: errorResponse.error.statusCode });
         }
 
+        if (!authData.user) {
+            const errorResponse = ExceptionHandler.createErrorResponse(
+                new ValidationException('Failed to create user')
+            );
+            return json(errorResponse, { status: 500 });
+        }
+
+        // Now that the user is created in auth.users, our trigger should have created a profile in customers.
+        // We might not need to do anything else here if the trigger handles it.
+
+        // Optional: Log for debugging
+        console.log('User created in auth, profile should be in customers via trigger.');
+
+        const { data: customerProfile, error: profileError } = await locals.supabase
+            .from('customers')
+            .select('id, user_id, first_name, last_name, role, created_at')
+            .eq('user_id', authData.user.id)
+            .single();
+
+        if (profileError) {
+            console.error('Error fetching created profile:', profileError);
+            // Return basic user data if profile fetch fails
+            const successResponse = ExceptionHandler.createSuccessResponse(
+                {
+                    id: authData.user.id,
+                    email: authData.user.email,
+                    role: userRole,
+                    created_at: authData.user.created_at
+                },
+                'User created successfully',
+                201
+            );
+            return json(successResponse, { status: 201 });
+        }
+
         const successResponse = ExceptionHandler.createSuccessResponse(
-            user,
+            customerProfile,
             'User created successfully',
             201
         );

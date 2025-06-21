@@ -81,9 +81,9 @@ export const GET: RequestHandler = async ({ params, locals, request }) => {
         }
 
         const { data: user, error } = await locals.supabase
-            .from('users')
-            .select('id, email, role, created_at, updated_at')
-            .eq('id', id)
+            .from('customers')
+            .select('id, user_id, first_name, last_name, role, created_at, updated_at')
+            .eq('user_id', id)
             .is('deleted_at', null)
             .single();
 
@@ -128,15 +128,16 @@ export const GET: RequestHandler = async ({ params, locals, request }) => {
  *           schema:
  *             type: object
  *             properties:
- *               email:
+ *               first_name:
  *                 type: string
- *                 format: email
- *                 description: User's email address
+ *                 description: User's first name
+ *               last_name:
+ *                 type: string
+ *                 description: User's last name
  *               role:
  *                 type: string
- *                 enum: [provider, admin]
- *                 default: provider
- *                 description: User's role (defaults to provider)
+ *                 enum: [customer, provider, admin]
+ *                 description: User's role
  *     security:
  *       - bearerAuth: []
  *     responses:
@@ -196,18 +197,19 @@ export const PUT: RequestHandler = async ({ params, request, locals }) => {
             return json(errorResponse, { status: 403 });
         }
 
-        // Ensure role is always provider by default if provided
+        // Ensure role is valid if provided
         if (updateData.role) {
-            updateData.role = updateData.role === 'admin' ? 'admin' : 'provider';
+            const validRoles = ['customer', 'provider', 'admin'];
+            updateData.role = validRoles.includes(updateData.role) ? updateData.role : 'customer';
         }
 
         const { data: user, error } = await locals.supabase
-            .from('users')
+            .from('customers')
             .update({
                 ...updateData,
                 updated_at: new Date().toISOString()
             })
-            .eq('id', id)
+            .eq('user_id', id)
             .is('deleted_at', null)
             .select()
             .single();
@@ -301,9 +303,9 @@ export const DELETE: RequestHandler = async ({ params, locals, request }) => {
         }
 
         const { error } = await locals.supabase
-            .from('users')
+            .from('customers')
             .update({ deleted_at: new Date().toISOString() })
-            .eq('id', id)
+            .eq('user_id', id)
             .is('deleted_at', null);
 
         if (error) {

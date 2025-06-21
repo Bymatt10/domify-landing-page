@@ -3,16 +3,36 @@ import { page } from '$app/stores';
 import { onMount } from 'svelte';
 
 interface Provider {
-	name: string;
-	photo: string;
+	id: string;
+	business_name: string;
+	photo_url: string;
 	rating: number;
-	price: number;
+	hourly_rate: number;
 	description: string;
-	reviews: number;
+	total_reviews: number;
+	provider_type: 'individual' | 'company';
+	location?: string;
+	phone?: string;
+	users: {
+		id: string;
+		email: string;
+		role: string;
+	};
+	provider_categories: Array<{
+		category_id: number;
+		categories: {
+			id: number;
+			name: string;
+			path_imgage: string;
+			description: string;
+		};
+	}>;
 }
 
 let category = '';
 let providers: Provider[] = [];
+let loading = true;
+let error = '';
 
 // Paginación
 let currentPage = 1;
@@ -66,7 +86,7 @@ function getPageNumbers() {
 	return pages;
 }
 
-// Filtros visuales (sin lógica funcional aún)
+// Filtros
 let selectedDate = 'week';
 let selectedTimes: string[] = [];
 let timeOfDay = {
@@ -75,7 +95,8 @@ let timeOfDay = {
 	evening: false
 };
 let specificTime = '';
-let priceRange = [20, 100];
+let priceRange = [200, 1000];
+let selectedProviderType: 'all' | 'individual' | 'company' = 'all';
 
 const timeOptions = [
 	"I'm Flexible",
@@ -84,519 +105,6 @@ const timeOptions = [
 	'4:00pm', '4:30pm', '5:00pm', '5:30pm', '6:00pm', '6:30pm', '7:00pm', '7:30pm',
 	'8:00pm', '8:30pm', '9:00pm', '9:30pm'
 ];
-
-// Datos simulados de ejemplo (10 por categoría)
-const allProviders: Record<string, Provider[]> = {
-	'Limpieza': [
-		{
-			name: 'Ana López',
-			photo: '/img/cleaning.png',
-			rating: 4.9,
-			price: 15,
-			description: 'Especialista en limpieza de casas y oficinas. Rápida, confiable y detallista.',
-			reviews: 120
-		},
-		{
-			name: 'CleanPro Services',
-			photo: 'https://placehold.co/200x200/0C3B2E/FFFFFF?text=CP&font=roboto',
-			rating: 4.9,
-			price: 18,
-			description: 'Limpieza profesional para empresas y hogares.',
-			reviews: 156
-		},
-		{
-			name: 'Carlos Pérez',
-			photo: '/img/cleaning.png',
-			rating: 4.7,
-			price: 13,
-			description: 'Limpieza profunda y ecológica. ¡Tu espacio reluciente!',
-			reviews: 98
-		},
-		{
-			name: 'María García',
-			photo: '/img/cleaning.png',
-			rating: 4.8,
-			price: 14,
-			description: 'Limpieza profesional de departamentos y oficinas.',
-			reviews: 110
-		},
-		{
-			name: 'SparkleClean Co.',
-			photo: 'https://placehold.co/200x200/6D9773/FFFFFF?text=SC&font=roboto',
-			rating: 4.8,
-			price: 20,
-			description: 'Limpieza premium con productos eco-friendly.',
-			reviews: 134
-		},
-		{
-			name: 'Luis Fernández',
-			photo: '/img/cleaning.png',
-			rating: 4.6,
-			price: 12,
-			description: 'Servicio rápido y eficiente, especializado en limpiezas profundas.',
-			reviews: 87
-		},
-		{
-			name: 'Sofía Ramírez',
-			photo: '/img/cleaning.png',
-			rating: 4.9,
-			price: 16,
-			description: 'Limpieza ecológica y detallada. Garantía de satisfacción.',
-			reviews: 134
-		},
-		{
-			name: 'Jorge Castillo',
-			photo: '/img/cleaning.png',
-			rating: 4.5,
-			price: 11,
-			description: 'Limpieza básica y mantenimiento semanal.',
-			reviews: 76
-		},
-		{
-			name: 'FreshStart Cleaning',
-			photo: 'https://placehold.co/200x200/BB8A52/FFFFFF?text=FS&font=roboto',
-			rating: 4.7,
-			price: 16,
-			description: 'Limpieza post-mudanza y renovación.',
-			reviews: 98
-		},
-		{
-			name: 'Valeria Torres',
-			photo: '/img/cleaning.png',
-			rating: 4.8,
-			price: 15,
-			description: 'Especialista en limpieza de cocinas y baños.',
-			reviews: 102
-		},
-		{
-			name: 'Miguel Díaz',
-			photo: '/img/cleaning.png',
-			rating: 4.7,
-			price: 13,
-			description: 'Limpieza rápida para mudanzas y eventos.',
-			reviews: 91
-		},
-		{
-			name: 'Lucía Herrera',
-			photo: '/img/cleaning.png',
-			rating: 4.9,
-			price: 17,
-			description: 'Limpieza profunda y desinfección.',
-			reviews: 128
-		},
-		{
-			name: 'Pedro Morales',
-			photo: '/img/cleaning.png',
-			rating: 4.6,
-			price: 12,
-			description: 'Limpieza de alfombras y tapizados.',
-			reviews: 83
-		}
-	],
-	'Mudanzas': [
-		{
-			name: 'María Torres',
-			photo: '/img/moving.png',
-			rating: 4.8,
-			price: 20,
-			description: 'Mudanzas rápidas y seguras. Cuidamos tus pertenencias.',
-			reviews: 80
-		},
-		{
-			name: 'MovePro Express',
-			photo: 'https://placehold.co/200x200/0C3B2E/FFFFFF?text=MP&font=roboto',
-			rating: 4.9,
-			price: 25,
-			description: 'Mudanzas express con seguro completo incluido.',
-			reviews: 145
-		},
-		{
-			name: 'Juan Pérez',
-			photo: '/img/moving.png',
-			rating: 4.7,
-			price: 19,
-			description: 'Servicio de mudanza local y nacional.',
-			reviews: 75
-		},
-		{
-			name: 'Sergio Gómez',
-			photo: '/img/moving.png',
-			rating: 4.9,
-			price: 22,
-			description: 'Mudanzas con embalaje profesional.',
-			reviews: 92
-		},
-		{
-			name: 'Andrea Ruiz',
-			photo: '/img/moving.png',
-			rating: 4.8,
-			price: 21,
-			description: 'Mudanzas familiares y de oficinas.',
-			reviews: 88
-		},
-		{
-			name: 'Relocate Solutions',
-			photo: 'https://placehold.co/200x200/6D9773/FFFFFF?text=RS&font=roboto',
-			rating: 4.8,
-			price: 28,
-			description: 'Mudanzas corporativas y residenciales premium.',
-			reviews: 167
-		},
-		{
-			name: 'Carlos Mendoza',
-			photo: '/img/moving.png',
-			rating: 4.6,
-			price: 18,
-			description: 'Transporte seguro y puntual.',
-			reviews: 70
-		},
-		{
-			name: 'Patricia Salas',
-			photo: '/img/moving.png',
-			rating: 4.7,
-			price: 20,
-			description: 'Mudanzas económicas y confiables.',
-			reviews: 77
-		},
-		{
-			name: 'Roberto Castro',
-			photo: '/img/moving.png',
-			rating: 4.8,
-			price: 23,
-			description: 'Especialista en mudanzas de objetos delicados.',
-			reviews: 85
-		},
-		{
-			name: 'Elena Vargas',
-			photo: '/img/moving.png',
-			rating: 4.9,
-			price: 22,
-			description: 'Mudanzas rápidas para estudiantes.',
-			reviews: 90
-		},
-		{
-			name: 'David Herrera',
-			photo: '/img/moving.png',
-			rating: 4.7,
-			price: 19,
-			description: 'Mudanzas y fletes en toda la ciudad.',
-			reviews: 73
-		},
-		{
-			name: 'Sonia Ríos',
-			photo: '/img/moving.png',
-			rating: 4.8,
-			price: 21,
-			description: 'Mudanzas con seguro incluido.',
-			reviews: 82
-		}
-	],
-	'Jardinería': [
-		{
-			name: 'Pedro Flores',
-			photo: '/img/gardening.png',
-			rating: 4.9,
-			price: 18,
-			description: 'Jardines hermosos y bien cuidados. Experto en plantas.',
-			reviews: 65
-		},
-		{
-			name: 'GreenThumb Pro',
-			photo: 'https://placehold.co/200x200/0C3B2E/FFFFFF?text=GT&font=roboto',
-			rating: 4.9,
-			price: 22,
-			description: 'Diseño y mantenimiento profesional de jardines.',
-			reviews: 89
-		},
-		{
-			name: 'Laura Ramos',
-			photo: '/img/gardening.png',
-			rating: 4.8,
-			price: 17,
-			description: 'Diseño y mantenimiento de jardines.',
-			reviews: 60
-		},
-		{
-			name: 'José Martínez',
-			photo: '/img/gardening.png',
-			rating: 4.7,
-			price: 16,
-			description: 'Poda de árboles y arbustos.',
-			reviews: 58
-		},
-		{
-			name: 'Marta Castillo',
-			photo: '/img/gardening.png',
-			rating: 4.9,
-			price: 19,
-			description: 'Jardinería ecológica y orgánica.',
-			reviews: 67
-		},
-		{
-			name: 'Andrés Suárez',
-			photo: '/img/gardening.png',
-			rating: 4.8,
-			price: 18,
-			description: 'Instalación de sistemas de riego.',
-			reviews: 62
-		},
-		{
-			name: 'Cecilia Vega',
-			photo: '/img/gardening.png',
-			rating: 4.7,
-			price: 17,
-			description: 'Decoración de jardines y terrazas.',
-			reviews: 59
-		},
-		{
-			name: 'Ricardo Díaz',
-			photo: '/img/gardening.png',
-			rating: 4.8,
-			price: 18,
-			description: 'Mantenimiento mensual de jardines.',
-			reviews: 64
-		},
-		{
-			name: 'Paula Morales',
-			photo: '/img/gardening.png',
-			rating: 4.9,
-			price: 20,
-			description: 'Jardinería para eventos y fiestas.',
-			reviews: 69
-		},
-		{
-			name: 'Felipe Navarro',
-			photo: '/img/gardening.png',
-			rating: 4.7,
-			price: 16,
-			description: 'Cuidado de césped y plantas.',
-			reviews: 57
-		},
-		{
-			name: 'Natalia Paredes',
-			photo: '/img/gardening.png',
-			rating: 4.8,
-			price: 19,
-			description: 'Jardinería creativa y personalizada.',
-			reviews: 63
-		}
-	],
-	'Ensamblaje': [
-		{
-			name: 'Lucía Gómez',
-			photo: '/img/assembly.png',
-			rating: 4.8,
-			price: 17,
-			description: 'Montaje y ensamblaje de muebles con garantía.',
-			reviews: 54
-		},
-		{
-			name: 'AssemblyPro Co.',
-			photo: 'https://placehold.co/200x200/0C3B2E/FFFFFF?text=AP&font=roboto',
-			rating: 4.9,
-			price: 21,
-			description: 'Ensamblaje profesional de muebles y equipos.',
-			reviews: 78
-		},
-		{
-			name: 'Mario Torres',
-			photo: '/img/assembly.png',
-			rating: 4.7,
-			price: 16,
-			description: 'Ensamblaje rápido y profesional.',
-			reviews: 49
-		},
-		{
-			name: 'Sandra Ruiz',
-			photo: '/img/assembly.png',
-			rating: 4.9,
-			price: 18,
-			description: 'Especialista en muebles de oficina.',
-			reviews: 58
-		},
-		{
-			name: 'Javier Díaz',
-			photo: '/img/assembly.png',
-			rating: 4.8,
-			price: 17,
-			description: 'Montaje de muebles a domicilio.',
-			reviews: 52
-		},
-		{
-			name: 'Patricia Herrera',
-			photo: '/img/assembly.png',
-			rating: 4.7,
-			price: 16,
-			description: 'Ensamblaje de muebles infantiles.',
-			reviews: 47
-		},
-		{
-			name: 'Fernando Salas',
-			photo: '/img/assembly.png',
-			rating: 4.8,
-			price: 18,
-			description: 'Montaje de escritorios y estanterías.',
-			reviews: 55
-		},
-		{
-			name: 'Gabriela Castro',
-			photo: '/img/assembly.png',
-			rating: 4.9,
-			price: 19,
-			description: 'Ensamblaje con herramientas propias.',
-			reviews: 60
-		},
-		{
-			name: 'Raúl Mendoza',
-			photo: '/img/assembly.png',
-			rating: 4.7,
-			price: 16,
-			description: 'Montaje de muebles para mudanzas.',
-			reviews: 48
-		},
-		{
-			name: 'Elena Vargas',
-			photo: '/img/assembly.png',
-			rating: 4.8,
-			price: 17,
-			description: 'Ensamblaje y reparación de muebles.',
-			reviews: 53
-		},
-		{
-			name: 'Tomás Ríos',
-			photo: '/img/assembly.png',
-			rating: 4.8,
-			price: 18,
-			description: 'Montaje profesional y seguro.',
-			reviews: 56
-		}
-	],
-	'Montaje': [
-		{
-			name: 'Juan Martínez',
-			photo: '/img/mounting.png',
-			rating: 4.7,
-			price: 16,
-			description: 'Montaje profesional de cuadros, TV y más.',
-			reviews: 42
-		},
-		{
-			name: 'TechMount Pro',
-			photo: 'https://placehold.co/200x200/0C3B2E/FFFFFF?text=TM&font=roboto',
-			rating: 4.9,
-			price: 22,
-			description: 'Especialistas en montaje de TV y sistemas audiovisuales.',
-			reviews: 78
-		},
-		{
-			name: 'Sofía López',
-			photo: '/img/mounting.png',
-			rating: 4.8,
-			price: 17,
-			description: 'Montaje de estanterías y repisas.',
-			reviews: 45
-		},
-		{
-			name: 'HomeFix Solutions',
-			photo: 'https://placehold.co/200x200/6D9773/FFFFFF?text=HF&font=roboto',
-			rating: 4.8,
-			price: 20,
-			description: 'Montaje profesional de muebles y decoración.',
-			reviews: 65
-		},
-		{
-			name: 'Diego Ramírez',
-			photo: '/img/mounting.png',
-			rating: 4.9,
-			price: 18,
-			description: 'Montaje seguro y rápido.',
-			reviews: 50
-		},
-		{
-			name: 'Valentina Torres',
-			photo: '/img/mounting.png',
-			rating: 4.8,
-			price: 17,
-			description: 'Montaje de muebles y decoración.',
-			reviews: 47
-		},
-		{
-			name: 'MountMaster Inc.',
-			photo: 'https://placehold.co/200x200/BB8A52/FFFFFF?text=MM&font=roboto',
-			rating: 4.9,
-			price: 25,
-			description: 'Montaje industrial y comercial especializado.',
-			reviews: 89
-		},
-		{
-			name: 'Martín Díaz',
-			photo: '/img/mounting.png',
-			rating: 4.7,
-			price: 16,
-			description: 'Montaje de soportes para TV.',
-			reviews: 43
-		},
-		{
-			name: 'Camila Herrera',
-			photo: '/img/mounting.png',
-			rating: 4.8,
-			price: 18,
-			description: 'Montaje de cuadros y espejos.',
-			reviews: 48
-		},
-		{
-			name: 'QuickMount Services',
-			photo: 'https://placehold.co/200x200/FFBA00/0C3B2E?text=QM&font=roboto',
-			rating: 4.7,
-			price: 19,
-			description: 'Montaje rápido y eficiente para hogares.',
-			reviews: 72
-		},
-		{
-			name: 'Andrés Salas',
-			photo: '/img/mounting.png',
-			rating: 4.9,
-			price: 19,
-			description: 'Montaje profesional para oficinas.',
-			reviews: 51
-		},
-		{
-			name: 'Paula Mendoza',
-			photo: '/img/mounting.png',
-			rating: 4.7,
-			price: 16,
-			description: 'Montaje de muebles infantiles.',
-			reviews: 44
-		},
-		{
-			name: 'Felipe Castro',
-			photo: '/img/mounting.png',
-			rating: 4.8,
-			price: 17,
-			description: 'Montaje de estanterías metálicas.',
-			reviews: 46
-		},
-		{
-			name: 'Natalia Ríos',
-			photo: '/img/mounting.png',
-			rating: 4.8,
-			price: 18,
-			description: 'Montaje y organización de espacios.',
-			reviews: 49
-		},
-		{
-			name: 'Carlos Mendoza',
-			photo: '/img/mounting.png',
-			rating: 4.9,
-			price: 20,
-			description: 'Montaje de TV 65" en pared de concreto con cableado oculto.',
-			reviews: 62
-		}
-	]
-};
-
-// Obtener la categoría de la URL
-$: category = $page.params.category.charAt(0).toUpperCase() + $page.params.category.slice(1);
 
 // Mapeo de IDs a nombres de categoría
 const categoryMapping: { [key: string]: string } = {
@@ -607,10 +115,83 @@ const categoryMapping: { [key: string]: string } = {
 	'assembly': 'Ensamblaje'
 };
 
+// Mapeo inverso para obtener el ID de la categoría
+const categoryIdMapping: { [key: string]: number } = {
+	'mounting': 2, // Montaje
+	'cleaning': 4, // Limpieza
+	'gardening': 5, // Jardinería
+	'moving': 3, // Mudanzas
+	'assembly': 1  // Ensamblaje
+};
+
+// Obtener la categoría de la URL
+$: category = $page.params.category.charAt(0).toUpperCase() + $page.params.category.slice(1);
+
+async function fetchProviders() {
+	try {
+		loading = true;
+		error = '';
+		
+		const categoryId = categoryIdMapping[$page.params.category];
+		if (!categoryId) {
+			error = 'Categoría no encontrada';
+			return;
+		}
+
+		const params = new URLSearchParams({
+			category_id: categoryId.toString(),
+			limit: '50' // Obtener más proveedores para filtrar
+		});
+
+		if (selectedProviderType !== 'all') {
+			params.append('provider_type', selectedProviderType);
+		}
+
+		const response = await fetch(`/api/providers?${params}`);
+		const result = await response.json();
+
+		if (!response.ok) {
+			throw new Error(result.message || 'Error al cargar proveedores');
+		}
+
+		// Aplicar filtros de precio
+		let filteredProviders = result.data.providers.filter((provider: Provider) => {
+			return provider.hourly_rate >= priceRange[0] && provider.hourly_rate <= priceRange[1];
+		});
+
+		// Ordenar por rating (más alto primero)
+		filteredProviders.sort((a: Provider, b: Provider) => b.rating - a.rating);
+
+		providers = filteredProviders;
+		currentPage = 1; // Resetear a la primera página
+	} catch (err) {
+		console.error('Error fetching providers:', err);
+		error = err instanceof Error ? err.message : 'Error al cargar proveedores';
+	} finally {
+		loading = false;
+	}
+}
+
+function applyFilters() {
+	// Solo aplicar filtros si ya estamos en el cliente
+	if (typeof window !== 'undefined') {
+		fetchProviders();
+	}
+}
+
 onMount(() => {
-	const mappedCategory = categoryMapping[$page.params.category] || category;
-	providers = allProviders[mappedCategory] ?? [];
+	fetchProviders();
 });
+
+// Observar cambios en los filtros solo en el cliente
+$: if (typeof window !== 'undefined' && priceRange) {
+	// Aplicar filtros automáticamente cuando cambie el rango de precio
+	applyFilters();
+}
+
+$: if (typeof window !== 'undefined' && selectedProviderType) {
+	applyFilters();
+}
 </script>
 
 <div class="providers-layout">
@@ -619,79 +200,120 @@ onMount(() => {
 			<div class="filter-content">
 				<h2>Filtrar</h2>
 				<div class="filter-section">
-					<label class="filter-label">Fecha</label>
-					<div class="filter-date-btns">
-						<button class:selected={selectedDate === 'today'} on:click={() => selectedDate = 'today'}>Hoy</button>
-						<button class:selected={selectedDate === '3days'} on:click={() => selectedDate = '3days'}>3 días</button>
-						<button class:selected={selectedDate === 'week'} on:click={() => selectedDate = 'week'}>Esta semana</button>
-						<button class:selected={selectedDate === 'custom'} on:click={() => selectedDate = 'custom'}>Elegir fecha</button>
-					</div>
+					<fieldset>
+						<legend class="filter-label">Fecha</legend>
+						<div class="filter-date-btns">
+							<button class:selected={selectedDate === 'today'} on:click={() => selectedDate = 'today'}>Hoy</button>
+							<button class:selected={selectedDate === '3days'} on:click={() => selectedDate = '3days'}>3 días</button>
+							<button class:selected={selectedDate === 'week'} on:click={() => selectedDate = 'week'}>Esta semana</button>
+							<button class:selected={selectedDate === 'custom'} on:click={() => selectedDate = 'custom'}>Elegir fecha</button>
+						</div>
+					</fieldset>
 				</div>
 				<div class="filter-section">
-					<label class="filter-label">Hora del día</label>
-					<div class="filter-checkboxes">
-						<label>
-							<input type="checkbox" bind:checked={timeOfDay.morning} />
-							Mañana (8am - 12pm)
-						</label>
-						<label>
-							<input type="checkbox" bind:checked={timeOfDay.afternoon} />
-							Tarde (12pm - 5pm)
-						</label>
-						<label>
-							<input type="checkbox" bind:checked={timeOfDay.evening} />
-							Noche (5pm - 9:30pm)
-						</label>
-					</div>
-					<div class="filter-or">o</div>
-					<select class="time-select" bind:value={specificTime}>
-						<option value="" disabled selected>Elegir hora específica</option>
-						{#each Array.from({ length: 14 }, (_, i) => i + 8) as hour}
-							<option value={hour}>
-								{hour}:00 {hour < 12 ? 'AM' : 'PM'}
-							</option>
-						{/each}
-					</select>
+					<fieldset>
+						<legend class="filter-label">Tipo de proveedor</legend>
+						<div class="filter-provider-type">
+							<label for="all-providers">
+								<input type="radio" id="all-providers" bind:group={selectedProviderType} value="all" />
+								Todos
+							</label>
+							<label for="individual-providers">
+								<input type="radio" id="individual-providers" bind:group={selectedProviderType} value="individual" />
+								Individuos
+							</label>
+							<label for="company-providers">
+								<input type="radio" id="company-providers" bind:group={selectedProviderType} value="company" />
+								Empresas
+							</label>
+						</div>
+					</fieldset>
 				</div>
 				<div class="filter-section">
-					<label class="filter-label">Precio por hora</label>
-					<div class="filter-price-range">
-						<div class="price-inputs">
-							<div class="price-input-group">
-								<label class="price-input-label">Desde</label>
-								<input 
-									type="number" 
-									bind:value={priceRange[0]} 
-									min="10" 
-									max="150" 
-									class="price-input"
-								/>
+					<fieldset>
+						<legend class="filter-label">Hora del día</legend>
+						<div class="filter-checkboxes">
+							<label for="morning-checkbox">
+								<input type="checkbox" id="morning-checkbox" bind:checked={timeOfDay.morning} />
+								Mañana (7am - 12pm)
+							</label>
+							<label for="afternoon-checkbox">
+								<input type="checkbox" id="afternoon-checkbox" bind:checked={timeOfDay.afternoon} />
+								Tarde (12pm - 5pm)
+							</label>
+							<label for="evening-checkbox">
+								<input type="checkbox" id="evening-checkbox" bind:checked={timeOfDay.evening} />
+								Noche (5pm - 9pm)
+							</label>
+						</div>
+						<div class="filter-or">o</div>
+						<select class="time-select" bind:value={specificTime} id="time-select">
+							<option value="" disabled selected>Elegir hora específica</option>
+							{#each Array.from({ length: 14 }, (_, i) => i + 7) as hour}
+								<option value={hour}>
+									{hour}:00 {hour < 12 ? 'AM' : 'PM'}
+								</option>
+							{/each}
+						</select>
+					</fieldset>
+				</div>
+				<div class="filter-section">
+					<fieldset>
+						<legend class="filter-label">Precio por hora</legend>
+						<div class="filter-price-range">
+							<div class="price-inputs">
+								<div class="price-input-group">
+									<label class="price-input-label" for="price-from">Desde</label>
+									<input 
+										id="price-from"
+										type="number" 
+										bind:value={priceRange[0]} 
+										min="100" 
+										max="3000" 
+										class="price-input"
+									/>
+								</div>
+								<span class="price-separator">-</span>
+								<div class="price-input-group">
+									<label class="price-input-label" for="price-to">Hasta</label>
+									<input 
+										id="price-to"
+										type="number" 
+										bind:value={priceRange[1]} 
+										min="100" 
+										max="3000" 
+										class="price-input"
+									/>
+								</div>
 							</div>
-							<span class="price-separator">-</span>
-							<div class="price-input-group">
-								<label class="price-input-label">Hasta</label>
-								<input 
-									type="number" 
-									bind:value={priceRange[1]} 
-									min="10" 
-									max="150" 
-									class="price-input"
-								/>
+							<div class="price-separator">
+								El precio promedio es <b>C$500/hr</b>
 							</div>
 						</div>
-						<div class="price-separator">
-							El precio promedio es <b>$50/hr</b>
-						</div>
-					</div>
+					</fieldset>
 				</div>
 			</div>
-			<button class="filter-apply-btn">Aplicar filtros</button>
+			<button class="filter-apply-btn" on:click={applyFilters}>Aplicar filtros</button>
 		</div>
 	</aside>
 	<main class="providers-main">
 		<h1>Proveedores de {categoryMapping[$page.params.category] || category}</h1>
-		{#if providers.length === 0}
-			<p>No hay proveedores disponibles en esta categoría aún.</p>
+		
+		{#if loading}
+			<div class="loading-state">
+				<div class="loading-spinner"></div>
+				<p>Cargando proveedores...</p>
+			</div>
+		{:else if error}
+			<div class="error-state">
+				<p>Error: {error}</p>
+				<button class="retry-btn" on:click={fetchProviders}>Intentar de nuevo</button>
+			</div>
+		{:else if providers.length === 0}
+			<div class="empty-state">
+				<p>No hay proveedores disponibles en esta categoría aún.</p>
+				<p>¡Sé el primero en registrarte como proveedor!</p>
+			</div>
 		{:else}
 			<div class="providers-count">
 				Mostrando {Math.min(currentPage * itemsPerPage, providers.length)} de {providers.length} proveedores
@@ -699,18 +321,39 @@ onMount(() => {
 			<div class="providers-list">
 				{#each paginatedProviders as p}
 					<div class="provider-card">
-						<img src={p.photo} alt={p.name} class="provider-photo" />
+						<img 
+							src={p.photo_url || '/img/cleaning.png'} 
+							alt={p.business_name} 
+							class="provider-photo"
+							on:error={(e) => {
+								const target = e.target as HTMLImageElement;
+								if (target) target.src = '/img/cleaning.png';
+							}}
+						/>
 						<div class="provider-info">
 							<div class="provider-header">
-								<h2>{p.name}</h2>
-								<div class="provider-price">${p.price}/hr</div>
+								<div class="provider-name-section">
+									<h2>{p.business_name}</h2>
+									<span class="provider-type-badge">
+										{p.provider_type === 'individual' ? '👤 Individual' : '🏢 Empresa'}
+									</span>
+								</div>
+								<div class="provider-price">C${p.hourly_rate}/hr</div>
 							</div>
 							<div class="provider-rating">
-								⭐ {p.rating} ({p.reviews} reseñas)
+								⭐ {p.rating.toFixed(1)} ({p.total_reviews} reseñas)
 							</div>
 							<p class="provider-description">{p.description}</p>
+							{#if p.location}
+								<div class="provider-location">
+									📍 {p.location}
+								</div>
+							{/if}
 							<div class="provider-footer">
 								<button class="contact-btn">Contactar</button>
+								{#if p.phone}
+									<button class="phone-btn">📞 {p.phone}</button>
+								{/if}
 							</div>
 						</div>
 					</div>
@@ -718,39 +361,41 @@ onMount(() => {
 			</div>
 			
 			<!-- Paginación -->
-			<div class="pagination">
-				<button 
-					class="pagination-btn" 
-					disabled={currentPage === 1}
-					on:click={() => goToPage(currentPage - 1)}
-				>
-					Anterior
-				</button>
-				
-				<div class="pagination-numbers">
-					{#each getPageNumbers() as pageNum}
-						{#if pageNum === '...'}
-							<span class="pagination-ellipsis">...</span>
-						{:else}
-							<button 
-								class="pagination-num" 
-								class:active={currentPage === pageNum}
-								on:click={() => typeof pageNum === 'number' && goToPage(pageNum)}
-							>
-								{pageNum}
-							</button>
-						{/if}
-					{/each}
+			{#if totalPages > 1}
+				<div class="pagination">
+					<button 
+						class="pagination-btn" 
+						disabled={currentPage === 1}
+						on:click={() => goToPage(currentPage - 1)}
+					>
+						Anterior
+					</button>
+					
+					<div class="pagination-numbers">
+						{#each getPageNumbers() as pageNum}
+							{#if pageNum === '...'}
+								<span class="pagination-ellipsis">...</span>
+							{:else}
+								<button 
+									class="pagination-num" 
+									class:active={currentPage === pageNum}
+									on:click={() => typeof pageNum === 'number' && goToPage(pageNum)}
+								>
+									{pageNum}
+								</button>
+							{/if}
+						{/each}
+					</div>
+					
+					<button 
+						class="pagination-btn"
+						disabled={currentPage === totalPages}
+						on:click={() => goToPage(currentPage + 1)}
+					>
+						Siguiente
+					</button>
 				</div>
-				
-				<button 
-					class="pagination-btn"
-					disabled={currentPage === totalPages}
-					on:click={() => goToPage(currentPage + 1)}
-				>
-					Siguiente
-				</button>
-			</div>
+			{/if}
 		{/if}
 	</main>
 </div>
@@ -853,22 +498,7 @@ onMount(() => {
 	cursor: pointer;
 }
 
-.filter-select {
-	width: 100%;
-	padding: 0.75rem 1rem;
-	border-radius: 0.5rem;
-	border: 2px solid #6D9773;
-	font-size: 1rem;
-	color: #0C3B2E;
-	background-color: #fff;
-	cursor: pointer;
-	transition: all 0.2s;
-}
 
-.filter-select:focus {
-	outline: none;
-	border-color: #0C3B2E;
-}
 
 .filter-apply-btn {
 	width: 100%;
@@ -905,12 +535,6 @@ onMount(() => {
 	font-weight: 500;
 	margin: 0 0 2rem 0;
 	font-size: 1rem;
-}
-
-.provider-list {
-	display: flex;
-	flex-direction: column;
-	gap: 1.5rem;
 }
 
 .provider-card {
@@ -963,11 +587,6 @@ onMount(() => {
 	font-weight: 600;
 }
 
-.provider-rating span {
-	color: #666;
-	font-size: 0.9rem;
-}
-
 .provider-description {
 	margin: 0;
 	color: #666;
@@ -980,6 +599,8 @@ onMount(() => {
 	justify-content: flex-end;
 	align-items: center;
 	margin-top: 1rem;
+	flex-wrap: wrap;
+	gap: 0.5rem;
 }
 
 .provider-price {
@@ -1141,6 +762,23 @@ onMount(() => {
 	accent-color: #6D9773;
 }
 
+/* Estilos para fieldset y legend */
+fieldset {
+	border: none;
+	padding: 0;
+	margin: 0;
+}
+
+legend.filter-label {
+	color: #0C3B2E;
+	font-weight: 600;
+	font-size: 1.1rem;
+	margin: 0;
+	padding-bottom: 0.5rem;
+	float: none;
+	width: auto;
+}
+
 .filter-price-range {
 	display: flex;
 	flex-direction: column;
@@ -1209,5 +847,111 @@ onMount(() => {
 
 .time-select::placeholder {
 	color: #666;
+}
+
+/* Estilos para filtro de tipo de proveedor */
+.filter-provider-type {
+	display: flex;
+	flex-direction: column;
+	gap: 0.75rem;
+	padding-left: 0.5rem;
+}
+
+.filter-provider-type label {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	color: #0C3B2E;
+	font-size: 1rem;
+	cursor: pointer;
+}
+
+.filter-provider-type input[type="radio"] {
+	width: 18px;
+	height: 18px;
+	accent-color: #6D9773;
+	cursor: pointer;
+}
+
+/* Estados de carga y error */
+.loading-state,
+.error-state,
+.empty-state {
+	text-align: center;
+	padding: 3rem 1rem;
+	color: #666;
+}
+
+.loading-spinner {
+	width: 40px;
+	height: 40px;
+	border: 4px solid #f3f3f3;
+	border-top: 4px solid #6D9773;
+	border-radius: 50%;
+	animation: spin 1s linear infinite;
+	margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+	0% { transform: rotate(0deg); }
+	100% { transform: rotate(360deg); }
+}
+
+.retry-btn {
+	background: #0C3B2E;
+	color: #fff;
+	border: none;
+	border-radius: 8px;
+	padding: 0.75rem 1.5rem;
+	font-size: 1rem;
+	font-weight: 600;
+	cursor: pointer;
+	transition: all 0.2s;
+	margin-top: 1rem;
+}
+
+.retry-btn:hover {
+	background: #6D9773;
+}
+
+/* Mejoras en las tarjetas de proveedores */
+.provider-name-section {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+}
+
+.provider-type-badge {
+	background: #6D9773;
+	color: #fff;
+	font-size: 0.8rem;
+	font-weight: 600;
+	padding: 0.25rem 0.75rem;
+	border-radius: 1rem;
+	width: fit-content;
+}
+
+.provider-location {
+	color: #666;
+	font-size: 0.9rem;
+	margin-top: 0.5rem;
+}
+
+.phone-btn {
+	background: #BB8A52;
+	color: #fff;
+	border: none;
+	border-radius: 6px;
+	padding: 0.5rem 1rem;
+	font-size: 0.9rem;
+	font-weight: 600;
+	cursor: pointer;
+	transition: all 0.2s;
+	margin-left: 0.5rem;
+}
+
+.phone-btn:hover {
+	background: #a67a45;
+	transform: translateY(-1px);
 }
 </style> 

@@ -55,19 +55,110 @@
 				--font-size-2xl: 1.5rem;
 				--font-size-3xl: 1.875rem;
 				--font-size-4xl: 2.25rem;
+
+				/* Transiciones */
+				--transition-fast: 0.2s;
+				--transition-normal: 0.3s;
+				--transition-slow: 0.5s;
 			}
 
 			/* Estilos base */
+			* {
+				margin: 0;
+				padding: 0;
+				box-sizing: border-box;
+			}
+
 			body {
 				margin: 0;
 				font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
 				color: var(--color-text);
 				background-color: var(--color-background);
+				line-height: 1.5;
 			}
 
 			/* Estilos de botones globales */
 			button {
 				font-family: inherit;
+				border: none;
+				cursor: pointer;
+				transition: all var(--transition-fast);
+			}
+
+			button:disabled {
+				cursor: not-allowed;
+				opacity: 0.7;
+			}
+
+			/* Estilos de inputs globales */
+			input, select, textarea {
+				font-family: inherit;
+				font-size: var(--font-size-base);
+				padding: var(--spacing-sm) var(--spacing-md);
+				border: 1px solid var(--color-primary-light);
+				border-radius: var(--border-radius-md);
+				background-color: var(--color-background-white);
+				color: var(--color-text);
+				transition: all var(--transition-fast);
+			}
+
+			input:focus, select:focus, textarea:focus {
+				outline: none;
+				border-color: var(--color-primary);
+				box-shadow: 0 0 0 2px rgba(12, 59, 46, 0.1);
+			}
+
+			/* Estilos de enlaces globales */
+			a {
+				color: var(--color-primary);
+				text-decoration: none;
+				transition: color var(--transition-fast);
+			}
+
+			a:hover {
+				color: var(--color-primary-hover);
+			}
+
+			/* Estilos de headings globales */
+			h1, h2, h3, h4, h5, h6 {
+				color: var(--color-text);
+				font-weight: 600;
+				line-height: 1.2;
+			}
+
+			/* Estilos de contenedores comunes */
+			.container {
+				width: 100%;
+				max-width: 1200px;
+				margin: 0 auto;
+				padding: 0 var(--spacing-md);
+			}
+
+			/* Utilidades comunes */
+			.text-center { text-align: center; }
+			.text-left { text-align: left; }
+			.text-right { text-align: right; }
+
+			.flex { display: flex; }
+			.flex-col { flex-direction: column; }
+			.items-center { align-items: center; }
+			.justify-center { justify-content: center; }
+			.justify-between { justify-content: space-between; }
+			.gap-sm { gap: var(--spacing-sm); }
+			.gap-md { gap: var(--spacing-md); }
+			.gap-lg { gap: var(--spacing-lg); }
+
+			/* Responsive breakpoints */
+			@media (max-width: 768px) {
+				:root {
+					--spacing-xl: 1.5rem;
+					--spacing-2xl: 2rem;
+					--spacing-3xl: 2.5rem;
+				}
+
+				.container {
+					padding: 0 var(--spacing-sm);
+				}
 			}
 		</style>
 		%sveltekit.head%

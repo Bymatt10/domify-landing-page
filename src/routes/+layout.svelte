@@ -6,8 +6,8 @@
 
 	export let data: any;
 
-	let { session, supabase: sb } = data;
-	$: ({ session, supabase: sb } = data);
+	let { session, user } = data;
+	$: ({ session, user } = data);
 
 	onMount(() => {
 		const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
@@ -26,7 +26,7 @@
 </svelte:head>
 
 <div class="app">
-	<Navbar />
+	<Navbar {session} {user} />
 	<main>
 		<slot />
 	</main>
@@ -54,9 +54,9 @@
 			<div class="footer-section">
 				<h4>Síguenos</h4>
 				<div class="social-links">
-					<a href="#" target="_blank" rel="noopener">Facebook</a>
-					<a href="#" target="_blank" rel="noopener">Twitter</a>
-					<a href="#" target="_blank" rel="noopener">Instagram</a>
+					<a href="https://facebook.com/domify" target="_blank" rel="noopener noreferrer" aria-label="Síguenos en Facebook">Facebook</a>
+					<a href="https://twitter.com/domify" target="_blank" rel="noopener noreferrer" aria-label="Síguenos en Twitter">Twitter</a>
+					<a href="https://instagram.com/domify" target="_blank" rel="noopener noreferrer" aria-label="Síguenos en Instagram">Instagram</a>
 				</div>
 			</div>
 		</div>

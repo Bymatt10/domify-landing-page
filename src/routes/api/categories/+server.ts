@@ -108,15 +108,15 @@ export const GET: RequestHandler = async ({ url, locals }) => {
  *             type: object
  *             required:
  *               - name
- *               - path_image
+ *               - icon
  *             properties:
  *               name:
  *                 type: string
  *                 description: Category name
  *                 example: "Ensamblaje"
- *               path_image:
+ *               icon:
  *                 type: string
- *                 description: Path to category image
+ *                 description: Path to category icon
  *                 example: "/img/assembly.png"
  *               description:
  *                 type: string
@@ -176,20 +176,20 @@ export const POST: RequestHandler = async ({ request, locals }) => {
         
         // Validate required fields
         validateRequired(body.name, 'Name');
-        validateRequired(body.path_image, 'Path image');
+        validateRequired(body.icon, 'Icon');
 
-        const { name, path_image, description } = body;
+        const { name, icon, description } = body;
 
-        console.log('Extracted data:', { name, path_image, description });
+        console.log('Extracted data:', { name, icon, description });
 
         // Validate name length
         if (name.length > 100) {
             throw new ValidationException('Category name must be 100 characters or less');
         }
 
-        // Validate image path
-        if (path_image.length > 500) {
-            throw new ValidationException('Image path must be 500 characters or less');
+        // Validate icon
+        if (icon.length > 10) { // Emoji length check
+            throw new ValidationException('Icon must be a single emoji or short string');
         }
 
         // Check if category name already exists
@@ -203,14 +203,10 @@ export const POST: RequestHandler = async ({ request, locals }) => {
             throw new ValidationException('Category name already exists');
         }
 
-        // Create the category
-        const { data: category, error } = await locals.supabase
+        // Insert into database
+        const { data, error } = await locals.supabase
             .from('categories')
-            .insert({
-                name,
-                path_image,
-                description
-            })
+            .insert([{ name, description, icon }])
             .select()
             .single();
 
@@ -220,7 +216,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
         }
 
         const successResponse = ExceptionHandler.createSuccessResponse(
-            category,
+            data,
             'Category created successfully',
             201
         );

@@ -96,8 +96,9 @@ export const POST: RequestHandler = async ({ request, locals }) => {
         validateEmail(email);
         validatePassword(password);
 
-        // Ensure role is always provider by default
-        const userRole = role === 'admin' ? 'admin' : 'provider';
+        // Ensure role is valid (customer by default)
+        const validRoles = ['customer', 'provider', 'admin'];
+        const userRole = validRoles.includes(role) ? role : 'customer';
 
         console.log('Creating user in Supabase Auth...');
 
@@ -114,7 +115,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
                     last_name,
                     role: userRole
                 },
-                // In development, we can disable email confirmation
+                // In development, disable email confirmation
                 emailRedirectTo: isDevelopment ? undefined : `${import.meta.env.PUBLIC_SITE_URL}/auth/callback`
             }
         });
@@ -122,41 +123,12 @@ export const POST: RequestHandler = async ({ request, locals }) => {
         console.log('Auth signup result:', { authData, authError });
 
         if (authError) {
-            // Handle email confirmation errors gracefully
-            const errorMessage = authError.message || '';
-            if (errorMessage.includes('confirmation email') || 
-                errorMessage.includes('Error sending') ||
-                errorMessage.includes('email') ||
-                authError.code === 'unexpected_failure') {
-                console.log('Email confirmation error detected, but user was created');
-                
-                // Create a basic user response even if authData.user is null
-                const responseUser = {
-                    id: 'pending-confirmation',
-                    email: email,
-                    role: userRole
-                };
-                
-                const message = isDevelopment 
-                    ? 'User created successfully. In local development, you can sign in directly.'
-                    : 'User created successfully. Please check your email for confirmation.';
-                
-                const successResponse = ExceptionHandler.createSuccessResponse(
-                    { user: responseUser, needsConfirmation: true, developmentMode: isDevelopment },
-                    message,
-                    201
-                );
-                
-                return json(successResponse, { status: 201 });
-            }
-            
-            if (authError.message.includes('already registered')) {
-                const errorResponse = ExceptionHandler.createErrorResponse(
-                    new ConflictException('User already exists')
-                );
-                return json(errorResponse, { status: 409 });
-            }
-            
+            console.error('Auth signup error details:', {
+                message: authError.message,
+                status: authError.status,
+                name: authError.name,
+                stack: authError.stack
+            });
             const errorResponse = handleAuthError(authError);
             return json(errorResponse, { status: errorResponse.error.statusCode });
         }
@@ -171,50 +143,11 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
         console.log('User created in Auth, ID:', authData.user.id);
 
-        // Create user in marketplace.users table
-        console.log('Creating user in marketplace.users table...');
-        const { data: userData, error: userError } = await locals.supabase
-            .from('users')
-            .insert({
-                id: authData.user.id,
-                email: email,
-                role: userRole
-            })
-            .select('id, email, role, created_at')
-            .single();
+        // The customer profile should be created automatically by the trigger
+        // We don't need to create it manually anymore
+        console.log('Customer profile should be created automatically by trigger');
 
-        console.log('Marketplace user creation result:', { userData, userError });
-
-        if (userError) {
-            console.error('Error creating marketplace user:', userError);
-        }
-
-        // Create customer profile SOLO si no existe
-        console.log('Checking if customer profile exists...');
-        const { data: existingCustomer, error: checkCustomerError } = await locals.supabase
-            .from('customers')
-            .select('id')
-            .eq('user_id', authData.user.id)
-            .single();
-
-        if (!existingCustomer) {
-            console.log('Creating customer profile...');
-            const { error: customerError } = await locals.supabase
-                .from('customers')
-                .insert({
-                    user_id: authData.user.id,
-                    first_name: first_name,
-                    last_name: last_name
-                });
-
-            if (customerError) {
-                console.error('Error creating customer profile:', customerError);
-            }
-        } else {
-            console.log('Customer profile already exists, skipping creation.');
-        }
-
-        const responseUser = userData || {
+        const responseUser = {
             id: authData.user.id,
             email: authData.user.email,
             role: userRole

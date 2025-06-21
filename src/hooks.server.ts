@@ -1,9 +1,12 @@
 import { createServerClient } from '@supabase/ssr'
+import { createClient } from '@supabase/supabase-js';
 import type { Handle } from '@sveltejs/kit'
 import { ExceptionHandler } from '$lib/exceptions';
+import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/public';
+import { PRIVATE_SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
 
-const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY!
+const supabaseUrl = PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = PUBLIC_SUPABASE_ANON_KEY;
 
 export const handle: Handle = async ({ event, resolve }) => {
 	/**
@@ -12,6 +15,9 @@ export const handle: Handle = async ({ event, resolve }) => {
 	 * The Supabase client gets the Auth token from the request cookies.
 	 */
 	event.locals.supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+		db: {
+			schema: 'public'
+		},
 		cookies: {
 			get: (key) => event.cookies.get(key),
 			/**
@@ -19,6 +25,24 @@ export const handle: Handle = async ({ event, resolve }) => {
 			 * the cookie options. Setting `path` to `/` replicates previous/
 			 * standard behavior.
 			 */
+			set: (key, value, options) => {
+				event.cookies.set(key, value, { ...options, path: '/' })
+			},
+			remove: (key, options) => {
+				event.cookies.delete(key, { ...options, path: '/' })
+			},
+		}
+	})
+
+	/**
+	 * Creates a Supabase admin client for administrative operations.
+	 */
+	event.locals.supabaseAdmin = createServerClient(supabaseUrl, PRIVATE_SUPABASE_SERVICE_ROLE_KEY, {
+		db: {
+			schema: 'public'
+		},
+		cookies: {
+			get: (key) => event.cookies.get(key),
 			set: (key, value, options) => {
 				event.cookies.set(key, value, { ...options, path: '/' })
 			},
@@ -47,9 +71,11 @@ export const handle: Handle = async ({ event, resolve }) => {
 		} = await event.locals.supabase.auth.getUser()
 		if (error) {
 			// JWT validation has failed
+			console.error('JWT validation failed:', error);
 			return { session: null, user: null }
 		}
 
+		// Return the validated user and session
 		return { session, user }
 	}
 
@@ -62,6 +88,39 @@ export const handle: Handle = async ({ event, resolve }) => {
 		} = await event.locals.supabase.auth.getSession();
 		return session;
 	};
+
+	/**
+	 * Get the authenticated user with validation
+	 */
+	event.locals.getUser = async () => {
+		const {
+			data: { user },
+			error,
+		} = await event.locals.supabase.auth.getUser()
+		if (error) {
+			console.error('Error getting user:', error);
+			return null;
+		}
+		return user;
+	};
+
+	// Verificar si el usuario necesita cambiar contraseña (excepto en rutas específicas)
+	const isPasswordChangeRoute = event.url.pathname.startsWith('/auth/change-password');
+	const isAPIRoute = event.url.pathname.startsWith('/api/');
+	const isAuthRoute = event.url.pathname.startsWith('/auth/');
+	
+	if (!isPasswordChangeRoute && !isAPIRoute && !isAuthRoute) {
+		const { session, user } = await event.locals.safeGetSession();
+		
+		if (session && user && user.user_metadata?.requires_password_change === true) {
+			return new Response(null, {
+				status: 302,
+				headers: {
+					location: '/auth/change-password'
+				}
+			});
+		}
+	}
 
 	return resolve(event, {
 		filterSerializedResponseHeaders(name) {

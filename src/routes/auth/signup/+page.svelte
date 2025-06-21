@@ -18,47 +18,13 @@
 			error = '';
 			success = '';
 
-			// Validations
+			// Validate passwords match
 			if (password !== confirmPassword) {
 				error = 'Las contraseñas no coinciden';
 				return;
 			}
 
-			if (password.length < 6) {
-				error = 'La contraseña debe tener al menos 6 caracteres';
-				return;
-			}
-
-			// Create marketplace user first with provider role as default
-			const { data: marketplaceUser, error: marketplaceError } = await supabase
-				.from('users')
-				.insert({
-					email: email,
-					password: 'temp_password', // Will be updated by auth
-					role: 'provider' // Always default to provider
-				})
-				.select()
-				.single();
-
-			if (marketplaceError) {
-				error = `Error creando perfil: ${marketplaceError.message}`;
-				return;
-			}
-
-			// Create customer profile
-			const { error: customerError } = await supabase
-				.from('customers')
-				.insert({
-					user_id: marketplaceUser.id,
-					first_name: firstName,
-					last_name: lastName
-				});
-
-			if (customerError) {
-				console.log('Customer creation error:', customerError);
-			}
-
-			// Now sign up with Supabase Auth
+			// Sign up with Supabase Auth (this will trigger the database trigger to create customer profile)
 			const { data, error: signupError } = await supabase.auth.signUp({
 				email,
 				password,
@@ -66,8 +32,7 @@
 					data: {
 						first_name: firstName,
 						last_name: lastName,
-						marketplace_user_id: marketplaceUser.id,
-						role: 'provider' // Ensure role is set in auth metadata too
+						role: 'customer' // Default role is now customer
 					}
 				}
 			});
@@ -136,6 +101,10 @@
 
 			if (googleError) {
 				error = googleError.message;
+			} else {
+				// El usuario será redirigido a Google para autenticación
+				// No necesitamos hacer nada más aquí, el callback manejará el resto
+				console.log('Redirigiendo a Google OAuth...');
 			}
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'Error inesperado';
@@ -256,15 +225,15 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
 		padding: 1rem;
 	}
 
 	.auth-card {
-		background: white;
+		background: var(--color-background-white);
 		padding: 2rem;
-		border-radius: 12px;
-		box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+		border-radius: var(--border-radius-lg);
+		box-shadow: var(--shadow-lg);
 		width: 100%;
 		max-width: 450px;
 	}
@@ -272,14 +241,14 @@
 	h1 {
 		text-align: center;
 		margin-bottom: 0.5rem;
-		color: #333;
+		color: var(--color-text);
 		font-size: 2rem;
 		font-weight: 700;
 	}
 
 	.subtitle {
 		text-align: center;
-		color: #666;
+		color: var(--color-text-light);
 		margin-bottom: 2rem;
 	}
 
@@ -287,7 +256,7 @@
 		background: #fee;
 		color: #c33;
 		padding: 0.75rem;
-		border-radius: 6px;
+		border-radius: var(--border-radius-sm);
 		margin-bottom: 1rem;
 		border: 1px solid #fcc;
 	}
@@ -296,7 +265,7 @@
 		background: #efe;
 		color: #363;
 		padding: 0.75rem;
-		border-radius: 6px;
+		border-radius: var(--border-radius-sm);
 		margin-bottom: 1rem;
 		border: 1px solid #cfc;
 	}
@@ -323,7 +292,7 @@
 	label {
 		display: block;
 		margin-bottom: 0.5rem;
-		color: #333;
+		color: var(--color-text);
 		font-weight: 500;
 	}
 
@@ -331,7 +300,7 @@
 		width: 100%;
 		padding: 0.75rem;
 		border: 2px solid #e1e5e9;
-		border-radius: 6px;
+		border-radius: var(--border-radius-sm);
 		font-size: 1rem;
 		transition: border-color 0.2s;
 		box-sizing: border-box;
@@ -339,7 +308,7 @@
 
 	input:focus {
 		outline: none;
-		border-color: #667eea;
+		border-color: var(--color-primary);
 	}
 
 	input:disabled {
@@ -350,10 +319,10 @@
 	.btn-primary {
 		width: 100%;
 		padding: 0.75rem;
-		background: #667eea;
-		color: white;
+		background: var(--color-primary);
+		color: var(--color-text-white);
 		border: none;
-		border-radius: 6px;
+		border-radius: var(--border-radius-sm);
 		font-size: 1rem;
 		font-weight: 600;
 		cursor: pointer;
@@ -361,7 +330,7 @@
 	}
 
 	.btn-primary:hover:not(:disabled) {
-		background: #5a6fd8;
+		background: var(--color-primary-hover);
 	}
 
 	.btn-primary:disabled {
@@ -386,18 +355,18 @@
 	}
 
 	.divider span {
-		background: white;
+		background: var(--color-background-white);
 		padding: 0 1rem;
-		color: #666;
+		color: var(--color-text-light);
 	}
 
 	.btn-google {
 		width: 100%;
 		padding: 0.75rem;
-		background: white;
-		color: #333;
+		background: var(--color-background-white);
+		color: var(--color-text);
 		border: 2px solid #e1e5e9;
-		border-radius: 6px;
+		border-radius: var(--border-radius-sm);
 		font-size: 1rem;
 		font-weight: 500;
 		cursor: pointer;
@@ -410,7 +379,7 @@
 	}
 
 	.btn-google:hover:not(:disabled) {
-		border-color: #ccc;
+		border-color: var(--color-primary-light);
 	}
 
 	.btn-google:disabled {
@@ -424,11 +393,11 @@
 
 	.auth-links p {
 		margin: 0.5rem 0;
-		color: #666;
+		color: var(--color-text-light);
 	}
 
 	.auth-links a {
-		color: #667eea;
+		color: var(--color-primary);
 		text-decoration: none;
 		font-weight: 500;
 	}

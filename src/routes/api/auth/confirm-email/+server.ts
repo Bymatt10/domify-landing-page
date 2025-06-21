@@ -1,10 +1,11 @@
 import { json } from '@sveltejs/kit';
-import type { RequestHandler } from '@sveltejs/kit';
+import type { RequestHandler } from './$types';
 import { 
     ExceptionHandler, 
     ValidationException,
     validateRequired
 } from '$lib/exceptions';
+import { createSupabaseAdminClient } from '$lib/supabase-server';
 
 /**
  * @swagger
@@ -54,53 +55,105 @@ import {
  */
 export const POST: RequestHandler = async ({ request, locals }) => {
     try {
-        const { email, code } = await request.json();
+        const { email } = await request.json();
 
-        // Validate required fields
-        validateRequired(email, 'Email');
-        validateRequired(code, 'Verification code');
+        if (!email) {
+            return json({ 
+                error: { 
+                    message: 'Email is required', 
+                    statusCode: 400, 
+                    timestamp: new Date().toISOString() 
+                } 
+            }, { status: 400 });
+        }
 
-        // Verify the email with the code
-        const { data, error } = await locals.supabase.auth.verifyOtp({
-            email,
-            token: code,
-            type: 'signup'
+        // In development mode, automatically confirm the user
+        if (import.meta.env.DEV) {
+            console.log('Development mode: Auto-confirming user:', email);
+            
+            // Create admin client for user management
+            const adminClient = createSupabaseAdminClient(fetch);
+            
+            // Get the user by email
+            const { data: users, error: userError } = await adminClient.auth.admin.listUsers();
+            
+            if (userError) {
+                console.error('Error listing users:', userError);
+                return json({ 
+                    error: { 
+                        message: 'Error confirming user', 
+                        statusCode: 500, 
+                        timestamp: new Date().toISOString() 
+                    } 
+                }, { status: 500 });
+            }
+
+            const user = users.users.find(u => u.email === email);
+            
+            if (!user) {
+                return json({ 
+                    error: { 
+                        message: 'User not found', 
+                        statusCode: 404, 
+                        timestamp: new Date().toISOString() 
+                    } 
+                }, { status: 404 });
+            }
+
+            // Confirm the user
+            const { error: confirmError } = await adminClient.auth.admin.updateUserById(
+                user.id,
+                { email_confirm: true }
+            );
+
+            if (confirmError) {
+                console.error('Error confirming user:', confirmError);
+                return json({ 
+                    error: { 
+                        message: 'Error confirming user', 
+                        statusCode: 500, 
+                        timestamp: new Date().toISOString() 
+                    } 
+                }, { status: 500 });
+            }
+
+            return json({ 
+                message: 'User confirmed successfully in development mode',
+                statusCode: 200,
+                timestamp: new Date().toISOString()
+            });
+        }
+
+        // In production, send confirmation email
+        const { error } = await locals.supabase.auth.resend({
+            type: 'signup',
+            email: email
         });
 
         if (error) {
-            // Handle specific error cases
-            if (error.message.includes('Invalid token') || error.message.includes('Invalid code')) {
-                const errorResponse = ExceptionHandler.createErrorResponse(
-                    new ValidationException('Invalid verification code')
-                );
-                return json(errorResponse, { status: 401 });
-            }
-
-            if (error.message.includes('User not found')) {
-                const errorResponse = ExceptionHandler.createErrorResponse(
-                    new ValidationException('User not found with this email address')
-                );
-                return json(errorResponse, { status: 404 });
-            }
-
-            if (error.message.includes('already confirmed')) {
-                const errorResponse = ExceptionHandler.createErrorResponse(
-                    new ValidationException('Email is already confirmed')
-                );
-                return json(errorResponse, { status: 400 });
-            }
-
-            const errorResponse = ExceptionHandler.handle(error);
-            return json(errorResponse, { status: errorResponse.error.statusCode });
+            return json({ 
+                error: { 
+                    message: error.message, 
+                    statusCode: 400, 
+                    timestamp: new Date().toISOString() 
+                } 
+            }, { status: 400 });
         }
 
-        return json({
-            message: 'Email confirmed successfully. You can now sign in.',
-            user: data.user
-        }, { status: 200 });
+        return json({ 
+            message: 'Confirmation email sent',
+            statusCode: 200,
+            timestamp: new Date().toISOString()
+        });
 
     } catch (error) {
-        const errorResponse = ExceptionHandler.handle(error);
-        return json(errorResponse, { status: errorResponse.error.statusCode });
+        console.error('Error in confirm-email endpoint:', error);
+        return json({ 
+            error: { 
+                message: 'Internal server error', 
+                statusCode: 500, 
+                timestamp: new Date().toISOString() 
+            } 
+        }, { status: 500 });
     }
 }; 

@@ -31,34 +31,18 @@ export function handleEmailConfirmationError(error: any) {
 }
 
 /**
- * Creates a user in the marketplace.users table after successful auth signup
+ * Creates a customer profile after successful auth signup
  */
-export async function createMarketplaceUser(profile: UserProfile, authUserId: string) {
+export async function createCustomerProfile(profile: UserProfile, authUserId: string, role: string = 'customer') {
 	try {
-		// Insert into marketplace.users table
-		const { data: userData, error: userError } = await supabase
-			.from('users')
-			.insert({
-				id: authUserId, // Use the same ID from auth.users
-				email: profile.email,
-				password: '', // This is handled by Supabase Auth
-				role: 'provider', // Always default to provider
-			})
-			.select()
-			.single();
-
-		if (userError) {
-			console.error('Error creating marketplace user:', userError);
-			return { success: false, error: userError.message };
-		}
-
-		// Create customer profile
+		// Create customer profile directly (no marketplace.users table needed)
 		const { data: customerData, error: customerError } = await supabase
 			.from('customers')
 			.insert({
 				user_id: authUserId,
 				first_name: profile.first_name,
 				last_name: profile.last_name,
+				role: role
 			})
 			.select()
 			.single();
@@ -70,12 +54,11 @@ export async function createMarketplaceUser(profile: UserProfile, authUserId: st
 
 		return { 
 			success: true, 
-			user: userData, 
 			customer: customerData 
 		};
 
 	} catch (error) {
-		console.error('Unexpected error creating marketplace user:', error);
+		console.error('Unexpected error creating customer profile:', error);
 		return { 
 			success: false, 
 			error: error instanceof Error ? error.message : 'Error inesperado' 
@@ -84,9 +67,9 @@ export async function createMarketplaceUser(profile: UserProfile, authUserId: st
 }
 
 /**
- * Signs up a user and creates their marketplace profile
+ * Signs up a user and creates their customer profile
  */
-export async function signUpWithProfile(profile: UserProfile, password: string) {
+export async function signUpWithProfile(profile: UserProfile, password: string, role: string = 'customer') {
 	try {
 		// First, sign up with Supabase Auth
 		const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -96,7 +79,7 @@ export async function signUpWithProfile(profile: UserProfile, password: string) 
 				data: {
 					first_name: profile.first_name,
 					last_name: profile.last_name,
-					role: 'provider', // Always default to provider
+					role: role, // Default to customer now
 				}
 			}
 		});
@@ -131,20 +114,40 @@ export async function signUpWithProfile(profile: UserProfile, password: string) 
 			};
 		}
 
-		// Create marketplace profile
-		const marketplaceResult = await createMarketplaceUser(profile, authData.user.id);
+		// The customer profile should be created automatically by the database trigger
+		// Let's wait a moment and then check if it exists
+		await new Promise(resolve => setTimeout(resolve, 100));
 
-		if (!marketplaceResult.success) {
-			return { 
-				success: false, 
-				error: `Usuario creado pero error en perfil: ${marketplaceResult.error}` 
+		// Check if profile was created by trigger
+		const { data: existingProfile, error: profileError } = await supabase
+			.from('customers')
+			.select('*')
+			.eq('user_id', authData.user.id)
+			.single();
+
+		if (profileError || !existingProfile) {
+			// If trigger didn't work, create manually
+			const profileResult = await createCustomerProfile(profile, authData.user.id, role);
+			
+			if (!profileResult.success) {
+				return { 
+					success: false, 
+					error: `Usuario creado pero error en perfil: ${profileResult.error}` 
+				};
+			}
+
+			return {
+				success: true,
+				user: authData.user,
+				profile: profileResult.customer,
+				message: 'Cuenta creada exitosamente'
 			};
 		}
 
 		return {
 			success: true,
 			user: authData.user,
-			profile: marketplaceResult,
+			profile: existingProfile,
 			message: 'Cuenta creada exitosamente'
 		};
 

@@ -2,6 +2,7 @@
 	import { supabase } from '$lib/supabase';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
+	import { invalidateAll } from '$app/navigation';
 
 	let email = '';
 	let password = '';
@@ -13,6 +14,7 @@
 			loading = true;
 			error = '';
 
+			// Use Supabase auth directly for session management
 			const { data, error: loginError } = await supabase.auth.signInWithPassword({
 				email,
 				password
@@ -23,9 +25,14 @@
 				return;
 			}
 
-			// Redirect to home or intended page
-			const redirectTo = $page.url.searchParams.get('redirectTo') || '/';
-			goto(redirectTo);
+			if (data.user) {
+				console.log('Login successful:', data.user);
+				// Invalidate all to refresh the session
+				await invalidateAll();
+				// Redirect to home or intended page with full reload
+				const redirectTo = $page.url.searchParams.get('redirectTo') || '/';
+				window.location.href = redirectTo;
+			}
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'Error inesperado';
 		} finally {
@@ -124,15 +131,15 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
 		padding: 1rem;
 	}
 
 	.auth-card {
-		background: white;
+		background: var(--color-background-white);
 		padding: 2rem;
-		border-radius: 12px;
-		box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+		border-radius: var(--border-radius-lg);
+		box-shadow: var(--shadow-lg);
 		width: 100%;
 		max-width: 400px;
 	}
@@ -140,14 +147,14 @@
 	h1 {
 		text-align: center;
 		margin-bottom: 0.5rem;
-		color: #333;
+		color: var(--color-text);
 		font-size: 2rem;
 		font-weight: 700;
 	}
 
 	.subtitle {
 		text-align: center;
-		color: #666;
+		color: var(--color-text-light);
 		margin-bottom: 2rem;
 	}
 
@@ -155,7 +162,7 @@
 		background: #fee;
 		color: #c33;
 		padding: 0.75rem;
-		border-radius: 6px;
+		border-radius: var(--border-radius-sm);
 		margin-bottom: 1rem;
 		border: 1px solid #fcc;
 	}
@@ -171,7 +178,7 @@
 	label {
 		display: block;
 		margin-bottom: 0.5rem;
-		color: #333;
+		color: var(--color-text);
 		font-weight: 500;
 	}
 
@@ -179,14 +186,14 @@
 		width: 100%;
 		padding: 0.75rem;
 		border: 2px solid #e1e5e9;
-		border-radius: 6px;
+		border-radius: var(--border-radius-sm);
 		font-size: 1rem;
 		transition: border-color 0.2s;
 	}
 
 	input:focus {
 		outline: none;
-		border-color: #667eea;
+		border-color: var(--color-primary);
 	}
 
 	input:disabled {
@@ -197,10 +204,10 @@
 	.btn-primary {
 		width: 100%;
 		padding: 0.75rem;
-		background: #667eea;
-		color: white;
+		background: var(--color-primary);
+		color: var(--color-text-white);
 		border: none;
-		border-radius: 6px;
+		border-radius: var(--border-radius-sm);
 		font-size: 1rem;
 		font-weight: 600;
 		cursor: pointer;
@@ -208,7 +215,7 @@
 	}
 
 	.btn-primary:hover:not(:disabled) {
-		background: #5a6fd8;
+		background: var(--color-primary-hover);
 	}
 
 	.btn-primary:disabled {
@@ -233,18 +240,18 @@
 	}
 
 	.divider span {
-		background: white;
+		background: var(--color-background-white);
 		padding: 0 1rem;
-		color: #666;
+		color: var(--color-text-light);
 	}
 
 	.btn-google {
 		width: 100%;
 		padding: 0.75rem;
-		background: white;
-		color: #333;
+		background: var(--color-background-white);
+		color: var(--color-text);
 		border: 2px solid #e1e5e9;
-		border-radius: 6px;
+		border-radius: var(--border-radius-sm);
 		font-size: 1rem;
 		font-weight: 500;
 		cursor: pointer;
@@ -257,7 +264,7 @@
 	}
 
 	.btn-google:hover:not(:disabled) {
-		border-color: #ccc;
+		border-color: var(--color-primary-light);
 	}
 
 	.btn-google:disabled {
@@ -271,11 +278,11 @@
 
 	.auth-links p {
 		margin: 0.5rem 0;
-		color: #666;
+		color: var(--color-text-light);
 	}
 
 	.auth-links a {
-		color: #667eea;
+		color: var(--color-primary);
 		text-decoration: none;
 		font-weight: 500;
 	}

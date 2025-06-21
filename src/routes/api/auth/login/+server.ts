@@ -95,8 +95,9 @@ export const POST: RequestHandler = async ({ request, locals }) => {
             return json(errorResponse, { status: 401 });
         }
 
-        // Check if user email is confirmed
-        if (!data.user.email_confirmed_at) {
+        // Check if user email is confirmed (skip in development)
+        const isDevelopment = process.env.NODE_ENV === 'development';
+        if (!data.user.email_confirmed_at && !isDevelopment) {
             const errorResponse = ExceptionHandler.createErrorResponse(
                 new AuthenticationException('Please confirm your email before signing in', { 
                     needsConfirmation: true,
@@ -106,21 +107,21 @@ export const POST: RequestHandler = async ({ request, locals }) => {
             return json(errorResponse, { status: 401 });
         }
 
-        // Get user details from marketplace.users table
-        const { data: userData, error: userError } = await locals.supabase
-            .from('users')
-            .select('id, email, role, created_at')
-            .eq('id', data.user.id)
+        // Get user details from customers table
+        const { data: customerData, error: customerError } = await locals.supabase
+            .from('customers')
+            .select('id, user_id, first_name, last_name, role, created_at')
+            .eq('user_id', data.user.id)
             .single();
 
-        if (userError) {
-            console.error('Error fetching user data:', userError);
+        if (customerError) {
+            console.error('Error fetching user data:', customerError);
         }
 
-        const user = userData || {
+        const user = customerData || {
             id: data.user.id,
             email: data.user.email,
-            role: 'provider'
+            role: 'customer'
         };
 
         return json({

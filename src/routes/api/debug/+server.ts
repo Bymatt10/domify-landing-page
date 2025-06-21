@@ -20,13 +20,6 @@ import { ExceptionHandler } from '$lib/exceptions';
  *                 data:
  *                   type: object
  *                   properties:
- *                     marketplace:
- *                       type: object
- *                       properties:
- *                         users:
- *                           type: array
- *                         error:
- *                           type: string
  *                     customers:
  *                       type: object
  *                       properties:
@@ -34,10 +27,17 @@ import { ExceptionHandler } from '$lib/exceptions';
  *                           type: array
  *                         error:
  *                           type: string
- *                     auth:
+ *                     providers:
  *                       type: object
  *                       properties:
- *                         users:
+ *                         data:
+ *                           type: array
+ *                         error:
+ *                           type: string
+ *                     applications:
+ *                       type: object
+ *                       properties:
+ *                         data:
  *                           type: array
  *                         error:
  *                           type: string
@@ -57,39 +57,40 @@ export const GET: RequestHandler = async ({ locals }) => {
     try {
         console.log('Debug endpoint called - checking database state...');
 
-        // Check marketplace.users table
-        const { data: marketplaceUsers, error: marketplaceError } = await locals.supabase
-            .from('users')
-            .select('*')
-            .is('deleted_at', null);
-
-        console.log('Marketplace users:', marketplaceUsers);
-        console.log('Marketplace error:', marketplaceError);
-
         // Check customers table
         const { data: customers, error: customersError } = await locals.supabase
             .from('customers')
             .select('*')
             .is('deleted_at', null);
 
-        console.log('Customers:', customers);
-        console.log('Customers error:', customersError);
+        // Check provider profiles
+        const { data: providers, error: providersError } = await locals.supabase
+            .from('provider_profiles')
+            .select('*')
+            .is('deleted_at', null);
 
-        // Try to get auth users (this might not work with current permissions)
-        const { data: authUsers, error: authError } = await locals.supabase.auth.admin.listUsers();
+        // Check provider applications
+        const { data: applications, error: applicationsError } = await locals.supabase
+            .from('provider_applications')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(10);
 
         const debugData = {
-            marketplace: {
-                users: marketplaceUsers || [],
-                error: marketplaceError?.message
-            },
             customers: {
                 data: customers || [],
-                error: customersError?.message
+                error: customersError?.message,
+                count: customers?.length || 0
             },
-            auth: {
-                users: authUsers?.users || [],
-                error: authError?.message
+            providers: {
+                data: providers || [],
+                error: providersError?.message,
+                count: providers?.length || 0
+            },
+            applications: {
+                data: applications || [],
+                error: applicationsError?.message,
+                count: applications?.length || 0
             }
         };
 

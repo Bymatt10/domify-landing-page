@@ -74,12 +74,12 @@
 <style>
 	.swagger-container {
 		min-height: 100vh;
-		background: #f8f9fa;
+		background: var(--color-background);
 	}
 
 	.swagger-header {
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-		color: white;
+		background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+		color: var(--color-text-white);
 		padding: 2rem 1rem;
 		text-align: center;
 	}
@@ -107,7 +107,7 @@
 	.info-card {
 		background: rgba(255, 255, 255, 0.1);
 		padding: 1rem;
-		border-radius: 8px;
+		border-radius: var(--border-radius-md);
 		backdrop-filter: blur(10px);
 	}
 
@@ -134,13 +134,13 @@
 	}
 
 	:global(.swagger-ui .info .title) {
-		color: #667eea;
+		color: var(--color-primary);
 	}
 
 	:global(.swagger-ui .scheme-container) {
-		background: #f8f9fa;
+		background: var(--color-background);
 		padding: 1rem;
-		border-radius: 8px;
+		border-radius: var(--border-radius-md);
 		margin: 1rem 0;
 	}
 
@@ -161,23 +161,23 @@
 	}
 
 	:global(.swagger-ui .btn.execute) {
-		background: #667eea;
-		border-color: #667eea;
+		background: var(--color-primary);
+		border-color: var(--color-primary);
 	}
 
 	:global(.swagger-ui .btn.execute:hover) {
-		background: #5a6fd8;
-		border-color: #5a6fd8;
+		background: var(--color-primary-hover);
+		border-color: var(--color-primary-hover);
 	}
 
 	:global(.swagger-ui .auth-wrapper .authorize) {
-		background: #667eea;
-		border-color: #667eea;
+		background: var(--color-primary);
+		border-color: var(--color-primary);
 	}
 
 	:global(.swagger-ui .auth-wrapper .authorize:hover) {
-		background: #5a6fd8;
-		border-color: #5a6fd8;
+		background: var(--color-primary-hover);
+		border-color: var(--color-primary-hover);
 	}
 
 	@media (max-width: 768px) {
