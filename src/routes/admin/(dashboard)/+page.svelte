@@ -37,8 +37,8 @@
         // Solo usar datos reales si están disponibles
         if (applicationsData.total !== undefined) {
           stats.totalApplications = applicationsData.total;
-          stats.pendingApplications = applicationsData.pending || 0;
-          stats.approvedApplications = applicationsData.approved || 0;
+        stats.pendingApplications = applicationsData.pending || 0;
+        stats.approvedApplications = applicationsData.approved || 0;
           applicationsLoaded = true;
         }
       }

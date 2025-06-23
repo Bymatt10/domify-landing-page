@@ -28,8 +28,8 @@ export const POST: RequestHandler = async ({ locals }) => {
         phone: '12345678',
         email: 'testwithuser@example.com',
         application_data: {
-          experience_years: 3,
-          certifications: ['Test Certification'],
+        experience_years: 3,
+        certifications: ['Test Certification'],
           availability: { monday: true, tuesday: true }
         },
         status: 'submitted'

@@ -97,9 +97,9 @@
   }
 
   async function loadApplications() {
-    loading = true;
-    error = '';
-    
+      loading = true;
+      error = '';
+
     try {
       const url = new URL('/api/provider-applications', window.location.origin);
       url.searchParams.set('status', statusFilter);
@@ -121,7 +121,7 @@
 
         if (applications.length === 0) {
           console.log('No applications found for the current filters.');
-        }
+      }
 
       } else {
         const errorData = await response.json();

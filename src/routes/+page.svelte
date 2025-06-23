@@ -1,74 +1,44 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
-	import { onMount } from 'svelte';
 	import type { PageData } from './$types';
-	import type { Category } from '$lib/types';
+	import { goto } from '$app/navigation';
 
 	export let data: PageData;
+
+	let { session } = data;
 	$: ({ session } = data);
 
-	// @ts-expect-error - El linter a veces no detecta el tipo de `data` correctamente desde +page.server.ts, pero el código funciona.
-	let categories: Category[] = data.categories || [];
-	let selectedCategorySlug = '';
-	let searchTerm = '';
-	let showDropdown = false;
-	let showSearchSuggestions = false;
-	let searchBarWrapper: HTMLElement | null = null;
-
-	$: filteredCategories = searchTerm
-		? categories.filter((c: Category) => c.name.toLowerCase().includes(searchTerm.toLowerCase()))
-		: [];
-
-	function handleSearch() {
-		const categoryParam = selectedCategorySlug
-			? `category=${encodeURIComponent(selectedCategorySlug)}`
-			: '';
-		const searchParam = searchTerm ? `search=${encodeURIComponent(searchTerm)}` : '';
-		const query = [categoryParam, searchParam].filter(Boolean).join('&');
-		goto(`/services?${query}`);
-	}
-
-	function selectCategory(slug: string, event?: MouseEvent) {
-		if (event) event.stopPropagation();
-		selectedCategorySlug = slug;
-		showDropdown = false;
-		const category = categories.find((c: Category) => c.slug === slug);
-		if (category) {
-			searchTerm = category.name;
+	const categories = [
+		{
+			id: 'cleaning',
+			name: 'Limpieza',
+			description: 'Servicios profesionales de limpieza para tu hogar u oficina',
+			icon: '/img/cleaning.png'
+		},
+		{
+			id: 'moving',
+			name: 'Mudanza',
+			description: 'Ayuda profesional para tu mudanza, empaque y transporte',
+			icon: '/img/moving.png'
+		},
+		{
+			id: 'gardening',
+			name: 'Jardinería',
+			description: 'Mantenimiento y diseño de jardines por expertos',
+			icon: '/img/gardening.png'
+		},
+		{
+			id: 'assembly',
+			name: 'Ensamblaje',
+			description: 'Montaje de muebles y equipos por profesionales',
+			icon: '/img/assembly.png'
+		},
+		{
+			id: 'mounting',
+			name: 'Montaje',
+			description: 'Instalación profesional de TV, cuadros y más',
+			icon: '/img/mounting.png'
 		}
-		handleSearch();
-	}
-
-	function getCategoryName(slug: string) {
-		if (!slug) return 'Categoría';
-		const category = categories.find((c: Category) => c.slug === slug);
-		return category ? category.name : 'Categoría';
-	}
-
-	function handleKeyPress(event: KeyboardEvent) {
-		if (event.key === 'Enter') {
-			handleSearch();
-		}
-	}
-
-	function handlePopularClick(slug: string, name: string) {
-		selectedCategorySlug = slug;
-		searchTerm = name;
-		handleSearch();
-	}
-
-	onMount(() => {
-		const handleClickOutside = (event: MouseEvent) => {
-			if (searchBarWrapper && !searchBarWrapper.contains(event.target as Node)) {
-				showDropdown = false;
-				showSearchSuggestions = false;
-			}
-		};
-		document.addEventListener('click', handleClickOutside);
-		return () => {
-			document.removeEventListener('click', handleClickOutside);
-		};
-	});
+	];
 
 	const propertyTypes = [
 		{
@@ -140,8 +110,11 @@
 		}
 	];
 
+	let selectedCategory = categories[0].id;
 	let searchQuery = '';
+	let showSearchSuggestions = false;
 	let statsVisible = false;
+	let isSearching = false;
 	let animatedStats = {
 		professionals: 0,
 		services: 0,
@@ -155,6 +128,28 @@
 		rating: 4.9,
 		support: '24/7'
 	};
+
+	async function handleSearch() {
+		if (searchQuery.trim()) {
+			isSearching = true;
+			await new Promise(resolve => setTimeout(resolve, 300));
+			goto(`/services/${selectedCategory}?search=${encodeURIComponent(searchQuery.trim())}`);
+		} else {
+			isSearching = true;
+			await new Promise(resolve => setTimeout(resolve, 300));
+			goto(`/services/${selectedCategory}`);
+		}
+	}
+
+	function handleCategoryClick(categoryId: string) {
+		goto(`/services/${categoryId}`);
+	}
+
+	function handleKeyPress(event: KeyboardEvent) {
+		if (event.key === 'Enter') {
+			handleSearch();
+		}
+	}
 
 	function handlePropertyTypeClick(propertyId: string) {
 		goto(`/services?property=${propertyId}`);
@@ -193,6 +188,11 @@
 		}, 1000);
 	}
 
+	$: filteredCategories = categories.filter(category =>
+		category.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+		category.description.toLowerCase().includes(searchQuery.toLowerCase())
+	);
+
 	function intersectionObserver(node: HTMLElement, { threshold = 0.5, callback }: { threshold: number, callback: () => void }) {
 		const observer = new IntersectionObserver(
 			(entries) => {
@@ -222,119 +222,113 @@
 			<h1>Encuentra los mejores servicios locales</h1>
 			<p>Conectamos personas con profesionales confiables para todas tus necesidades del hogar</p>
 			
-			<div class="search-bar-wrapper" bind:this={searchBarWrapper}>
-				<div class="search-bar">
-					<input
-						type="text"
-						bind:value={searchTerm}
-						placeholder="¿Qué servicio necesitas?"
-						class="search-input"
-						on:focus={() => (showSearchSuggestions = true)}
-						on:keydown={handleKeyPress}
-					/>
-					<div class="category-selector">
-						<button
-							class="dropdown-toggle"
-							on:click|stopPropagation={() => (showDropdown = !showDropdown)}
+			<div class="search-container">
+				<div class="search-box">
+					<div class="search-input-group">
+						<input
+							type="text"
+							placeholder="¿Qué servicio necesitas?"
+							bind:value={searchQuery}
+							on:keypress={handleKeyPress}
+							on:focus={() => showSearchSuggestions = true}
+							class="search-input"
+							aria-label="Buscar servicio"
+						/>
+						<button 
+							on:click={handleSearch} 
+							class="search-button"
+							class:searching={isSearching}
+							type="button"
+							aria-label="Buscar"
+							disabled={isSearching}
 						>
-							<span>{getCategoryName(selectedCategorySlug)}</span>
-							<svg
-								xmlns="http://www.w3.org/2000/svg"
-								width="20"
-								height="20"
-								viewBox="0 0 24 24"
-								fill="none"
-								stroke="currentColor"
-								stroke-width="2"
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								class="chevron-icon"
-								class:rotated={showDropdown}
-							>
-								<path d="m6 9 6 6 6-6" />
-							</svg>
+							{#if isSearching}
+								<div class="search-spinner">
+									<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+										<circle cx="12" cy="12" r="10" stroke-dasharray="31.416" stroke-dashoffset="31.416" class="spinner-circle"/>
+									</svg>
+								</div>
+							{:else}
+								<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" class="search-icon">
+									<circle cx="11" cy="11" r="8"/>
+									<path d="m21 21-4.35-4.35"/>
+								</svg>
+							{/if}
 						</button>
-						{#if showDropdown}
-							<div class="dropdown-menu">
-								<button class="dropdown-item" on:click={(e) => selectCategory('', e)}>
-									Todas las categorías
-								</button>
-								{#each categories as category}
-									<button
-										class="dropdown-item"
-										on:click={(e) => selectCategory(category.slug, e)}
-									>
-										{category.name}
-									</button>
-								{/each}
-							</div>
-						{/if}
 					</div>
-					<button class="search-button" on:click={handleSearch}>
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							width="24"
-							height="24"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="2"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							class="search-icon"
+					
+					{#if showSearchSuggestions && searchQuery && filteredCategories.length > 0}
+						<div 
+							class="search-suggestions" 
+							role="listbox"
+							aria-label="Sugerencias de búsqueda"
 						>
-							<circle cx="11" cy="11" r="8"/>
-							<path d="m21 21-4.35-4.35"/>
-						</svg>
-					</button>
+							{#each filteredCategories.slice(0, 3) as category}
+								<button 
+									class="suggestion-item"
+									role="option"
+									aria-selected={selectedCategory === category.id}
+									on:click={() => {
+										selectedCategory = category.id;
+										searchQuery = category.name;
+										showSearchSuggestions = false;
+										handleSearch();
+									}}
+									on:keydown={(e) => {
+										if (e.key === 'Enter' || e.key === ' ') {
+											selectedCategory = category.id;
+											searchQuery = category.name;
+											showSearchSuggestions = false;
+											handleSearch();
+										}
+									}}
+								>
+									<img src={category.icon} alt="" class="suggestion-icon" />
+									<div class="suggestion-content">
+										<div class="suggestion-title">{category.name}</div>
+										<div class="suggestion-desc">{category.description}</div>
+									</div>
+								</button>
+							{/each}
+						</div>
+					{/if}
 				</div>
 				
-				{#if showSearchSuggestions && searchTerm && filteredCategories.length > 0}
-					<div class="search-suggestions" role="listbox" aria-label="Sugerencias de búsqueda">
-						{#each filteredCategories.slice(0, 3) as category}
-							<button
-								class="suggestion-item"
-								role="option"
-								on:click={() => selectCategory(category.slug)}
-							>
-								<img src={category.icon || '/img/cleaning.png'} alt="" class="suggestion-icon" />
-								<div class="suggestion-content">
-									<div class="suggestion-title">{category.name}</div>
-									<div class="suggestion-desc">{category.description}</div>
-								</div>
-							</button>
-						{/each}
-					</div>
-				{/if}
-			</div>
-			
-			<div class="popular-searches">
-				<span class="popular-label">Búsquedas populares:</span>
-				{#each categories.slice(0, 3) as category}
-					<button class="popular-tag" on:click={() => handlePopularClick(category.slug, category.name)}>
-						{category.name}
-					</button>
-				{/each}
+				<div class="popular-searches">
+					<span class="popular-label">Búsquedas populares:</span>
+					{#each categories.slice(0, 3) as category}
+						<button 
+							class="popular-tag"
+							on:click={() => {
+								selectedCategory = category.id;
+								searchQuery = category.name;
+								handleSearch();
+							}}
+						>
+							{category.name}
+						</button>
+					{/each}
+				</div>
 			</div>
 		</div>
 	</section>
 
-	<section class="stats" use:intersectionObserver={{ threshold: 0.5, callback: animateStats }}>
+	<section class="stats-section" use:intersectionObserver={{ threshold: 0.5, callback: animateStats }}>
 		<div class="container">
 			<div class="stats-grid">
-				<div class="stat-item">
+				<div class="stat-card">
 					<div class="stat-number">{animatedStats.professionals}+</div>
 					<div class="stat-label">Profesionales Verificados</div>
 				</div>
-				<div class="stat-item">
+				<div class="stat-card">
 					<div class="stat-number">{animatedStats.services}+</div>
 					<div class="stat-label">Servicios Completados</div>
 				</div>
-				<div class="stat-item">
+				<div class="stat-card">
 					<div class="stat-number">{animatedStats.rating.toFixed(1)}</div>
 					<div class="stat-label">Calificación Promedio</div>
 				</div>
-				<div class="stat-item">
+				<div class="stat-card">
 					<div class="stat-number">{animatedStats.support}</div>
 					<div class="stat-label">Soporte Disponible</div>
 				</div>
@@ -371,26 +365,23 @@
 		</div>
 	</section>
 
-	<section class="categories-section">
+	<section class="categories">
 		<div class="container">
 			<h2>Nuestros Servicios</h2>
-			<p>Explora la amplia gama de servicios que ofrecemos para tu hogar y negocio.</p>
-			<div class="category-grid">
-				{#each categories as category (category.id)}
-					<button
+			<div class="categories-grid">
+				{#each categories as category}
+					<button 
 						class="category-card"
-						on:click={() => goto(`/services/${category.slug}`)}
+						on:click={() => handleCategoryClick(category.id)}
 						on:keydown={(e) => {
 							if (e.key === 'Enter' || e.key === ' ') {
-								goto(`/services/${category.slug}`);
+								handleCategoryClick(category.id);
 							}
 						}}
 					>
-						<img
-							src={category.icon || '/img/cleaning.png'}
-							alt={`Ícono de ${category.name}`}
-							class="category-icon"
-						/>
+						<div class="category-icon">
+							<img src={category.icon} alt="" aria-hidden="true" />
+						</div>
 						<h3>{category.name}</h3>
 						<p>{category.description}</p>
 					</button>
@@ -532,160 +523,232 @@
 		opacity: 0.9;
 	}
 
-	.search-bar-wrapper {
-		position: relative;
-		max-width: 700px;
+	.search-container {
+		max-width: 600px;
 		margin: 0 auto;
 	}
 
-	.search-bar {
+	.search-box {
+		position: relative;
+		margin-bottom: var(--spacing-lg);
+	}
+
+	.search-input-group {
 		display: flex;
-		align-items: center;
-		background-color: white;
-		border-radius: 999px;
-		box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+		background: var(--color-background-white);
+		border-radius: var(--border-radius-full);
 		overflow: hidden;
-		width: 100%;
-		height: 60px;
-		border: 1px solid #e2e8f0;
+		box-shadow: var(--shadow-lg);
+		border: 2px solid transparent;
+		transition: all var(--transition-fast);
+		position: relative;
+	}
+
+	.search-input-group:focus-within {
+		border-color: var(--color-highlight);
+		box-shadow: 0 8px 25px rgba(230, 168, 0, 0.3);
+		transform: translateY(-1px);
+	}
+
+	.search-input-group::after {
+		content: '';
+		position: absolute;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		height: 2px;
+		background: linear-gradient(90deg, var(--color-highlight), var(--color-primary));
+		transform: scaleX(0);
+		transition: transform 0.3s ease;
+	}
+
+	.search-input-group:focus-within::after {
+		transform: scaleX(1);
 	}
 
 	.search-input {
-		flex-grow: 1;
+		flex: 1;
+		padding: var(--spacing-md) var(--spacing-lg);
 		border: none;
+		font-size: var(--font-size-lg);
 		outline: none;
-		padding: 0 24px;
-		font-size: 1rem;
 		background: transparent;
-		color: #4a5568;
+		transition: all var(--transition-fast);
+	}
+
+	.search-input:focus {
+		background: rgba(230, 168, 0, 0.05);
 	}
 
 	.search-input::placeholder {
-		color: #a0aec0;
+		color: var(--color-text-light);
+		opacity: 0.7;
+		transition: opacity var(--transition-fast);
 	}
 
-	.category-selector {
-		position: relative;
-		height: 100%;
-	}
-
-	.dropdown-toggle {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		height: 100%;
-		background-color: #f7fafc;
-		border: none;
-		border-left: 1px solid #e2e8f0;
-		padding: 0 20px;
-		cursor: pointer;
-		min-width: 150px;
-		font-size: 1rem;
-		color: #2d3748;
-		transition: background-color 0.2s;
-	}
-
-	.dropdown-toggle:hover {
-		background-color: #edf2f7;
-	}
-
-	.chevron-icon {
-		transition: transform 0.2s ease-in-out;
-	}
-
-	.chevron-icon.rotated {
-		transform: rotate(180deg);
-	}
-
-	.dropdown-menu {
-		position: absolute;
-		top: calc(100% + 5px);
-		left: 0;
-		right: 0;
-		background-color: white;
-		border-radius: 8px;
-		box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-		border: 1px solid #e2e8f0;
-		z-index: 10;
-		overflow: hidden;
-	}
-
-	.dropdown-item {
-		display: block;
-		width: 100%;
-		text-align: left;
-		padding: 12px 20px;
-		border: none;
-		background: none;
-		cursor: pointer;
-		font-size: 1rem;
-		color: #4a5568;
-	}
-
-	.dropdown-item:hover {
-		background-color: #f7fafc;
-		color: var(--primary-color, #2d3748);
+	.search-input:focus::placeholder {
+		opacity: 0.5;
 	}
 
 	.search-button {
-		background-color: var(--accent-color, #f59e0b);
-		color: white;
+		padding: var(--spacing-md) var(--spacing-lg);
+		background: var(--color-highlight);
+		color: var(--color-primary);
 		border: none;
-		padding: 0 20px;
-		height: 100%;
+		cursor: pointer;
+		transition: all var(--transition-fast);
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		cursor: pointer;
-		transition: background-color 0.2s;
+		position: relative;
+		overflow: hidden;
+		min-width: 60px;
+	}
+
+	.search-button::before {
+		content: '';
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		width: 0;
+		height: 0;
+		background: rgba(255, 255, 255, 0.3);
+		border-radius: 50%;
+		transform: translate(-50%, -50%);
+		transition: width 0.3s ease, height 0.3s ease;
+	}
+
+	.search-button:hover::before {
+		width: 100px;
+		height: 100px;
 	}
 
 	.search-button:hover {
-		background-color: #d97706;
+		background: #e6a800;
+		transform: translateY(-1px);
+		box-shadow: 0 4px 12px rgba(230, 168, 0, 0.4);
 	}
 
-	.search-button svg {
-		width: 20px;
-		height: 20px;
+	.search-button:active {
+		transform: translateY(0);
+		box-shadow: 0 2px 8px rgba(230, 168, 0, 0.4);
+	}
+
+	.search-button:focus {
+		outline: none;
+		box-shadow: 0 0 0 3px rgba(230, 168, 0, 0.5);
+	}
+
+	.search-button.searching {
+		background: #d4a000;
+		cursor: not-allowed;
+		animation: pulse 1.5s infinite;
+	}
+
+	.search-icon {
+		transition: transform 0.2s ease;
+	}
+
+	.search-button:hover .search-icon {
+		transform: scale(1.1);
+	}
+
+	.search-spinner {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.spinner-circle {
+		animation: spin 1s linear infinite;
+		transform-origin: center;
+	}
+
+	@keyframes spin {
+		to {
+			transform: rotate(360deg);
+		}
+	}
+
+	@keyframes pulse {
+		0%, 100% {
+			transform: scale(1);
+		}
+		50% {
+			transform: scale(1.05);
+		}
 	}
 
 	.search-suggestions {
 		position: absolute;
-		top: calc(100% + 5px);
+		top: 100%;
 		left: 0;
 		right: 0;
-		background-color: white;
-		border-radius: 8px;
-		box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-		border: 1px solid #e2e8f0;
+		background: var(--color-background-white);
+		border-radius: var(--border-radius-lg);
+		box-shadow: var(--shadow-lg);
+		margin-top: var(--spacing-sm);
 		z-index: 10;
 		overflow: hidden;
+		animation: slideDown 0.3s ease-out;
+		border: 1px solid rgba(0, 0, 0, 0.1);
+	}
+
+	@keyframes slideDown {
+		from {
+			opacity: 0;
+			transform: translateY(-10px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
 	}
 
 	.suggestion-item {
 		display: flex;
 		align-items: center;
-		gap: 1rem;
-		width: 100%;
-		text-align: left;
-		padding: 12px 20px;
-		border: none;
-		background: none;
+		padding: var(--spacing-md) var(--spacing-lg);
 		cursor: pointer;
-		border-bottom: 1px solid #f0f0f0;
+		transition: all var(--transition-fast);
+		border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+		position: relative;
 	}
 
 	.suggestion-item:last-child {
 		border-bottom: none;
 	}
 
+	.suggestion-item::before {
+		content: '';
+		position: absolute;
+		left: 0;
+		top: 0;
+		bottom: 0;
+		width: 3px;
+		background: var(--color-highlight);
+		transform: scaleY(0);
+		transition: transform 0.2s ease;
+	}
+
 	.suggestion-item:hover {
-		background-color: #f7fafc;
+		background: var(--color-background);
+		transform: translateX(4px);
+	}
+
+	.suggestion-item:hover::before {
+		transform: scaleY(1);
+	}
+
+	.suggestion-item:active {
+		background: rgba(230, 168, 0, 0.1);
+		transform: translateX(2px);
 	}
 
 	.suggestion-icon {
-		width: 40px;
-		height: 40px;
+		width: 32px;
+		height: 32px;
+		margin-right: var(--spacing-md);
 		object-fit: contain;
 	}
 
@@ -694,70 +757,117 @@
 	}
 
 	.suggestion-title {
-		font-weight: 500;
-		color: #2d3748;
+		font-weight: 600;
+		color: var(--color-text);
+		margin-bottom: 2px;
 	}
 
 	.suggestion-desc {
-		font-size: 0.9rem;
-		color: #718096;
+		font-size: var(--font-size-sm);
+		color: var(--color-text-light);
 	}
 
 	.popular-searches {
-		margin-top: 1rem;
 		display: flex;
-		justify-content: center;
 		align-items: center;
-		gap: 0.75rem;
+		justify-content: center;
+		gap: var(--spacing-md);
 		flex-wrap: wrap;
 	}
 
 	.popular-label {
-		font-size: 0.9rem;
-		color: #cbd5e0;
+		font-size: var(--font-size-sm);
+		opacity: 0.8;
 	}
 
 	.popular-tag {
 		background: rgba(255, 255, 255, 0.1);
-		color: white;
+		color: var(--color-text-white);
 		border: 1px solid rgba(255, 255, 255, 0.2);
-		padding: 0.5rem 1rem;
-		border-radius: 999px;
+		padding: var(--spacing-sm) var(--spacing-md);
+		border-radius: var(--border-radius-full);
+		font-size: var(--font-size-sm);
 		cursor: pointer;
-		transition: background-color 0.2s;
+		transition: all var(--transition-fast);
+		position: relative;
+		overflow: hidden;
+	}
+
+	.popular-tag::before {
+		content: '';
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		width: 0;
+		height: 0;
+		background: rgba(255, 255, 255, 0.2);
+		border-radius: 50%;
+		transform: translate(-50%, -50%);
+		transition: width 0.3s ease, height 0.3s ease;
+	}
+
+	.popular-tag:hover::before {
+		width: 100px;
+		height: 100px;
 	}
 
 	.popular-tag:hover {
 		background: rgba(255, 255, 255, 0.2);
+		border-color: var(--color-highlight);
+		transform: translateY(-1px);
+		box-shadow: 0 4px 12px rgba(255, 255, 255, 0.2);
+	}
+
+	.popular-tag:active {
+		transform: translateY(0);
+		box-shadow: 0 2px 8px rgba(255, 255, 255, 0.2);
 	}
 
 	/* Stats Section */
-	.stats {
-		background-color: var(--color-primary-dark);
+	.stats-section {
+		background: var(--color-background-white);
 		padding: var(--spacing-3xl) 0;
-		color: var(--color-text-white);
+		border-bottom: 1px solid rgba(0, 0, 0, 0.1);
 	}
 
 	.stats-grid {
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-		gap: var(--spacing-2xl);
+		gap: var(--spacing-xl);
 	}
 
-	.stat-item {
+	.stat-card {
 		text-align: center;
+		padding: var(--spacing-lg);
+		opacity: 0;
+		transform: translateY(20px);
+		animation: fadeInUp 0.6s ease-out forwards;
+	}
+
+	.stat-card:nth-child(1) { animation-delay: 0.1s; }
+	.stat-card:nth-child(2) { animation-delay: 0.2s; }
+	.stat-card:nth-child(3) { animation-delay: 0.3s; }
+	.stat-card:nth-child(4) { animation-delay: 0.4s; }
+
+	@keyframes fadeInUp {
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
 	}
 
 	.stat-number {
 		font-size: var(--font-size-4xl);
 		font-weight: 700;
-		color: var(--color-highlight);
+		color: var(--color-primary);
+		margin-bottom: var(--spacing-sm);
+		transition: all 0.3s ease;
 	}
 
 	.stat-label {
 		font-size: var(--font-size-lg);
-		margin-top: var(--spacing-sm);
-		opacity: 0.9;
+		color: var(--color-text-light);
+		font-weight: 500;
 	}
 
 	/* Property Types Section */
@@ -830,64 +940,63 @@
 	}
 
 	/* Categories Section */
-	.categories-section {
+	.categories {
 		padding: var(--spacing-3xl) 0;
 		background: var(--color-background-white);
 	}
 
-	.categories-section h2 {
+	.categories h2 {
 		text-align: center;
 		color: var(--color-primary);
 		font-size: var(--font-size-3xl);
-		margin-bottom: var(--spacing-md);
+		margin: 0 0 var(--spacing-2xl);
 	}
 
-	.categories-section p {
-		text-align: center;
-		color: var(--color-text-light);
-		max-width: 600px;
-		margin: 0 auto var(--spacing-xl);
-	}
-
-	.category-grid {
+	.categories-grid {
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
 		gap: var(--spacing-lg);
 	}
 
 	.category-card {
-		background: var(--color-background-white);
+		background-color: var(--color-background-white);
 		border-radius: var(--border-radius-lg);
 		padding: var(--spacing-lg);
 		text-align: center;
-		border: 1px solid #e2e8f0;
-		transition: all var(--transition-fast);
 		cursor: pointer;
+		transition: all var(--transition-fast);
+		border: 1px solid rgba(0, 0, 0, 0.1);
 	}
 
 	.category-card:hover {
-		transform: translateY(-5px);
-		box-shadow: var(--shadow-lg);
-		border-color: var(--color-highlight);
+		transform: translateY(-2px);
+		box-shadow: var(--shadow-md);
+		border-color: var(--color-primary-light);
 	}
 
 	.category-icon {
 		width: 60px;
 		height: 60px;
 		margin: 0 auto var(--spacing-md);
+	}
+
+	.category-icon img {
+		width: 100%;
+		height: 100%;
 		object-fit: contain;
 	}
 
 	.category-card h3 {
-		font-size: var(--font-size-xl);
 		color: var(--color-primary);
-		margin-bottom: var(--spacing-sm);
+		font-size: var(--font-size-lg);
+		margin: 0 0 var(--spacing-sm);
 	}
 
 	.category-card p {
 		color: var(--color-text-light);
-		font-size: var(--font-size-md);
-		line-height: 1.5;
+		margin: 0;
+		line-height: 1.4;
+		font-size: var(--font-size-sm);
 	}
 
 	/* Testimonials Section */
@@ -1140,13 +1249,13 @@
 			font-size: var(--font-size-lg);
 		}
 
-		.search-bar {
+		.search-input-group {
 			flex-direction: column;
+			border-radius: var(--border-radius-lg);
 		}
 
-		.category-selector {
-			border-left: none;
-			border-top: 1px solid rgba(255, 255, 255, 0.2);
+		.search-button {
+			border-radius: 0 0 var(--border-radius-lg) var(--border-radius-lg);
 		}
 
 		.popular-searches {
@@ -1167,7 +1276,7 @@
 			grid-template-columns: 1fr;
 		}
 
-		.category-grid {
+		.categories-grid {
 			grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
 			gap: var(--spacing-md);
 		}
