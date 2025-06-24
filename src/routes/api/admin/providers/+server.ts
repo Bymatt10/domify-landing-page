@@ -13,8 +13,9 @@ export const GET: RequestHandler = async ({ url, locals }) => {
         const search = url.searchParams.get('search') || '';
         const offset = (page - 1) * limit;
 
+        // Usar la vista que incluye emails de usuarios
         let query = locals.supabaseAdmin
-            .from('provider_profiles')
+            .from('admin_providers_view')
             .select(`
                 id,
                 user_id,
@@ -23,32 +24,37 @@ export const GET: RequestHandler = async ({ url, locals }) => {
                 location,
                 is_active,
                 created_at,
-                user:users (
-                    email,
-                    raw_user_meta_data
-                )
+                updated_at,
+                user_email
             `, { count: 'exact' });
 
         if (search) {
-            // Buscamos por nombre de negocio O por email del usuario
-            // Nota: La búsqueda en tabla relacionada (users.email) requiere una vista o función en DB para ser más eficiente.
-            // Por ahora, buscamos en los campos principales.
             query = query.or(`business_name.ilike.%${search}%,phone.ilike.%${search}%`);
         }
 
         query = query.order('created_at', { ascending: false }).range(offset, offset + limit - 1);
 
-        const { data, error, count } = await query;
+        const { data: providers, error: providersError, count } = await query;
 
-        if (error) {
-            if (error.message.includes("could not find")) {
-                 throw new Error("No se pudo encontrar la relación entre 'provider_profiles' y 'users'. Por favor, ejecuta el script SQL para crear la llave foránea.");
-            }
-            throw error;
+        if (providersError) {
+            console.error('Error fetching providers:', providersError);
+            
+            // Si la vista no existe, intentamos con la tabla original
+            console.log('Trying fallback to provider_profiles table...');
+            return await getProvidersFallback(url, locals);
         }
 
+        // Formatear los datos para mantener compatibilidad con el frontend
+        const formattedProviders = (providers || []).map((provider: any) => ({
+            ...provider,
+            user: { 
+                email: provider.user_email || 'Email no disponible',
+                raw_user_meta_data: null 
+            }
+        }));
+
         return json({
-            providers: data || [],
+            providers: formattedProviders,
             total: count || 0,
             page,
             limit,
@@ -60,4 +66,53 @@ export const GET: RequestHandler = async ({ url, locals }) => {
         console.error('Error fetching providers:', error);
         return json({ error: error.message }, { status: 500 });
     }
-}; 
+};
+
+// Función de respaldo que usa la tabla original
+async function getProvidersFallback(url: URL, locals: any) {
+    const page = parseInt(url.searchParams.get('page') || '1');
+    const limit = parseInt(url.searchParams.get('limit') || '10');
+    const search = url.searchParams.get('search') || '';
+    const offset = (page - 1) * limit;
+
+    let query = locals.supabaseAdmin
+        .from('provider_profiles')
+        .select(`
+            id,
+            user_id,
+            business_name,
+            phone,
+            location,
+            is_active,
+            created_at,
+            updated_at
+        `, { count: 'exact' });
+
+    if (search) {
+        query = query.or(`business_name.ilike.%${search}%,phone.ilike.%${search}%`);
+    }
+
+    query = query.order('created_at', { ascending: false }).range(offset, offset + limit - 1);
+
+    const { data: providers, error: providersError, count } = await query;
+
+    if (providersError) {
+        throw new Error('Error al cargar los proveedores: ' + providersError.message);
+    }
+
+    const providersWithUserData = (providers || []).map((provider: any) => ({
+        ...provider,
+        user: { 
+            email: 'Email no disponible',
+            raw_user_meta_data: null 
+        }
+    }));
+
+    return json({
+        providers: providersWithUserData,
+        total: count || 0,
+        page,
+        limit,
+        totalPages: count ? Math.ceil(count / limit) : 0,
+    });
+} 

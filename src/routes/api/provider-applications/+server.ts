@@ -129,32 +129,39 @@ export const GET: RequestHandler = async ({ url, locals }) => {
     // Si se solicita una aplicación específica
     if (id) {
       const { data, error } = await locals.supabaseAdmin
-        .from('provider_applications')
-        .select(`
-          *,
-          categories:provider_application_categories(category_id),
-          user:users(id, email, raw_user_meta_data)
-        `)
+        .from('admin_provider_applications_complete')
+        .select('*')
         .eq('id', id)
         .single();
       
-      if (error) throw new Error(error.message);
+      if (error) {
+        console.error('Error fetching specific application:', error);
+        throw new Error(error.message);
+      }
+      
+      // Formatear los datos para mantener compatibilidad
+      const formattedApplication = {
+        ...data,
+        user: {
+          id: data.user_id,
+          email: data.user_email || 'Email no disponible',
+          raw_user_meta_data: data.raw_user_meta_data
+        },
+        categories: data.category_ids || []
+      };
+      
       return json({ 
-        applications: [data], 
+        applications: [formattedApplication], 
         message: 'Application retrieved', 
         statusCode: 200, 
         timestamp: new Date().toISOString() 
       });
     }
 
-    // Construir query base con categorías y datos de usuario
+    // Construir query usando la vista completa
     let query = locals.supabaseAdmin
-      .from('provider_applications')
-      .select(`
-        *,
-        categories:provider_application_categories(category_id),
-        user:users(id, email, raw_user_meta_data)
-      `, { count: 'exact' });
+      .from('admin_provider_applications_complete')
+      .select('*', { count: 'exact' });
 
     // Aplicar filtros
     if (user_id) query = query.eq('user_id', user_id);
@@ -187,14 +194,42 @@ export const GET: RequestHandler = async ({ url, locals }) => {
     query = query.range(offset, offset + limit - 1);
     query = query.order('submitted_at', { ascending: false });
 
-    const { data, error, count } = await query;
+    const { data: applications, error, count } = await query;
     
-    if (error) throw new Error(error.message);
+    if (error) {
+      console.error('Error fetching applications:', error);
+      
+      // Si la vista no existe, intentar con la tabla original
+      console.log('Trying fallback to provider_applications table...');
+      return await getApplicationsFallback(url, locals);
+    }
+
+    // Formatear los datos para mantener compatibilidad con el frontend
+    const formattedApplications = (applications || []).map(app => {
+      // Extraer datos del campo application_data si existe
+      const appData = app.application_data || {};
+      
+      return {
+        ...app,
+        user: {
+          id: app.user_id,
+          email: app.user_email || 'Email no disponible',
+          raw_user_meta_data: app.raw_user_meta_data
+        },
+        categories: app.category_ids || [],
+        // Extraer campos del JSONB para compatibilidad
+        experience_years: appData.experience_years || null,
+        certifications: appData.certifications || [],
+        availability: appData.availability || {},
+        // Mantener updated_at como created_at si no existe
+        updated_at: app.created_at
+      };
+    });
 
     const totalPages = count ? Math.ceil(count / limit) : 0;
 
     return json({ 
-      applications: data || [], 
+      applications: formattedApplications, 
       total: count || 0,
       page,
       limit,
@@ -203,16 +238,158 @@ export const GET: RequestHandler = async ({ url, locals }) => {
       statusCode: 200, 
       timestamp: new Date().toISOString() 
     });
+
   } catch (error) {
+    console.error('Error in GET /api/provider-applications:', error);
     return json({ 
-      error: { 
-        message: error instanceof Error ? error.message : 'Unknown error', 
-        statusCode: 400, 
-        timestamp: new Date().toISOString() 
-      } 
-    }, { status: 400 });
+      error: { message: error instanceof Error ? error.message : 'Unknown error' } 
+    }, { status: 500 });
   }
 };
+
+// Función de respaldo que usa la tabla original
+async function getApplicationsFallback(url: URL, locals: any) {
+  const id = url.searchParams.get('id');
+  const user_id = url.searchParams.get('user_id');
+  const status = url.searchParams.get('status');
+  const search = url.searchParams.get('search');
+  const date = url.searchParams.get('date');
+  const page = parseInt(url.searchParams.get('page') || '1');
+  const limit = parseInt(url.searchParams.get('limit') || '10');
+  const offset = (page - 1) * limit;
+
+  // Consulta simple sin joins problemáticos
+  let query = locals.supabaseAdmin
+    .from('provider_applications')
+    .select(`
+      *,
+      categories:provider_application_categories(category_id)
+    `, { count: 'exact' });
+
+  // Aplicar filtros
+  if (user_id) query = query.eq('user_id', user_id);
+  if (status && status !== 'all') query = query.eq('status', status);
+  if (search) query = query.ilike('headline', `%${search}%`);
+
+  // Filtro de fecha
+  if (date && date !== 'all') {
+    const now = new Date();
+    let startDate: Date;
+    
+    switch (date) {
+      case 'today':
+        startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        break;
+      case 'week':
+        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        break;
+      case 'month':
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        break;
+      default:
+        startDate = new Date(0);
+    }
+    
+    query = query.gte('submitted_at', startDate.toISOString());
+  }
+
+  // Aplicar paginación
+  query = query.range(offset, offset + limit - 1);
+  query = query.order('submitted_at', { ascending: false });
+
+  const { data: applications, error, count } = await query;
+  
+  if (error) {
+    throw new Error('Error al cargar las aplicaciones: ' + error.message);
+  }
+
+  // Obtener datos de usuario por separado
+  let applicationsWithUsers = applications || [];
+  
+  if (applications && applications.length > 0) {
+    try {
+      const userIds = applications.map((app: any) => app.user_id).filter(Boolean);
+      
+      if (userIds.length > 0) {
+        const { data: users, error: usersError } = await locals.supabaseAdmin
+          .from('auth.users')
+          .select('id, email, raw_user_meta_data')
+          .in('id', userIds);
+        
+        if (!usersError && users) {
+          const usersMap = new Map(users.map((u: any) => [u.id, u]));
+          applicationsWithUsers = applications.map((app: any) => {
+            const appData = app.application_data || {};
+            return {
+              ...app,
+              user: usersMap.get(app.user_id) || { 
+                id: app.user_id, 
+                email: 'Email no disponible', 
+                raw_user_meta_data: null 
+              },
+              // Extraer campos del JSONB para compatibilidad
+              experience_years: appData.experience_years || null,
+              certifications: appData.certifications || [],
+              availability: appData.availability || {},
+              // Mantener updated_at como created_at si no existe
+              updated_at: app.created_at
+            };
+          });
+        } else {
+          applicationsWithUsers = applications.map((app: any) => {
+            const appData = app.application_data || {};
+            return {
+              ...app,
+              user: { 
+                id: app.user_id, 
+                email: 'Email no disponible', 
+                raw_user_meta_data: null 
+              },
+              // Extraer campos del JSONB para compatibilidad
+              experience_years: appData.experience_years || null,
+              certifications: appData.certifications || [],
+              availability: appData.availability || {},
+              // Mantener updated_at como created_at si no existe
+              updated_at: app.created_at
+            };
+          });
+        }
+      }
+    } catch (userFetchError) {
+      console.warn('Error fetching users:', userFetchError);
+      applicationsWithUsers = applications.map((app: any) => {
+        const appData = app.application_data || {};
+        return {
+          ...app,
+          user: { 
+            id: app.user_id, 
+            email: 'Email no disponible', 
+            raw_user_meta_data: null 
+          },
+          // Extraer campos del JSONB para compatibilidad
+          experience_years: appData.experience_years || null,
+          certifications: appData.certifications || [],
+          availability: appData.availability || {},
+          // Mantener updated_at como created_at si no existe
+          updated_at: app.created_at
+        };
+      });
+    }
+  }
+
+  const totalPages = count ? Math.ceil(count / limit) : 0;
+
+  return json({ 
+    applications: applicationsWithUsers, 
+    total: count || 0,
+    page,
+    limit,
+    totalPages,
+    message: 'Applications retrieved (fallback)', 
+    statusCode: 200, 
+    timestamp: new Date().toISOString() 
+  });
+}
 
 /**
  * @swagger

@@ -217,279 +217,593 @@
 </script>
 
 <div class="home">
-	<section class="hero">
-		<div class="hero-content">
-			<h1>Encuentra los mejores servicios locales</h1>
-			<p>Conectamos personas con profesionales confiables para todas tus necesidades del hogar</p>
-			
-			<div class="search-container">
-				<div class="search-box">
-					<div class="search-input-group">
-						<input
-							type="text"
-							placeholder="¿Qué servicio necesitas?"
-							bind:value={searchQuery}
-							on:keypress={handleKeyPress}
-							on:focus={() => showSearchSuggestions = true}
-							class="search-input"
-							aria-label="Buscar servicio"
-						/>
-						<button 
-							on:click={handleSearch} 
-							class="search-button"
-							class:searching={isSearching}
-							type="button"
-							aria-label="Buscar"
-							disabled={isSearching}
-						>
-							{#if isSearching}
-								<div class="search-spinner">
-									<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-										<circle cx="12" cy="12" r="10" stroke-dasharray="31.416" stroke-dashoffset="31.416" class="spinner-circle"/>
-									</svg>
-								</div>
-							{:else}
-								<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" class="search-icon">
-									<circle cx="11" cy="11" r="8"/>
-									<path d="m21 21-4.35-4.35"/>
-								</svg>
-							{/if}
-						</button>
+	<div class="home-layout">
+		<!-- Sidebar izquierdo para anuncios -->
+		<aside class="ad-sidebar ad-sidebar-left">
+			<div class="ad-space">
+				<!-- Ejemplo 1: Google AdSense -->
+				<div class="ad-example">
+					<div class="ad-header">
+						<span class="ad-badge">Anuncio</span>
+						<span class="ad-provider">Google AdSense</span>
 					</div>
+					<div class="ad-content">
+						<!-- CÓDIGO REAL DE GOOGLE ADSENSE:
+						<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-TU_PUBLISHER_ID"
+						     crossorigin="anonymous"></script>
+						<ins class="adsbygoogle"
+						     style="display:block"
+						     data-ad-client="ca-pub-TU_PUBLISHER_ID"
+						     data-ad-slot="TU_AD_SLOT"
+						     data-ad-format="auto"
+						     data-full-width-responsive="true"></ins>
+						<script>
+						     (adsbygoogle = window.adsbygoogle || []).push({});
+						</script>
+						-->
+						<div class="ad-image-placeholder google-style">
+							<div class="ad-image-content">
+								<div class="ad-image-icon">🧹</div>
+								<div class="ad-image-text">Servicios Profesionales</div>
+							</div>
+						</div>
+						<div class="ad-text">
+							<h4>Servicios de Limpieza Profesional</h4>
+							<p>Limpieza de casas y oficinas con garantía de calidad. Profesionales verificados y precios transparentes.</p>
+							<div class="ad-cta">Ver más</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- Ejemplo 2: Anuncio personalizado -->
+				<div class="ad-space" style="margin-top: var(--spacing-lg);">
+					<div class="ad-example custom-ad">
+						<div class="ad-header">
+							<span class="ad-badge">Patrocinado</span>
+							<span class="ad-provider">Domify Premium</span>
+						</div>
+						<div class="ad-content">
+							<div class="ad-icon">🏠</div>
+							<div class="ad-text">
+								<h4>Conviértete en Proveedor Premium</h4>
+								<p>Accede a más clientes y mejores tarifas</p>
+								<button class="ad-button">Aplicar Ahora</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</aside>
+
+		<!-- Contenido principal -->
+		<main class="main-content">
+			<section class="hero">
+				<div class="hero-content">
+					<h1>Encuentra los mejores servicios locales</h1>
+					<p>Conectamos personas con profesionales confiables para todas tus necesidades del hogar</p>
 					
-					{#if showSearchSuggestions && searchQuery && filteredCategories.length > 0}
-						<div 
-							class="search-suggestions" 
-							role="listbox"
-							aria-label="Sugerencias de búsqueda"
-						>
-							{#each filteredCategories.slice(0, 3) as category}
+					<div class="search-container">
+						<div class="search-box">
+							<div class="search-input-group">
+								<input
+									type="text"
+									placeholder="¿Qué servicio necesitas?"
+									bind:value={searchQuery}
+									on:keypress={handleKeyPress}
+									on:focus={() => showSearchSuggestions = true}
+									class="search-input"
+									aria-label="Buscar servicio"
+								/>
 								<button 
-									class="suggestion-item"
-									role="option"
-									aria-selected={selectedCategory === category.id}
+									on:click={handleSearch} 
+									class="search-button"
+									class:searching={isSearching}
+									type="button"
+									aria-label="Buscar"
+									disabled={isSearching}
+								>
+									{#if isSearching}
+										<div class="search-spinner">
+											<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+												<circle cx="12" cy="12" r="10" stroke-dasharray="31.416" stroke-dashoffset="31.416" class="spinner-circle"/>
+											</svg>
+										</div>
+									{:else}
+										<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" class="search-icon">
+											<circle cx="11" cy="11" r="8"/>
+											<path d="m21 21-4.35-4.35"/>
+										</svg>
+									{/if}
+								</button>
+							</div>
+							
+							{#if showSearchSuggestions && searchQuery && filteredCategories.length > 0}
+								<div 
+									class="search-suggestions" 
+									role="listbox"
+									aria-label="Sugerencias de búsqueda"
+								>
+									{#each filteredCategories.slice(0, 3) as category}
+										<button 
+											class="suggestion-item"
+											role="option"
+											aria-selected={selectedCategory === category.id}
+											on:click={() => {
+												selectedCategory = category.id;
+												searchQuery = category.name;
+												showSearchSuggestions = false;
+												handleSearch();
+											}}
+											on:keydown={(e) => {
+												if (e.key === 'Enter' || e.key === ' ') {
+													selectedCategory = category.id;
+													searchQuery = category.name;
+													showSearchSuggestions = false;
+													handleSearch();
+												}
+											}}
+										>
+											<img src={category.icon} alt="" class="suggestion-icon" />
+											<div class="suggestion-content">
+												<div class="suggestion-title">{category.name}</div>
+												<div class="suggestion-desc">{category.description}</div>
+											</div>
+										</button>
+									{/each}
+								</div>
+							{/if}
+						</div>
+						
+						<div class="popular-searches">
+							<span class="popular-label">Búsquedas populares:</span>
+							{#each categories.slice(0, 3) as category}
+								<button 
+									class="popular-tag"
 									on:click={() => {
 										selectedCategory = category.id;
 										searchQuery = category.name;
-										showSearchSuggestions = false;
 										handleSearch();
 									}}
-									on:keydown={(e) => {
-										if (e.key === 'Enter' || e.key === ' ') {
-											selectedCategory = category.id;
-											searchQuery = category.name;
-											showSearchSuggestions = false;
-											handleSearch();
-										}
-									}}
 								>
-									<img src={category.icon} alt="" class="suggestion-icon" />
-									<div class="suggestion-content">
-										<div class="suggestion-title">{category.name}</div>
-										<div class="suggestion-desc">{category.description}</div>
-									</div>
+									{category.name}
 								</button>
 							{/each}
 						</div>
-					{/if}
+					</div>
 				</div>
-				
-				<div class="popular-searches">
-					<span class="popular-label">Búsquedas populares:</span>
-					{#each categories.slice(0, 3) as category}
-						<button 
-							class="popular-tag"
-							on:click={() => {
-								selectedCategory = category.id;
-								searchQuery = category.name;
-								handleSearch();
-							}}
-						>
-							{category.name}
-						</button>
-					{/each}
-				</div>
-			</div>
-		</div>
-	</section>
+			</section>
 
-	<section class="stats-section" use:intersectionObserver={{ threshold: 0.5, callback: animateStats }}>
-		<div class="container">
-			<div class="stats-grid">
-				<div class="stat-card">
-					<div class="stat-number">{animatedStats.professionals}+</div>
-					<div class="stat-label">Profesionales Verificados</div>
-				</div>
-				<div class="stat-card">
-					<div class="stat-number">{animatedStats.services}+</div>
-					<div class="stat-label">Servicios Completados</div>
-				</div>
-				<div class="stat-card">
-					<div class="stat-number">{animatedStats.rating.toFixed(1)}</div>
-					<div class="stat-label">Calificación Promedio</div>
-				</div>
-				<div class="stat-card">
-					<div class="stat-number">{animatedStats.support}</div>
-					<div class="stat-label">Soporte Disponible</div>
-				</div>
-			</div>
-		</div>
-	</section>
-
-	<section class="property-types">
-		<div class="container">
-			<h2>Servicios para Todo Tipo de Propiedades</h2>
-			<p class="section-subtitle">Soluciones especializadas según tus necesidades</p>
-			<div class="property-grid">
-				{#each propertyTypes as property}
-					<button 
-						class="property-card"
-						on:click={() => handlePropertyTypeClick(property.id)}
-						on:keydown={(e) => {
-							if (e.key === 'Enter' || e.key === ' ') {
-								handlePropertyTypeClick(property.id);
-							}
-						}}
-					>
-						<div class="property-icon" aria-hidden="true">{property.icon}</div>
-						<h3>{property.name}</h3>
-						<p>{property.description}</p>
-						<div class="property-services">
-							{#each property.services as service}
-								<span class="service-tag">{service}</span>
-							{/each}
+			<section class="stats-section" use:intersectionObserver={{ threshold: 0.5, callback: animateStats }}>
+				<div class="container">
+					<div class="stats-grid">
+						<div class="stat-card">
+							<div class="stat-number">{animatedStats.professionals}+</div>
+							<div class="stat-label">Profesionales Verificados</div>
 						</div>
-					</button>
-				{/each}
-			</div>
-		</div>
-	</section>
-
-	<section class="categories">
-		<div class="container">
-			<h2>Nuestros Servicios</h2>
-			<div class="categories-grid">
-				{#each categories as category}
-					<button 
-						class="category-card"
-						on:click={() => handleCategoryClick(category.id)}
-						on:keydown={(e) => {
-							if (e.key === 'Enter' || e.key === ' ') {
-								handleCategoryClick(category.id);
-							}
-						}}
-					>
-						<div class="category-icon">
-							<img src={category.icon} alt="" aria-hidden="true" />
+						<div class="stat-card">
+							<div class="stat-number">{animatedStats.services}+</div>
+							<div class="stat-label">Servicios Completados</div>
 						</div>
-						<h3>{category.name}</h3>
-						<p>{category.description}</p>
-					</button>
-				{/each}
-			</div>
-		</div>
-	</section>
+						<div class="stat-card">
+							<div class="stat-number">{animatedStats.rating.toFixed(1)}</div>
+							<div class="stat-label">Calificación Promedio</div>
+						</div>
+						<div class="stat-card">
+							<div class="stat-number">{animatedStats.support}</div>
+							<div class="stat-label">Soporte Disponible</div>
+						</div>
+					</div>
+				</div>
+			</section>
 
-	<section class="testimonials">
-		<div class="container">
-			<h2>Lo que dicen nuestros clientes</h2>
-			<div class="testimonials-grid">
-				{#each testimonials as testimonial}
-					<div class="testimonial-card">
-						<div class="testimonial-header">
-							<div class="testimonial-avatar">{testimonial.avatar}</div>
-							<div class="testimonial-info">
-								<div class="testimonial-name">{testimonial.name}</div>
-								<div class="testimonial-location">{testimonial.location}</div>
-								<div class="testimonial-rating">
-									{#each Array.from({ length: testimonial.rating }) as _}
-										⭐
+			<section class="property-types">
+				<div class="container">
+					<h2>Servicios para Todo Tipo de Propiedades</h2>
+					<p class="section-subtitle">Soluciones especializadas según tus necesidades</p>
+					<div class="property-grid">
+						{#each propertyTypes as property}
+							<button 
+								class="property-card"
+								on:click={() => handlePropertyTypeClick(property.id)}
+								on:keydown={(e) => {
+									if (e.key === 'Enter' || e.key === ' ') {
+										handlePropertyTypeClick(property.id);
+									}
+								}}
+							>
+								<div class="property-icon" aria-hidden="true">{property.icon}</div>
+								<h3>{property.name}</h3>
+								<p>{property.description}</p>
+								<div class="property-services">
+									{#each property.services as service}
+										<span class="service-tag">{service}</span>
 									{/each}
 								</div>
+							</button>
+						{/each}
+					</div>
+				</div>
+			</section>
+
+			<section class="categories">
+				<div class="container">
+					<h2>Nuestros Servicios</h2>
+					<div class="categories-grid">
+						{#each categories as category}
+							<button 
+								class="category-card"
+								on:click={() => handleCategoryClick(category.id)}
+								on:keydown={(e) => {
+									if (e.key === 'Enter' || e.key === ' ') {
+										handleCategoryClick(category.id);
+									}
+								}}
+							>
+								<div class="category-icon">
+									<img src={category.icon} alt="" aria-hidden="true" />
+								</div>
+								<h3>{category.name}</h3>
+								<p>{category.description}</p>
+							</button>
+						{/each}
+					</div>
+				</div>
+			</section>
+
+			<section class="testimonials">
+				<div class="container">
+					<h2>Lo que dicen nuestros clientes</h2>
+					<div class="testimonials-grid">
+						{#each testimonials as testimonial}
+							<div class="testimonial-card">
+								<div class="testimonial-header">
+									<div class="testimonial-avatar">{testimonial.avatar}</div>
+									<div class="testimonial-info">
+										<div class="testimonial-name">{testimonial.name}</div>
+										<div class="testimonial-location">{testimonial.location}</div>
+										<div class="testimonial-rating">
+											{#each Array.from({ length: testimonial.rating }) as _}
+												⭐
+											{/each}
+										</div>
+									</div>
+								</div>
+								<p class="testimonial-comment">"{testimonial.comment}"</p>
+							</div>
+						{/each}
+					</div>
+				</div>
+			</section>
+
+			<section class="features">
+				<div class="container">
+					<h2>¿Por qué elegir Domify?</h2>
+					<div class="features-grid">
+						<div class="feature-card">
+							<div class="feature-icon">✅</div>
+							<h3>Profesionales Verificados</h3>
+							<p>Todos nuestros proveedores pasan por un riguroso proceso de verificación.</p>
+						</div>
+						<div class="feature-card">
+							<div class="feature-icon">💰</div>
+							<h3>Precios Transparentes</h3>
+							<p>Sin sorpresas ni costos ocultos. Conoce el precio antes de contratar.</p>
+						</div>
+						<div class="feature-card">
+							<div class="feature-icon">🛡️</div>
+							<h3>Servicio Garantizado</h3>
+							<p>Satisfacción garantizada en todos nuestros servicios.</p>
+						</div>
+						<div class="feature-card">
+							<div class="feature-icon">⚡</div>
+							<h3>Respuesta Rápida</h3>
+							<p>Conectamos con profesionales disponibles en tu zona en minutos.</p>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<section class="sponsors">
+				<div class="container">
+					<h2>Nuestros Aliados Estratégicos</h2>
+					<p class="section-subtitle">Trabajamos con las mejores instituciones financieras</p>
+					<div class="sponsors-grid">
+						{#each sponsors as sponsor}
+							<div class="sponsor-card">
+								<div class="sponsor-logo">
+									<img src={sponsor.logo} alt="Sponsor logo" />
+								</div>
+								<p>{sponsor.description}</p>
+							</div>
+						{/each}
+					</div>
+				</div>
+			</section>
+
+			<section class="cta-section">
+				<div class="container">
+					<div class="cta-content">
+						<div class="cta-group">
+							<h2>¿Necesitas un servicio?</h2>
+							<p>Únete a miles de clientes satisfechos que confían en Domify</p>
+							<div class="cta-buttons">
+								<a href="/auth/signup" class="cta-button primary">Registrarse</a>
+								<a href="/services" class="cta-button secondary">Explorar Servicios</a>
 							</div>
 						</div>
-						<p class="testimonial-comment">"{testimonial.comment}"</p>
-					</div>
-				{/each}
-			</div>
-		</div>
-	</section>
 
-	<section class="features">
-		<div class="container">
-			<h2>¿Por qué elegir Domify?</h2>
-			<div class="features-grid">
-				<div class="feature-card">
-					<div class="feature-icon">✅</div>
-					<h3>Profesionales Verificados</h3>
-					<p>Todos nuestros proveedores pasan por un riguroso proceso de verificación.</p>
-				</div>
-				<div class="feature-card">
-					<div class="feature-icon">💰</div>
-					<h3>Precios Transparentes</h3>
-					<p>Sin sorpresas ni costos ocultos. Conoce el precio antes de contratar.</p>
-				</div>
-				<div class="feature-card">
-					<div class="feature-icon">🛡️</div>
-					<h3>Servicio Garantizado</h3>
-					<p>Satisfacción garantizada en todos nuestros servicios.</p>
-				</div>
-				<div class="feature-card">
-					<div class="feature-icon">⚡</div>
-					<h3>Respuesta Rápida</h3>
-					<p>Conectamos con profesionales disponibles en tu zona en minutos.</p>
-				</div>
-			</div>
-		</div>
-	</section>
+						<div class="cta-divider"></div>
 
-	<section class="sponsors">
-		<div class="container">
-			<h2>Nuestros Aliados Estratégicos</h2>
-			<p class="section-subtitle">Trabajamos con las mejores instituciones financieras</p>
-			<div class="sponsors-grid">
-				{#each sponsors as sponsor}
-					<div class="sponsor-card">
-						<div class="sponsor-logo">
-							<img src={sponsor.logo} alt="Sponsor logo" />
+						<div class="cta-group">
+							<h2>¿Eres un profesional?</h2>
+							<p>Únete a nuestra red de proveedores y haz crecer tu negocio</p>
+							<div class="cta-buttons">
+								<a href="/become-provider" class="cta-button primary">Conviértete en Domifito</a>
+								<a href="/provider-benefits" class="cta-button secondary">Conoce los beneficios</a>
+							</div>
 						</div>
-						<p>{sponsor.description}</p>
 					</div>
-				{/each}
-			</div>
-		</div>
-	</section>
+				</div>
+			</section>
+		</main>
 
-	<section class="cta-section">
-		<div class="container">
-			<div class="cta-content">
-				<div class="cta-group">
-					<h2>¿Necesitas un servicio?</h2>
-					<p>Únete a miles de clientes satisfechos que confían en Domify</p>
-					<div class="cta-buttons">
-						<a href="/auth/signup" class="cta-button primary">Registrarse</a>
-						<a href="/services" class="cta-button secondary">Explorar Servicios</a>
+		<!-- Sidebar derecho para anuncios -->
+		<aside class="ad-sidebar ad-sidebar-right">
+			<div class="ad-space">
+				<!-- Ejemplo 3: Anuncio de Facebook Ads -->
+				<div class="ad-example facebook-ad">
+					<div class="ad-header">
+						<span class="ad-badge">Anuncio</span>
+						<span class="ad-provider">Facebook Ads</span>
+					</div>
+					<div class="ad-content">
+						<div class="ad-image-placeholder facebook-style">
+							<div class="ad-image-content">
+								<div class="ad-image-icon">📦</div>
+								<div class="ad-image-text">Oferta Especial</div>
+							</div>
+						</div>
+						<div class="ad-text">
+							<h4>20% de Descuento en Mudanzas</h4>
+							<p>Válido solo este mes. ¡Reserva ahora y ahorra en tu próxima mudanza!</p>
+							<div class="ad-cta">Obtener Descuento</div>
+						</div>
 					</div>
 				</div>
 
-				<div class="cta-divider"></div>
-
-				<div class="cta-group">
-					<h2>¿Eres un profesional?</h2>
-					<p>Únete a nuestra red de proveedores y haz crecer tu negocio</p>
-					<div class="cta-buttons">
-						<a href="/become-provider" class="cta-button primary">Conviértete en Domifito</a>
-						<a href="/provider-benefits" class="cta-button secondary">Conoce los beneficios</a>
+				<!-- Ejemplo 4: Anuncio de afiliado -->
+				<div class="ad-space" style="margin-top: var(--spacing-lg);">
+					<div class="ad-example affiliate-ad">
+						<div class="ad-header">
+							<span class="ad-badge">Recomendado</span>
+							<span class="ad-provider">Aliado Estratégico</span>
+						</div>
+						<div class="ad-content">
+							<div class="ad-icon">🛡️</div>
+							<div class="ad-text">
+								<h4>Seguro para el Hogar</h4>
+								<p>Protege tu propiedad con las mejores coberturas</p>
+								<button class="ad-button secondary">Cotizar</button>
+							</div>
+						</div>
 					</div>
 				</div>
 			</div>
-		</div>
-	</section>
+		</aside>
+	</div>
 </div>
 
 <style>
 	.home {
 		background-color: var(--color-background);
+	}
+
+	/* Layout de tres columnas */
+	.home-layout {
+		display: grid;
+		grid-template-columns: 300px 1fr 300px;
+		gap: var(--spacing-xl);
+		max-width: 1800px;
+		margin: 0 auto;
+		padding: 0 var(--spacing-lg);
+	}
+
+	/* Sidebars para anuncios */
+	.ad-sidebar {
+		position: sticky;
+		top: var(--spacing-xl);
+		height: fit-content;
+		display: flex;
+		flex-direction: column;
+		gap: var(--spacing-xl);
+	}
+
+	.ad-space {
+		background: var(--color-background-white);
+		border-radius: var(--border-radius-lg);
+		box-shadow: var(--shadow-md);
+		overflow: hidden;
+		transition: all var(--transition-fast);
+	}
+
+	.ad-space:hover {
+		box-shadow: var(--shadow-lg);
+		transform: translateY(-2px);
+	}
+
+	/* Estilos para ejemplos de anuncios */
+	.ad-example {
+		background: var(--color-background-white);
+		border-radius: var(--border-radius-lg);
+		overflow: hidden;
+		transition: all var(--transition-fast);
+	}
+
+	.ad-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: var(--spacing-sm) var(--spacing-md);
+		background: var(--color-background);
+		border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+	}
+
+	.ad-badge {
+		background: var(--color-highlight);
+		color: var(--color-primary);
+		padding: 2px var(--spacing-sm);
+		border-radius: var(--border-radius-sm);
+		font-size: var(--font-size-xs);
+		font-weight: 600;
+	}
+
+	.ad-provider {
+		font-size: var(--font-size-xs);
+		color: var(--color-text-light);
+		font-weight: 500;
+	}
+
+	.ad-content {
+		padding: var(--spacing-md);
+	}
+
+	.ad-image {
+		width: 100%;
+		margin-bottom: var(--spacing-md);
+		border-radius: var(--border-radius-md);
+		overflow: hidden;
+	}
+
+	.ad-image img {
+		width: 100%;
+		height: auto;
+		display: block;
+	}
+
+	.ad-icon {
+		font-size: 2.5rem;
+		text-align: center;
+		margin-bottom: var(--spacing-md);
+	}
+
+	.ad-text h4 {
+		font-size: var(--font-size-lg);
+		font-weight: 600;
+		color: var(--color-text);
+		margin: 0 0 var(--spacing-sm);
+		line-height: 1.3;
+	}
+
+	.ad-text p {
+		font-size: var(--font-size-sm);
+		color: var(--color-text-light);
+		margin: 0 0 var(--spacing-md);
+		line-height: 1.4;
+	}
+
+	.ad-cta {
+		background: var(--color-primary);
+		color: var(--color-text-white);
+		padding: var(--spacing-sm) var(--spacing-md);
+		border-radius: var(--border-radius-md);
+		text-align: center;
+		font-weight: 600;
+		font-size: var(--font-size-sm);
+		cursor: pointer;
+		transition: all var(--transition-fast);
+	}
+
+	.ad-cta:hover {
+		background: var(--color-primary-dark);
+		transform: translateY(-1px);
+	}
+
+	.ad-button {
+		width: 100%;
+		padding: var(--spacing-sm) var(--spacing-md);
+		border: none;
+		border-radius: var(--border-radius-md);
+		font-weight: 600;
+		font-size: var(--font-size-sm);
+		cursor: pointer;
+		transition: all var(--transition-fast);
+		background: var(--color-highlight);
+		color: var(--color-primary);
+	}
+
+	.ad-button:hover {
+		background: #e6a800;
+		transform: translateY(-1px);
+	}
+
+	.ad-button.secondary {
+		background: var(--color-primary);
+		color: var(--color-text-white);
+	}
+
+	.ad-button.secondary:hover {
+		background: var(--color-primary-dark);
+	}
+
+	/* Estilos específicos para diferentes tipos de anuncios */
+	.custom-ad {
+		border: 2px solid var(--color-highlight);
+	}
+
+	.facebook-ad {
+		border: 2px solid #1877F2;
+	}
+
+	.affiliate-ad {
+		border: 2px solid var(--color-primary);
+	}
+
+	/* Placeholder para cuando no hay anuncios */
+	.ad-placeholder {
+		width: 300px;
+		height: 600px;
+		background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+		border: 2px dashed var(--color-primary-light);
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		color: var(--color-text-light);
+		text-align: center;
+		position: relative;
+	}
+
+	.ad-placeholder::before {
+		content: '';
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		width: 60px;
+		height: 60px;
+		background: var(--color-primary-light);
+		border-radius: 50%;
+		transform: translate(-50%, -50%);
+		opacity: 0.3;
+	}
+
+	.ad-label {
+		font-size: var(--font-size-sm);
+		font-weight: 600;
+		margin-bottom: var(--spacing-sm);
+		position: relative;
+		z-index: 1;
+	}
+
+	.ad-size {
+		font-size: var(--font-size-xs);
+		opacity: 0.7;
+		position: relative;
+		z-index: 1;
+	}
+
+	/* Contenido principal */
+	.main-content {
+		min-width: 0; /* Permite que el contenido se ajuste */
 	}
 
 	.container {
@@ -876,11 +1190,27 @@
 		background: var(--color-background);
 	}
 
-	.section-subtitle {
+	.property-types .container {
+		text-align: center;
+	}
+
+	.property-types h2 {
+		text-align: center;
+		color: var(--color-primary);
+		font-size: var(--font-size-3xl);
+		margin: 0 0 var(--spacing-md);
+		line-height: 1.2;
+	}
+
+	.property-types .section-subtitle {
 		text-align: center;
 		color: var(--color-text-light);
 		font-size: var(--font-size-lg);
-		margin-bottom: var(--spacing-2xl);
+		margin: 0 0 var(--spacing-2xl);
+		max-width: 600px;
+		margin-left: auto;
+		margin-right: auto;
+		line-height: 1.5;
 	}
 
 	.property-grid {
@@ -1240,6 +1570,46 @@
 		transform: translateY(-2px);
 	}
 
+	/* Responsive design */
+	@media (max-width: 1400px) {
+		.home-layout {
+			grid-template-columns: 250px 1fr 250px;
+			gap: var(--spacing-lg);
+		}
+
+		.ad-placeholder {
+			width: 250px;
+			height: 500px;
+		}
+	}
+
+	@media (max-width: 1200px) {
+		.home-layout {
+			grid-template-columns: 200px 1fr 200px;
+			gap: var(--spacing-md);
+		}
+
+		.ad-placeholder {
+			width: 200px;
+			height: 400px;
+		}
+	}
+
+	@media (max-width: 1024px) {
+		.home-layout {
+			grid-template-columns: 1fr;
+			gap: 0;
+		}
+
+		.ad-sidebar {
+			display: none; /* Ocultar sidebars en pantallas pequeñas */
+		}
+
+		.main-content {
+			width: 100%;
+		}
+	}
+
 	@media (max-width: 768px) {
 		.hero h1 {
 			font-size: var(--font-size-3xl);
@@ -1352,5 +1722,71 @@
 			font-size: var(--font-size-xs);
 			font-weight: 500;
 		}
+	}
+
+	/* Nuevo diseño para placeholder de imagen */
+	.ad-image-placeholder {
+		width: 100%;
+		height: 200px;
+		margin-bottom: var(--spacing-md);
+		border-radius: var(--border-radius-md);
+		overflow: hidden;
+		background: linear-gradient(135deg, #4A90E2 0%, #357ABD 100%);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		position: relative;
+	}
+
+	.ad-image-placeholder::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+		opacity: 0.3;
+	}
+
+	.ad-image-content {
+		text-align: center;
+		color: white;
+		z-index: 1;
+		position: relative;
+	}
+
+	.ad-image-icon {
+		font-size: 3rem;
+		margin-bottom: var(--spacing-sm);
+		filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+	}
+
+	.ad-image-text {
+		font-size: var(--font-size-lg);
+		font-weight: 600;
+		text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+	}
+
+	/* Estilo específico para anuncio de Facebook */
+	.ad-image-placeholder.facebook-style {
+		background: linear-gradient(135deg, #FF6B6B 0%, #EE5A52 100%);
+	}
+
+	/* Estilo específico para anuncio de Google AdSense */
+	.ad-image-placeholder.google-style {
+		background: linear-gradient(135deg, #4A90E2 0%, #357ABD 100%);
+	}
+
+	/* Estilo general para section-subtitle */
+	.section-subtitle {
+		text-align: center;
+		color: var(--color-text-light);
+		font-size: var(--font-size-lg);
+		margin: 0 0 var(--spacing-2xl);
+		max-width: 600px;
+		margin-left: auto;
+		margin-right: auto;
+		line-height: 1.5;
 	}
 </style> 
