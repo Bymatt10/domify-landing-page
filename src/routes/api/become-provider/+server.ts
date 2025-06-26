@@ -7,12 +7,16 @@ export const POST: RequestHandler = async ({ request, locals: { supabase, supaba
 		console.log('📝 Datos recibidos:', applicationData);
 
 		// 1. Validar campos requeridos
+		validateRequired(applicationData.first_name, 'Nombre');
+		validateRequired(applicationData.last_name, 'Apellido');
+		validateRequired(applicationData.email, 'Email');
+		validateRequired(applicationData.phone, 'Teléfono');
+		validateRequired(applicationData.department, 'Departamento');
+		validateRequired(applicationData.city, 'Ciudad');
+		validateRequired(applicationData.address, 'Dirección');
 		validateRequired(applicationData.headline, 'Título');
 		validateRequired(applicationData.bio, 'Descripción');
 		validateRequired(applicationData.hourly_rate, 'Precio por hora');
-		validateRequired(applicationData.location, 'Ubicación');
-		validateRequired(applicationData.phone, 'Teléfono');
-		validateRequired(applicationData.email, 'Email');
 		if (!applicationData.categories || applicationData.categories.length === 0) {
 			throw new ValidationException('Debe seleccionar al menos una categoría');
 		}
@@ -21,8 +25,12 @@ export const POST: RequestHandler = async ({ request, locals: { supabase, supaba
 
 		// 2. Preparar datos adicionales para almacenar en application_data
 		const additionalData = {
+			first_name: applicationData.first_name,
+			last_name: applicationData.last_name,
+			department: applicationData.department,
+			city: applicationData.city,
+			address: applicationData.address,
 			experience_years: applicationData.experience_years || 0,
-			certifications: applicationData.certifications || [],
 			availability: applicationData.availability || {}
 		};
 
@@ -39,7 +47,7 @@ export const POST: RequestHandler = async ({ request, locals: { supabase, supaba
 				headline: applicationData.headline,
 				bio: applicationData.bio,
 				hourly_rate: parseFloat(applicationData.hourly_rate),
-				location: applicationData.location,
+				location: `${applicationData.city}, ${applicationData.department}`, // Mantener compatibilidad
 				phone: applicationData.phone,
 				email: applicationData.email,
 				application_data: additionalData,
@@ -58,7 +66,7 @@ export const POST: RequestHandler = async ({ request, locals: { supabase, supaba
 					headline: applicationData.headline,
 					bio: applicationData.bio,
 					hourly_rate: parseFloat(applicationData.hourly_rate),
-					location: applicationData.location,
+					location: `${applicationData.city}, ${applicationData.department}`, // Mantener compatibilidad
 					phone: applicationData.phone,
 					email: applicationData.email,
 					application_data: additionalData,

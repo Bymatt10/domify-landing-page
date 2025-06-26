@@ -25,14 +25,22 @@
 	];
 	
 	let formData = {
+		// Información personal
+		first_name: '',
+		last_name: '',
+		email: '',
+		phone: '',
+		
+		// Dirección
+		department: '',
+		city: '',
+		address: '',
+		
+		// Información del servicio
 		headline: '',
 		bio: '',
 		hourly_rate: '',
-		location: '',
-		phone: '',
-		email: '',
 		experience_years: '',
-		certifications: '',
 		categories: [] as number[],
 		availability: {
 			monday: { morning: false, afternoon: false, evening: false },
@@ -73,8 +81,9 @@
 
 		try {
 			// Validar campos requeridos
-			if (!formData.headline || !formData.bio || !formData.hourly_rate || 
-				!formData.location || !formData.phone || !formData.email || 
+			if (!formData.first_name || !formData.last_name || !formData.email || !formData.phone ||
+				!formData.department || !formData.city || !formData.address ||
+				!formData.headline || !formData.bio || !formData.hourly_rate || 
 				formData.categories.length === 0) {
 				submitError = 'Por favor, completa todos los campos requeridos.';
 				isSubmitting = false;
@@ -91,14 +100,17 @@
 
 			// Preparar datos para la API
 			const applicationData = {
+				first_name: formData.first_name,
+				last_name: formData.last_name,
+				email: formData.email,
+				phone: formData.phone,
+				department: formData.department,
+				city: formData.city,
+				address: formData.address,
 				headline: formData.headline,
 				bio: formData.bio,
 				hourly_rate: parseFloat(formData.hourly_rate),
-				location: formData.location,
-				phone: formData.phone,
-				email: formData.email,
 				experience_years: parseInt(formData.experience_years) || 0,
-				certifications: formData.certifications ? formData.certifications.split(',').map(c => c.trim()) : [],
 				categories: formData.categories,
 				availability: formData.availability
 			};
@@ -116,14 +128,17 @@
 				submitMessage = '¡Tu aplicación ha sido enviada exitosamente! Te contactaremos pronto para revisar tu solicitud.';
 				// Limpiar formulario
 				formData = {
+					first_name: '',
+					last_name: '',
+					email: '',
+					phone: '',
+					department: '',
+					city: '',
+					address: '',
 					headline: '',
 					bio: '',
 					hourly_rate: '',
-					location: '',
-					phone: '',
-					email: '',
 					experience_years: '',
-					certifications: '',
 					categories: [],
 					availability: {
 						monday: { morning: false, afternoon: false, evening: false },
@@ -272,40 +287,90 @@
 			<div class="form-section">
 				<h3>Información de Contacto</h3>
 				
-				<div class="form-group">
-					<label for="email">Email *</label>
-					<input
-						type="email"
-						id="email"
-						bind:value={formData.email}
-						required
-						placeholder="tu@email.com"
-					/>
+				<div class="form-row">
+					<div class="form-group">
+						<label for="first_name">Nombre *</label>
+						<input
+							type="text"
+							id="first_name"
+							bind:value={formData.first_name}
+							required
+							placeholder="Tu nombre"
+						/>
+					</div>
+
+					<div class="form-group">
+						<label for="last_name">Apellido *</label>
+						<input
+							type="text"
+							id="last_name"
+							bind:value={formData.last_name}
+							required
+							placeholder="Tu apellido"
+						/>
+					</div>
+				</div>
+
+				<div class="form-row">
+					<div class="form-group">
+						<label for="email">Email *</label>
+						<input
+							type="email"
+							id="email"
+							bind:value={formData.email}
+							required
+							placeholder="tu@email.com"
+						/>
+					</div>
+
+					<div class="form-group">
+						<label for="phone">Teléfono *</label>
+						<input
+							type="tel"
+							id="phone"
+							bind:value={formData.phone}
+							required
+							placeholder="+505 8888 8888"
+						/>
+					</div>
+				</div>
+
+				<div class="form-row">
+					<div class="form-group">
+						<label for="department">Departamento *</label>
+						<select
+							id="department"
+							bind:value={formData.department}
+							required
+						>
+							<option value="">Selecciona tu departamento</option>
+							{#each nicaraguaDepartments as department}
+								<option value={department}>{department}</option>
+							{/each}
+						</select>
+					</div>
+
+					<div class="form-group">
+						<label for="city">Ciudad *</label>
+						<input
+							type="text"
+							id="city"
+							bind:value={formData.city}
+							required
+							placeholder="Tu ciudad"
+						/>
+					</div>
 				</div>
 
 				<div class="form-group">
-					<label for="location">Departamento *</label>
-					<select
-						id="location"
-						bind:value={formData.location}
+					<label for="address">Dirección completa *</label>
+					<textarea
+						id="address"
+						bind:value={formData.address}
 						required
-					>
-						<option value="">Selecciona tu departamento</option>
-						{#each nicaraguaDepartments as department}
-							<option value={department}>{department}</option>
-						{/each}
-					</select>
-				</div>
-
-				<div class="form-group">
-					<label for="phone">Teléfono *</label>
-					<input
-						type="tel"
-						id="phone"
-						bind:value={formData.phone}
-						required
-						placeholder="+505 8888 8888"
-					/>
+						rows="3"
+						placeholder="Dirección exacta: barrio, calle, número de casa, puntos de referencia..."
+					></textarea>
 				</div>
 			</div>
 
@@ -341,20 +406,6 @@
 						{/each}
 					</div>
 				{/if}
-			</div>
-
-			<!-- Certificaciones -->
-			<div class="form-section">
-				<h3>Certificaciones</h3>
-				<div class="form-group">
-					<label for="certifications">Certificaciones (separadas por comas)</label>
-					<input
-						type="text"
-						id="certifications"
-						bind:value={formData.certifications}
-						placeholder="Certificación de Limpieza, Licencia de Jardinería, etc."
-					/>
-				</div>
 			</div>
 
 			<!-- Disponibilidad -->
