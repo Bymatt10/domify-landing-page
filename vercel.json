@@ -4,11 +4,6 @@
   "framework": "sveltekit",
   "installCommand": "npm install",
   "devCommand": "npm run dev",
-  "functions": {
-    ".svelte-kit/output/server/**/*.js": {
-      "runtime": "nodejs18.x"
-    }
-  },
   "rewrites": [
     {
       "source": "/(.*)",
