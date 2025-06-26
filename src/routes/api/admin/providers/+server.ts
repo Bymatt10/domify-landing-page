@@ -1,5 +1,30 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
+import { PUBLIC_SUPABASE_URL } from '$env/static/public';
+import { PRIVATE_SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
+
+// Función helper para hacer queries directas con fetch
+async function directSupabaseQuery(endpoint: string, options: any = {}) {
+  const url = `${PUBLIC_SUPABASE_URL}/rest/v1/${endpoint}`;
+  const response = await fetch(url, {
+    headers: {
+      'Authorization': `Bearer ${PRIVATE_SUPABASE_SERVICE_ROLE_KEY}`,
+      'apikey': PRIVATE_SUPABASE_SERVICE_ROLE_KEY,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation',
+      ...options.headers
+    },
+    ...options
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('Supabase query failed:', response.status, response.statusText, errorText);
+    throw new Error(`Supabase query failed: ${response.status} ${response.statusText}`);
+  }
+
+  return response.json();
+}
 
 export const GET: RequestHandler = async ({ url, locals }) => {
     try {
@@ -13,52 +38,62 @@ export const GET: RequestHandler = async ({ url, locals }) => {
         const search = url.searchParams.get('search') || '';
         const offset = (page - 1) * limit;
 
-        // Usar la vista que incluye emails de usuarios
-        let query = locals.supabaseAdmin
-            .from('admin_providers_view')
-            .select(`
-                id,
-                user_id,
-                business_name,
-                phone,
-                location,
-                is_active,
-                created_at,
-                updated_at,
-                user_email
-            `, { count: 'exact' });
+        console.log('Fetching providers...');
 
+        // Obtener provider_profiles con query directa
+        let queryParams = [`limit=${limit}`, `offset=${offset}`, `order=created_at.desc`];
+        
         if (search) {
-            query = query.or(`business_name.ilike.%${search}%,phone.ilike.%${search}%`);
+            queryParams.push(`or=(business_name.ilike.%${search}%,phone.ilike.%${search}%)`);
         }
 
-        query = query.order('created_at', { ascending: false }).range(offset, offset + limit - 1);
+        const queryString = queryParams.join('&');
+        const providers = await directSupabaseQuery(`provider_profiles?${queryString}`);
 
-        const { data: providers, error: providersError, count } = await query;
+        console.log('Providers fetched successfully:', providers.length);
 
-        if (providersError) {
-            console.error('Error fetching providers:', providersError);
+        // Para cada proveedor, obtener el email desde auth.users
+        const providersWithEmail = await Promise.all(providers.map(async (provider: any) => {
+            let email = 'Email no disponible';
             
-            // Si la vista no existe, intentamos con la tabla original
-            console.log('Trying fallback to provider_profiles table...');
-            return await getProvidersFallback(url, locals);
-        }
+            try {
+                // Obtener el usuario desde auth.users usando el user_id
+                const authResponse = await fetch(`${PUBLIC_SUPABASE_URL}/auth/v1/admin/users/${provider.user_id}`, {
+                    headers: {
+                        'Authorization': `Bearer ${PRIVATE_SUPABASE_SERVICE_ROLE_KEY}`,
+                        'apikey': PRIVATE_SUPABASE_SERVICE_ROLE_KEY,
+                        'Content-Type': 'application/json'
+                    }
+                });
 
-        // Formatear los datos para mantener compatibilidad con el frontend
-        const formattedProviders = (providers || []).map((provider: any) => ({
-            ...provider,
-            user: { 
-                email: provider.user_email || 'Email no disponible',
-                raw_user_meta_data: null 
+                if (authResponse.ok) {
+                    const authUser = await authResponse.json();
+                    email = authUser.email || 'Email no disponible';
+                } else {
+                    console.warn('Error fetching auth user for provider:', provider.id, authResponse.status);
+                }
+            } catch (error) {
+                console.warn('Error fetching auth user email for provider:', provider.id, error);
             }
+
+            return {
+                ...provider,
+                user: {
+                    email,
+                    raw_user_meta_data: {}
+                }
+            };
         }));
 
+        const total = providers.length;
+        const totalPages = Math.ceil(total / limit);
+
         return json({
-            providers: formattedProviders,
-            total: count || 0,
+            providers: providersWithEmail,
+            total,
             page,
             limit,
-            totalPages: count ? Math.ceil(count / limit) : 0,
+            totalPages,
         });
 
     } catch (e) {
@@ -66,53 +101,4 @@ export const GET: RequestHandler = async ({ url, locals }) => {
         console.error('Error fetching providers:', error);
         return json({ error: error.message }, { status: 500 });
     }
-};
-
-// Función de respaldo que usa la tabla original
-async function getProvidersFallback(url: URL, locals: any) {
-    const page = parseInt(url.searchParams.get('page') || '1');
-    const limit = parseInt(url.searchParams.get('limit') || '10');
-    const search = url.searchParams.get('search') || '';
-    const offset = (page - 1) * limit;
-
-    let query = locals.supabaseAdmin
-        .from('provider_profiles')
-        .select(`
-            id,
-            user_id,
-            business_name,
-            phone,
-            location,
-            is_active,
-            created_at,
-            updated_at
-        `, { count: 'exact' });
-
-    if (search) {
-        query = query.or(`business_name.ilike.%${search}%,phone.ilike.%${search}%`);
-    }
-
-    query = query.order('created_at', { ascending: false }).range(offset, offset + limit - 1);
-
-    const { data: providers, error: providersError, count } = await query;
-
-    if (providersError) {
-        throw new Error('Error al cargar los proveedores: ' + providersError.message);
-    }
-
-    const providersWithUserData = (providers || []).map((provider: any) => ({
-        ...provider,
-        user: { 
-            email: 'Email no disponible',
-            raw_user_meta_data: null 
-        }
-    }));
-
-    return json({
-        providers: providersWithUserData,
-        total: count || 0,
-        page,
-        limit,
-        totalPages: count ? Math.ceil(count / limit) : 0,
-    });
-} 
+}; 

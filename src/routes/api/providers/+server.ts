@@ -1,5 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from '@sveltejs/kit';
+import { PUBLIC_SUPABASE_URL } from '$env/static/public';
+import { PRIVATE_SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
 import { 
     ExceptionHandler, 
     ValidationException, 
@@ -7,6 +9,29 @@ import {
     AuthorizationException,
     validateRequired
 } from '$lib/exceptions';
+
+// Función helper para hacer queries directas con fetch
+async function directSupabaseQuery(endpoint: string, options: any = {}) {
+  const url = `${PUBLIC_SUPABASE_URL}/rest/v1/${endpoint}`;
+  const response = await fetch(url, {
+    headers: {
+      'Authorization': `Bearer ${PRIVATE_SUPABASE_SERVICE_ROLE_KEY}`,
+      'apikey': PRIVATE_SUPABASE_SERVICE_ROLE_KEY,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation',
+      ...options.headers
+    },
+    ...options
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('Supabase query failed:', response.status, response.statusText, errorText);
+    throw new Error(`Supabase query failed: ${response.status} ${response.statusText}`);
+  }
+
+  return response.json();
+}
 
 /**
  * @swagger
@@ -69,18 +94,14 @@ import {
  *       500:
  *         description: Internal server error
  */
-export const GET: RequestHandler = async ({ url, locals }) => {
+export const GET: RequestHandler = async ({ url }) => {
     try {
         const id = url.searchParams.get('id');
         if (id) {
             // Obtener provider por ID
-            const { data, error } = await locals.supabase
-                .from('provider_profiles')
-                .select('*')
-                .eq('id', id)
-                .single();
-            if (error || !data) throw new Error('Provider not found');
-            return json({ data, message: 'Provider retrieved', statusCode: 200, timestamp: new Date().toISOString() });
+            const provider = await directSupabaseQuery(`provider_profiles?id=eq.${id}&limit=1`);
+            if (!provider || provider.length === 0) throw new Error('Provider not found');
+            return json({ data: provider[0], message: 'Provider retrieved', statusCode: 200, timestamp: new Date().toISOString() });
         }
         
         // Listar todos con filtros
@@ -89,66 +110,101 @@ export const GET: RequestHandler = async ({ url, locals }) => {
         const categoryId = url.searchParams.get('category_id');
         const providerType = url.searchParams.get('provider_type');
         
-        let query = locals.supabase
-            .from('provider_profiles')
-            .select('*');
+        console.log('🔍 Fetching providers with filters:', { limit, offset, categoryId, providerType });
+        
+        // Construir query para provider_profiles
+        let queryParams = [
+            `is_active=eq.true`,
+            `limit=${limit}`,
+            `offset=${offset}`
+        ];
         
         // Aplicar filtro por tipo de proveedor si se proporciona
         if (providerType && providerType !== 'all') {
-            query = query.eq('provider_type', providerType);
+            queryParams.push(`provider_type=eq.${providerType}`);
         }
         
-        const { data, error } = await query.range(offset, offset + limit - 1);
+        const queryString = queryParams.join('&');
+        const allProviders = await directSupabaseQuery(`provider_profiles?${queryString}`);
         
-        if (error) throw new Error(error.message);
+        console.log(`📊 Found ${allProviders.length} active providers`);
         
-        // Si hay filtro por categoría, obtener los provider_categories
-        let filteredProviders = data || [];
+        // Si hay filtro por categoría, filtrar por categoría
+        let filteredProviders = allProviders;
         if (categoryId) {
-            // Obtener los provider_ids que pertenecen a esta categoría
-            const { data: categoryProviders, error: categoryError } = await locals.supabase
-                .from('provider_categories')
-                .select('provider_id')
-                .eq('category_id', categoryId);
+            console.log(`🎯 Filtering by category ID: ${categoryId}`);
             
-            if (!categoryError && categoryProviders) {
-                const providerIds = categoryProviders.map(cp => cp.provider_id);
-                filteredProviders = filteredProviders.filter(provider => 
+            // Obtener los provider_profile_ids que pertenecen a esta categoría
+            const categoryProviders = await directSupabaseQuery(`provider_categories?category_id=eq.${categoryId}&select=provider_profile_id`);
+            console.log(`🔗 Found ${categoryProviders.length} providers in category ${categoryId}:`, categoryProviders);
+            
+            if (categoryProviders && categoryProviders.length > 0) {
+                const providerIds = categoryProviders.map((cp: any) => cp.provider_profile_id);
+                filteredProviders = allProviders.filter((provider: any) => 
                     providerIds.includes(provider.id)
                 );
+                console.log(`✅ Filtered to ${filteredProviders.length} providers for category ${categoryId}`);
+            } else {
+                filteredProviders = [];
+                console.log(`❌ No providers found for category ${categoryId}`);
             }
         }
         
-        // Transformar los datos para que coincidan con la estructura esperada
-        const transformedProviders = filteredProviders.map(provider => ({
-            id: provider.id,
-            business_name: provider.headline || 'Sin nombre',
-            photo_url: provider.photo_url || '/img/cleaning.png',
-            rating: provider.average_rating || 0,
-            hourly_rate: provider.hourly_rate || 500,
-            description: provider.bio || 'Sin descripción',
-            total_reviews: provider.total_reviews || 0,
-            provider_type: provider.provider_type || 'individual',
-            location: provider.location,
-            phone: provider.phone,
-            users: {
-                id: provider.user_id,
-                email: 'user@example.com', // Placeholder
-                role: 'provider'
-            },
-            provider_categories: []
+        // Para cada proveedor, obtener el email real del auth
+        const providersWithEmails = await Promise.all(filteredProviders.map(async (provider: any) => {
+            let email = 'user@example.com';
+            
+            try {
+                // Obtener el usuario desde auth.users usando el user_id
+                const authResponse = await fetch(`${PUBLIC_SUPABASE_URL}/auth/v1/admin/users/${provider.user_id}`, {
+                    headers: {
+                        'Authorization': `Bearer ${PRIVATE_SUPABASE_SERVICE_ROLE_KEY}`,
+                        'apikey': PRIVATE_SUPABASE_SERVICE_ROLE_KEY,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (authResponse.ok) {
+                    const authUser = await authResponse.json();
+                    email = authUser.email || 'user@example.com';
+                }
+            } catch (error) {
+                console.warn('Error fetching auth user email for provider:', provider.id);
+            }
+
+            return {
+                id: provider.id,
+                business_name: provider.business_name || provider.headline || 'Sin nombre',
+                photo_url: provider.photo_url || '/img/cleaning.png',
+                rating: provider.average_rating || 0,
+                hourly_rate: provider.hourly_rate || 500,
+                description: provider.bio || 'Sin descripción',
+                total_reviews: provider.total_reviews || 0,
+                provider_type: provider.provider_type || 'individual',
+                location: provider.location,
+                phone: provider.phone,
+                users: {
+                    id: provider.user_id,
+                    email: email,
+                    role: 'provider'
+                },
+                provider_categories: []
+            };
         }));
+        
+        console.log(`🎉 Returning ${providersWithEmails.length} providers`);
         
         return json({ 
             data: { 
-                providers: transformedProviders,
-                total: transformedProviders.length
+                providers: providersWithEmails,
+                total: providersWithEmails.length
             }, 
             message: 'Providers retrieved', 
             statusCode: 200, 
             timestamp: new Date().toISOString() 
         });
     } catch (error) {
+        console.error('❌ Error in providers endpoint:', error);
         return json({ error: { message: error instanceof Error ? error.message : 'Unknown error', statusCode: 400, timestamp: new Date().toISOString() } }, { status: 400 });
     }
 };

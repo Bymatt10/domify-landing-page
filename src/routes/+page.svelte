@@ -203,6 +203,21 @@
 	}
 </script>
 
+<svelte:head>
+	<title>Domify - Encuentra Servicios Locales de Confianza</title>
+	<meta name="description" content="Domify es el marketplace líder para encontrar y contratar servicios de limpieza, mudanza, jardinería, ensamblaje y más en tu ciudad. Profesionales verificados y soporte 24/7." />
+	<meta name="keywords" content="servicios, marketplace, limpieza, mudanza, jardinería, ensamblaje, proveedores, Domify, contratar, hogar, profesionales" />
+	<meta property="og:title" content="Domify - Encuentra Servicios Locales de Confianza" />
+	<meta property="og:description" content="Domify es el marketplace líder para encontrar y contratar servicios de limpieza, mudanza, jardinería, ensamblaje y más en tu ciudad." />
+	<meta property="og:image" content="https://domify.app/img/og-image.png" />
+	<meta property="og:url" content="https://domify.app/" />
+	<meta property="og:type" content="website" />
+	<meta name="twitter:card" content="summary_large_image" />
+	<meta name="twitter:title" content="Domify - Encuentra Servicios Locales de Confianza" />
+	<meta name="twitter:description" content="Domify es el marketplace líder para encontrar y contratar servicios de limpieza, mudanza, jardinería, ensamblaje y más en tu ciudad." />
+	<meta name="twitter:image" content="https://domify.app/img/og-image.png" />
+</svelte:head>
+
 <div class="home">
 	<div class="home-layout">
 		<!-- Sidebar izquierdo para anuncios -->
@@ -1796,18 +1811,25 @@
 	}
 	
 	/* Dark mode support */
-	@media (prefers-color-scheme: dark) {
-		.home {
-			background-color: #1a1a1a;
-		}
-		
-		.ad-space {
-			background: #2a2a2a;
-		}
-		
-		.ad-example {
-			background: #2a2a2a;
-		}
+	:global(.dark) .home {
+		background-color: var(--color-background);
+	}
+	
+	:global(.dark) .ad-space {
+		background: var(--color-background-card);
+	}
+	
+	:global(.dark) .ad-example {
+		background: var(--color-background-card);
+	}
+	
+	:global(.dark) .hero {
+		background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+	}
+	
+	:global(.dark) .navbar {
+		background-color: var(--color-background-white);
+		border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 	}
 	
 	/* Nuevo diseño para placeholder de imagen */

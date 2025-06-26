@@ -59,9 +59,9 @@
 			<h2>4. Variables de entorno</h2>
 			<p>Asegúrate de que tu archivo <code>.env</code> tenga las variables correctas:</p>
 			<div class="code-block">
-				<pre><code>PUBLIC_SUPABASE_URL=http://localhost:54321
+				<pre><code>{`PUBLIC_SUPABASE_URL=http://localhost:54321
 PUBLIC_SUPABASE_ANON_KEY=tu-anon-key
-PRIVATE_SUPABASE_SERVICE_ROLE_KEY=tu-service-role-key</code></pre>
+PRIVATE_SUPABASE_SERVICE_ROLE_KEY=tu-service-role-key`}</code></pre>
 			</div>
 
 			<h2>5. Probar el registro</h2>
@@ -76,10 +76,10 @@ PRIVATE_SUPABASE_SERVICE_ROLE_KEY=tu-service-role-key</code></pre>
 			<h2>6. Triggers automáticos</h2>
 			<p>La aplicación tiene configurados triggers automáticos que crean perfiles de usuario cuando se registran con OAuth:</p>
 			<div class="code-block">
-				<pre><code>-- Trigger para crear perfil de customer automáticamente
+				<pre><code>{`-- Trigger para crear perfil de customer automáticamente
 CREATE TRIGGER handle_new_user_trigger
     AFTER INSERT ON auth.users
-    FOR EACH ROW EXECUTE FUNCTION handle_new_user();</code></pre>
+    FOR EACH ROW EXECUTE FUNCTION handle_new_user();`}</code></pre>
 			</div>
 
 			<h2>7. Solución de problemas</h2>
@@ -112,12 +112,12 @@ CREATE TRIGGER handle_new_user_trigger
 			<h2>8. Metadatos de Google OAuth</h2>
 			<p>Cuando un usuario se registra con Google, los metadatos incluyen:</p>
 			<div class="code-block">
-				<pre><code>{
+				<pre><code>{`{
   "full_name": "Nombre Completo del Usuario",
   "avatar_url": "https://lh3.googleusercontent.com/...",
   "email": "usuario@gmail.com",
   "email_verified": true
-}</code></pre>
+}`}</code></pre>
 			</div>
 
 			<div class="alert alert-success">

@@ -44,8 +44,18 @@
 </script>
 
 <svelte:head>
-	<title>Domify API Documentation</title>
-	<meta name="description" content="API documentation for Domify marketplace platform" />
+	<title>Documentación API - Domify</title>
+	<meta name="description" content="Consulta la documentación oficial de la API de Domify para desarrolladores. Descubre cómo integrar y consumir los servicios del marketplace." />
+	<meta name="keywords" content="API, documentación, Domify, desarrolladores, integración, endpoints, swagger" />
+	<meta property="og:title" content="Documentación API - Domify" />
+	<meta property="og:description" content="Consulta la documentación oficial de la API de Domify para desarrolladores." />
+	<meta property="og:image" content="https://domify.app/img/og-image.png" />
+	<meta property="og:url" content="https://domify.app/api/docs" />
+	<meta property="og:type" content="website" />
+	<meta name="twitter:card" content="summary_large_image" />
+	<meta name="twitter:title" content="Documentación API - Domify" />
+	<meta name="twitter:description" content="Consulta la documentación oficial de la API de Domify para desarrolladores." />
+	<meta name="twitter:image" content="https://domify.app/img/og-image.png" />
 </svelte:head>
 
 <div class="swagger-container">

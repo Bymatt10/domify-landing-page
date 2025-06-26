@@ -2,6 +2,7 @@
 	import { supabase } from '$lib/supabase';
 	import { goto, invalidateAll } from '$app/navigation';
 	import { page } from '$app/stores';
+	import ThemeToggle from './ThemeToggle.svelte';
 
 	let isMenuOpen = false;
 
@@ -53,6 +54,9 @@
 				<a href="/" class="nav-link">Inicio</a>
 				<a href="/services" class="nav-link">Servicios</a>
 				
+				<!-- Theme Toggle -->
+				<ThemeToggle />
+				
 				{#if session}
 					{#if isAdmin}
 						<a href="/admin" class="nav-link">Panel Admin</a>
@@ -85,6 +89,11 @@
 		position: sticky;
 		top: 0;
 		z-index: 50;
+		transition: all var(--transition-fast);
+	}
+
+	:global(.dark) .navbar {
+		border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 	}
 
 	.navbar-content {

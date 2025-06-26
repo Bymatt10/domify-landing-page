@@ -80,7 +80,18 @@
 </script>
 
 <svelte:head>
-  <title>Mi Aplicación - Domify</title>
+  <title>Mi Aplicación de Proveedor - Domify</title>
+  <meta name="description" content="Consulta y gestiona el estado de tu aplicación para ser proveedor en Domify. Revisa tu progreso y mantente informado." />
+  <meta name="keywords" content="proveedor, aplicación, estado, servicios, Domify, progreso, gestión" />
+  <meta property="og:title" content="Mi Aplicación de Proveedor - Domify" />
+  <meta property="og:description" content="Consulta y gestiona el estado de tu aplicación para ser proveedor en Domify." />
+  <meta property="og:image" content="https://domify.app/img/og-image.png" />
+  <meta property="og:url" content="https://domify.app/my-application" />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Mi Aplicación de Proveedor - Domify" />
+  <meta name="twitter:description" content="Consulta y gestiona el estado de tu aplicación para ser proveedor en Domify." />
+  <meta name="twitter:image" content="https://domify.app/img/og-image.png" />
 </svelte:head>
 
 <div class="container">

@@ -95,7 +95,7 @@ let timeOfDay = {
 	evening: false
 };
 let specificTime = '';
-let priceRange = [200, 1000];
+let priceRange = [10, 3000];
 let selectedProviderType: 'all' | 'individual' | 'company' = 'all';
 
 const timeOptions = [
@@ -132,9 +132,15 @@ async function fetchProviders() {
 		loading = true;
 		error = '';
 		
+		console.log('🔍 [DEBUG] Starting fetchProviders');
+		console.log('🔍 [DEBUG] Category from URL:', $page.params.category);
+		
 		const categoryId = categoryIdMapping[$page.params.category];
+		console.log('🔍 [DEBUG] Category ID:', categoryId);
+		
 		if (!categoryId) {
 			error = 'Categoría no encontrada';
+			console.log('❌ [DEBUG] Category not found');
 			return;
 		}
 
@@ -147,28 +153,44 @@ async function fetchProviders() {
 			params.append('provider_type', selectedProviderType);
 		}
 
-		const response = await fetch(`/api/providers?${params}`);
+		const url = `/api/providers?${params}`;
+		console.log('📡 [DEBUG] Fetching URL:', url);
+
+		const response = await fetch(url);
 		const result = await response.json();
+
+		console.log('📊 [DEBUG] Response status:', response.status);
+		console.log('📋 [DEBUG] Response data:', result);
 
 		if (!response.ok) {
 			throw new Error(result.message || 'Error al cargar proveedores');
 		}
 
+		console.log('🔍 [DEBUG] Original providers count:', result.data.providers.length);
+		console.log('🔍 [DEBUG] Price range:', priceRange);
+
 		// Aplicar filtros de precio
 		let filteredProviders = result.data.providers.filter((provider: Provider) => {
-			return provider.hourly_rate >= priceRange[0] && provider.hourly_rate <= priceRange[1];
+			const inRange = provider.hourly_rate >= priceRange[0] && provider.hourly_rate <= priceRange[1];
+			console.log(`🔍 [DEBUG] Provider ${provider.business_name}: $${provider.hourly_rate}/hr - ${inRange ? 'INCLUDED' : 'EXCLUDED'}`);
+			return inRange;
 		});
+
+		console.log('✅ [DEBUG] Filtered providers count:', filteredProviders.length);
 
 		// Ordenar por rating (más alto primero)
 		filteredProviders.sort((a: Provider, b: Provider) => b.rating - a.rating);
 
 		providers = filteredProviders;
 		currentPage = 1; // Resetear a la primera página
+		
+		console.log('🎉 [DEBUG] Final providers set:', providers.length);
 	} catch (err) {
-		console.error('Error fetching providers:', err);
+		console.error('❌ [DEBUG] Error fetching providers:', err);
 		error = err instanceof Error ? err.message : 'Error al cargar proveedores';
 	} finally {
 		loading = false;
+		console.log('🏁 [DEBUG] fetchProviders completed. Loading:', loading);
 	}
 }
 
@@ -232,7 +254,7 @@ $: if (typeof window !== 'undefined' && selectedProviderType) {
 				<div class="filter-section">
 					<fieldset>
 						<legend class="filter-label">Hora del día</legend>
-						<div class="filter-checkboxes">
+						<div class="filter-checkboxes compact-checkboxes">
 							<label for="morning-checkbox">
 								<input type="checkbox" id="morning-checkbox" bind:checked={timeOfDay.morning} />
 								Mañana (7am - 12pm)
@@ -246,8 +268,7 @@ $: if (typeof window !== 'undefined' && selectedProviderType) {
 								Noche (5pm - 9pm)
 							</label>
 						</div>
-						<div class="filter-or">o</div>
-						<select class="time-select" bind:value={specificTime} id="time-select">
+						<select class="time-select compact-select" bind:value={specificTime} id="time-select">
 							<option value="" disabled selected>Elegir hora específica</option>
 							{#each Array.from({ length: 14 }, (_, i) => i + 7) as hour}
 								<option value={hour}>
@@ -268,7 +289,7 @@ $: if (typeof window !== 'undefined' && selectedProviderType) {
 										id="price-from"
 										type="number" 
 										bind:value={priceRange[0]} 
-										min="100" 
+										min="10" 
 										max="3000" 
 										class="price-input"
 									/>
@@ -280,14 +301,14 @@ $: if (typeof window !== 'undefined' && selectedProviderType) {
 										id="price-to"
 										type="number" 
 										bind:value={priceRange[1]} 
-										min="100" 
+										min="10" 
 										max="3000" 
 										class="price-input"
 									/>
 								</div>
 							</div>
 							<div class="price-separator">
-								El precio promedio es <b>C$500/hr</b>
+								El precio promedio es <b>C$300/hr</b>
 							</div>
 						</div>
 					</fieldset>
@@ -497,8 +518,6 @@ $: if (typeof window !== 'undefined' && selectedProviderType) {
 	accent-color: #6D9773;
 	cursor: pointer;
 }
-
-
 
 .filter-apply-btn {
 	width: 100%;
@@ -750,6 +769,81 @@ $: if (typeof window !== 'undefined' && selectedProviderType) {
 	.pagination {
 		flex-wrap: wrap;
 		gap: 0.8rem;
+	}
+
+	.filter-box {
+		padding: 0.7rem 0.4rem;
+		margin-top: 1rem;
+		border-radius: 8px;
+		box-shadow: 0 1px 4px rgba(12,59,46,0.05);
+		gap: 0.7rem;
+	}
+	.filter-box h2 {
+		font-size: 1.2rem;
+		padding-bottom: 0.2rem;
+		border-bottom-width: 1px;
+	}
+	.filter-label {
+		font-size: 1rem;
+		padding-bottom: 0.2rem;
+	}
+	.filter-section {
+		gap: 0.4rem;
+	}
+	.filter-date-btns {
+		gap: 0.3rem;
+	}
+	.filter-date-btns button {
+		padding: 0.35rem 0.2rem;
+		font-size: 0.85rem;
+		border-radius: 0.7rem;
+	}
+	.compact-checkboxes label {
+		font-size: 0.92rem;
+		padding: 0.15rem 0;
+	}
+	.compact-checkboxes input[type="checkbox"] {
+		width: 16px;
+		height: 16px;
+	}
+	.filter-provider-type label {
+		font-size: 0.92rem;
+		gap: 0.4rem;
+	}
+	.filter-provider-type input[type="radio"] {
+		width: 16px;
+		height: 16px;
+	}
+	.compact-select {
+		padding: 0.35rem 0.5rem;
+		font-size: 0.92rem;
+		border-radius: 6px;
+	}
+	.price-inputs {
+		gap: 0.2rem;
+		flex-direction: row;
+	}
+	.price-input-group {
+		flex: 1;
+	}
+	.price-input-label {
+		font-size: 0.85rem;
+		margin-bottom: 0.1rem;
+	}
+	.price-input {
+		padding: 0.3rem 0.5rem;
+		font-size: 0.92rem;
+		border-radius: 6px;
+	}
+	.price-separator {
+		margin-top: 0.5rem;
+		font-size: 0.9rem;
+	}
+	.filter-apply-btn {
+		padding: 0.5rem 0.7rem;
+		font-size: 0.95rem;
+		border-radius: 6px;
+		margin-top: 0.7rem;
 	}
 }
 

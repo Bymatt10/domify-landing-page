@@ -1,6 +1,40 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from '@sveltejs/kit';
-import { sendWelcomeEmail as sendEmail, type WelcomeEmailData } from '$lib/email.js';
+import { sendEmail, type WelcomeEmailData } from '$lib/email.js';
+import { createClient } from '@supabase/supabase-js';
+import { PUBLIC_SUPABASE_URL } from '$env/static/public';
+import { PRIVATE_SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
+
+// Cliente directo para admin operations
+const supabaseAdmin = createClient(PUBLIC_SUPABASE_URL, PRIVATE_SUPABASE_SERVICE_ROLE_KEY, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false
+  }
+});
+
+// Función helper para hacer queries directas con fetch
+async function directSupabaseQuery(endpoint: string, options: any = {}) {
+  const url = `${PUBLIC_SUPABASE_URL}/rest/v1/${endpoint}`;
+  const response = await fetch(url, {
+    headers: {
+      'Authorization': `Bearer ${PRIVATE_SUPABASE_SERVICE_ROLE_KEY}`,
+      'apikey': PRIVATE_SUPABASE_SERVICE_ROLE_KEY,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation',
+      ...options.headers
+    },
+    ...options
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('Supabase query failed:', response.status, response.statusText, errorText);
+    throw new Error(`Supabase query failed: ${response.status} ${response.statusText}`);
+  }
+
+  return response.json();
+}
 
 // Función para generar contraseña temporal
 function generateTemporaryPassword(): string {
@@ -12,19 +46,33 @@ function generateTemporaryPassword(): string {
   return password;
 }
 
-
-
 // Función para enviar email de bienvenida
 async function sendWelcomeEmail(email: string, tempPassword: string, providerName: string): Promise<void> {
   try {
-    const emailData: WelcomeEmailData = {
-      email,
+    const loginUrl = `${process.env.NODE_ENV === 'production' ? 'https://yourdomain.com' : 'http://localhost:5173'}/auth/login`;
+    
+    // Importar el servicio de email
+    const { sendEmail, createProviderWelcomeEmail } = await import('$lib/email-service');
+    
+    // Crear el HTML del email usando la plantilla
+    const emailHtml = createProviderWelcomeEmail({
       name: providerName,
-      tempPassword,
-      loginUrl: `${process.env.NODE_ENV === 'production' ? 'https://yourdomain.com' : 'http://localhost:5173'}/auth/login`
-    };
+      email: email,
+      tempPassword: tempPassword,
+      loginUrl: loginUrl
+    });
 
-    await sendEmail(emailData);
+    const result = await sendEmail({
+      to: email,
+      subject: '¡Bienvenido a Domify! - Tu cuenta ha sido aprobada',
+      html: emailHtml
+    });
+
+    if (result) {
+      console.log('✅ Email de bienvenida enviado exitosamente a:', email);
+    } else {
+      console.error('❌ Error enviando email de bienvenida');
+    }
   } catch (error) {
     console.error('Error sending welcome email:', error);
     // No fallar la aprobación si el email falla
@@ -126,111 +174,32 @@ export const GET: RequestHandler = async ({ url, locals }) => {
     const limit = parseInt(url.searchParams.get('limit') || '10');
     const offset = (page - 1) * limit;
 
-    // Si se solicita una aplicación específica
-    if (id) {
-      const { data, error } = await locals.supabaseAdmin
-        .from('admin_provider_applications_complete')
-        .select('*')
-        .eq('id', id)
-        .single();
-      
-      if (error) {
-        console.error('Error fetching specific application:', error);
-        throw new Error(error.message);
-      }
-      
-      // Formatear los datos para mantener compatibilidad
-      const formattedApplication = {
-        ...data,
-        user: {
-          id: data.user_id,
-          email: data.user_email || 'Email no disponible',
-          raw_user_meta_data: data.raw_user_meta_data
-        },
-        categories: data.category_ids || []
-      };
-      
-      return json({ 
-        applications: [formattedApplication], 
-        message: 'Application retrieved', 
-        statusCode: 200, 
-        timestamp: new Date().toISOString() 
-      });
-    }
-
-    // Construir query usando la vista completa
-    let query = locals.supabaseAdmin
-      .from('admin_provider_applications_complete')
-      .select('*', { count: 'exact' });
-
-    // Aplicar filtros
-    if (user_id) query = query.eq('user_id', user_id);
-    if (status && status !== 'all') query = query.eq('status', status);
-    if (search) query = query.ilike('headline', `%${search}%`);
-
-    // Filtro de fecha
-    if (date && date !== 'all') {
-      const now = new Date();
-      let startDate: Date;
-      
-      switch (date) {
-        case 'today':
-          startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-          break;
-        case 'week':
-          startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-          break;
-        case 'month':
-          startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-          break;
-        default:
-          startDate = new Date(0);
-      }
-      
-      query = query.gte('submitted_at', startDate.toISOString());
-    }
-
-    // Aplicar paginación
-    query = query.range(offset, offset + limit - 1);
-    query = query.order('submitted_at', { ascending: false });
-
-    const { data: applications, error, count } = await query;
+    // Usar la misma query simple que funciona en el debug
+    console.log('Fetching provider applications...');
     
-    if (error) {
-      console.error('Error fetching applications:', error);
-      
-      // Si la vista no existe, intentar con la tabla original
-      console.log('Trying fallback to provider_applications table...');
-      return await getApplicationsFallback(url, locals);
-    }
+    const applications = await directSupabaseQuery(`provider_applications?limit=${limit}&offset=${offset}&order=created_at.desc`);
+    
+    console.log('Applications fetched successfully:', applications.length);
 
     // Formatear los datos para mantener compatibilidad con el frontend
-    const formattedApplications = (applications || []).map(app => {
-      // Extraer datos del campo application_data si existe
-      const appData = app.application_data || {};
-      
+    const formattedApplications = (applications || []).map((app: any) => {
       return {
         ...app,
         user: {
-          id: app.user_id,
-          email: app.user_email || 'Email no disponible',
-          raw_user_meta_data: app.raw_user_meta_data
+          id: app.user_id || null,
+          email: app.email || 'Email no disponible',
+          raw_user_meta_data: {}
         },
-        categories: app.category_ids || [],
-        // Extraer campos del JSONB para compatibilidad
-        experience_years: appData.experience_years || null,
-        certifications: appData.certifications || [],
-        availability: appData.availability || {},
-        // Mantener updated_at como created_at si no existe
-        updated_at: app.created_at
+        categories: []
       };
     });
 
-    const totalPages = count ? Math.ceil(count / limit) : 0;
+    const total = applications.length;
+    const totalPages = Math.ceil(total / limit);
 
     return json({ 
       applications: formattedApplications, 
-      total: count || 0,
+      total,
       page,
       limit,
       totalPages,
@@ -242,154 +211,10 @@ export const GET: RequestHandler = async ({ url, locals }) => {
   } catch (error) {
     console.error('Error in GET /api/provider-applications:', error);
     return json({ 
-      error: { message: error instanceof Error ? error.message : 'Unknown error' } 
+      error: { message: error instanceof Error ? error.message : 'Error desconocido' } 
     }, { status: 500 });
   }
 };
-
-// Función de respaldo que usa la tabla original
-async function getApplicationsFallback(url: URL, locals: any) {
-  const id = url.searchParams.get('id');
-  const user_id = url.searchParams.get('user_id');
-  const status = url.searchParams.get('status');
-  const search = url.searchParams.get('search');
-  const date = url.searchParams.get('date');
-  const page = parseInt(url.searchParams.get('page') || '1');
-  const limit = parseInt(url.searchParams.get('limit') || '10');
-  const offset = (page - 1) * limit;
-
-  // Consulta simple sin joins problemáticos
-  let query = locals.supabaseAdmin
-    .from('provider_applications')
-    .select(`
-      *,
-      categories:provider_application_categories(category_id)
-    `, { count: 'exact' });
-
-  // Aplicar filtros
-  if (user_id) query = query.eq('user_id', user_id);
-  if (status && status !== 'all') query = query.eq('status', status);
-  if (search) query = query.ilike('headline', `%${search}%`);
-
-  // Filtro de fecha
-  if (date && date !== 'all') {
-    const now = new Date();
-    let startDate: Date;
-    
-    switch (date) {
-      case 'today':
-        startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        break;
-      case 'week':
-        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        break;
-      case 'month':
-        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-        break;
-      default:
-        startDate = new Date(0);
-    }
-    
-    query = query.gte('submitted_at', startDate.toISOString());
-  }
-
-  // Aplicar paginación
-  query = query.range(offset, offset + limit - 1);
-  query = query.order('submitted_at', { ascending: false });
-
-  const { data: applications, error, count } = await query;
-  
-  if (error) {
-    throw new Error('Error al cargar las aplicaciones: ' + error.message);
-  }
-
-  // Obtener datos de usuario por separado
-  let applicationsWithUsers = applications || [];
-  
-  if (applications && applications.length > 0) {
-    try {
-      const userIds = applications.map((app: any) => app.user_id).filter(Boolean);
-      
-      if (userIds.length > 0) {
-        const { data: users, error: usersError } = await locals.supabaseAdmin
-          .from('auth.users')
-          .select('id, email, raw_user_meta_data')
-          .in('id', userIds);
-        
-        if (!usersError && users) {
-          const usersMap = new Map(users.map((u: any) => [u.id, u]));
-          applicationsWithUsers = applications.map((app: any) => {
-            const appData = app.application_data || {};
-            return {
-              ...app,
-              user: usersMap.get(app.user_id) || { 
-                id: app.user_id, 
-                email: 'Email no disponible', 
-                raw_user_meta_data: null 
-              },
-              // Extraer campos del JSONB para compatibilidad
-              experience_years: appData.experience_years || null,
-              certifications: appData.certifications || [],
-              availability: appData.availability || {},
-              // Mantener updated_at como created_at si no existe
-              updated_at: app.created_at
-            };
-          });
-        } else {
-          applicationsWithUsers = applications.map((app: any) => {
-            const appData = app.application_data || {};
-            return {
-              ...app,
-              user: { 
-                id: app.user_id, 
-                email: 'Email no disponible', 
-                raw_user_meta_data: null 
-              },
-              // Extraer campos del JSONB para compatibilidad
-              experience_years: appData.experience_years || null,
-              certifications: appData.certifications || [],
-              availability: appData.availability || {},
-              // Mantener updated_at como created_at si no existe
-              updated_at: app.created_at
-            };
-          });
-        }
-      }
-    } catch (userFetchError) {
-      console.warn('Error fetching users:', userFetchError);
-      applicationsWithUsers = applications.map((app: any) => {
-        const appData = app.application_data || {};
-        return {
-          ...app,
-          user: { 
-            id: app.user_id, 
-            email: 'Email no disponible', 
-            raw_user_meta_data: null 
-          },
-          // Extraer campos del JSONB para compatibilidad
-          experience_years: appData.experience_years || null,
-          certifications: appData.certifications || [],
-          availability: appData.availability || {},
-          // Mantener updated_at como created_at si no existe
-          updated_at: app.created_at
-        };
-      });
-    }
-  }
-
-  const totalPages = count ? Math.ceil(count / limit) : 0;
-
-  return json({ 
-    applications: applicationsWithUsers, 
-    total: count || 0,
-    page,
-    limit,
-    totalPages,
-    message: 'Applications retrieved (fallback)', 
-    statusCode: 200, 
-    timestamp: new Date().toISOString() 
-  });
-}
 
 /**
  * @swagger
@@ -572,29 +397,34 @@ export const PUT: RequestHandler = async ({ request, url, locals }) => {
     const categoriesUpdate = updateData.categories;
 
     // Obtener la aplicación actual para verificar si se está aprobando
-    const { data: currentApp, error: fetchError } = await locals.supabaseAdmin
-      .from('provider_applications')
-      .select('*')
-      .eq('id', id)
-      .single();
+    const currentAppData = await directSupabaseQuery(`provider_applications?id=eq.${id}`);
+    if (!currentAppData || currentAppData.length === 0) throw new Error('Application not found');
+    const currentApp = currentAppData[0];
 
-    if (fetchError || !currentApp) throw new Error('Application not found');
+    // Actualizar la aplicación usando fetch directo
+    const updateResponse = await fetch(`${PUBLIC_SUPABASE_URL}/rest/v1/provider_applications?id=eq.${id}`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${PRIVATE_SUPABASE_SERVICE_ROLE_KEY}`,
+        'apikey': PRIVATE_SUPABASE_SERVICE_ROLE_KEY,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=representation'
+      },
+      body: JSON.stringify(updateFields)
+    });
 
-    // Actualizar la aplicación
-    const { data, error } = await locals.supabaseAdmin
-      .from('provider_applications')
-      .update(updateFields)
-      .eq('id', id)
-      .select()
-      .single();
+    if (!updateResponse.ok) {
+      throw new Error('Application not found or update failed');
+    }
 
-    if (error || !data) throw new Error('Application not found or update failed');
+    const data = await updateResponse.json();
+    if (!data || data.length === 0) throw new Error('Application not found or update failed');
 
     // Actualizar categorías si se proporcionaron
     if (categoriesUpdate && Array.isArray(categoriesUpdate)) {
       try {
         // Eliminar categorías existentes
-        await locals.supabaseAdmin
+        await supabaseAdmin
           .from('provider_application_categories')
           .delete()
           .eq('application_id', id);
@@ -606,7 +436,7 @@ export const PUT: RequestHandler = async ({ request, url, locals }) => {
             category_id: categoryId
           }));
 
-          await locals.supabaseAdmin
+          await supabaseAdmin
             .from('provider_application_categories')
             .insert(categoryInserts);
         }
@@ -627,7 +457,7 @@ export const PUT: RequestHandler = async ({ request, url, locals }) => {
           
           try {
             // Crear usuario en Supabase Auth
-            const { data: newUser, error: createError } = await locals.supabaseAdmin.auth.admin.createUser({
+            const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
               email: currentApp.email,
               password: tempPassword,
               email_confirm: true,
@@ -652,7 +482,7 @@ export const PUT: RequestHandler = async ({ request, url, locals }) => {
               targetUserId = newUser.user.id;
               
               // Actualizar la aplicación con el nuevo user_id
-              await locals.supabaseAdmin
+              await supabaseAdmin
                 .from('provider_applications')
                 .update({ user_id: targetUserId })
                 .eq('id', currentApp.id);
@@ -660,7 +490,7 @@ export const PUT: RequestHandler = async ({ request, url, locals }) => {
               // Crear perfiles tanto de customer como de provider
               await Promise.all([
                 // Perfil de customer
-                locals.supabaseAdmin
+                supabaseAdmin
                   .from('customers')
                   .insert({
                     user_id: targetUserId,
@@ -683,12 +513,13 @@ export const PUT: RequestHandler = async ({ request, url, locals }) => {
         // Crear perfil del proveedor (para usuarios existentes o recién creados)
         if (targetUserId) {
           // Crear perfil del proveedor
-          const { data: profileData, error: profileError } = await locals.supabaseAdmin
+          const { data: profileData, error: profileError } = await supabaseAdmin
             .from('provider_profiles')
             .insert({
-              user_id: currentApp.user_id,
+              user_id: targetUserId,
               business_name: currentApp.headline, // Usar headline como business_name
-              description: currentApp.bio,
+              headline: currentApp.headline,
+              bio: currentApp.bio,
               hourly_rate: currentApp.hourly_rate,
               location: currentApp.location,
               phone: currentApp.phone,
@@ -703,7 +534,7 @@ export const PUT: RequestHandler = async ({ request, url, locals }) => {
             // No fallar la actualización si no se puede crear el perfil
           } else if (profileData) {
             // Asignar categorías al proveedor usando provider_profile_id
-            const { data: categoryData, error: categoryError } = await locals.supabaseAdmin
+            const { data: categoryData, error: categoryError } = await supabaseAdmin
               .from('provider_application_categories')
               .select('category_id')
               .eq('application_id', currentApp.id);
@@ -714,7 +545,7 @@ export const PUT: RequestHandler = async ({ request, url, locals }) => {
                 category_id: item.category_id
               }));
 
-              const { error: assignError } = await locals.supabaseAdmin
+              const { error: assignError } = await supabaseAdmin
                 .from('provider_categories')
                 .insert(categoryAssignments);
 
@@ -725,8 +556,8 @@ export const PUT: RequestHandler = async ({ request, url, locals }) => {
 
             // Actualizar el rol del usuario a 'provider' (solo si hay user_id)
             try {
-              const { error: userError } = await locals.supabase.auth.admin.updateUserById(
-                currentApp.user_id,
+              const { error: userError } = await supabaseAdmin.auth.admin.updateUserById(
+                targetUserId,
                 { user_metadata: { role: 'provider' } }
               );
 

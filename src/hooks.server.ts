@@ -36,19 +36,12 @@ export const handle: Handle = async ({ event, resolve }) => {
 
 	/**
 	 * Creates a Supabase admin client for administrative operations.
+	 * Uses the service role key to bypass RLS policies.
 	 */
-	event.locals.supabaseAdmin = createServerClient(supabaseUrl, PRIVATE_SUPABASE_SERVICE_ROLE_KEY, {
-		db: {
-			schema: 'public'
-		},
-		cookies: {
-			get: (key) => event.cookies.get(key),
-			set: (key, value, options) => {
-				event.cookies.set(key, value, { ...options, path: '/' })
-			},
-			remove: (key, options) => {
-				event.cookies.delete(key, { ...options, path: '/' })
-			},
+	event.locals.supabaseAdmin = createClient(supabaseUrl, PRIVATE_SUPABASE_SERVICE_ROLE_KEY, {
+		auth: {
+			autoRefreshToken: false,
+			persistSession: false
 		}
 	})
 

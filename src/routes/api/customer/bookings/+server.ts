@@ -121,6 +121,7 @@ export const GET: RequestHandler = async (event) => {
  */
 export const POST: RequestHandler = async (event) => {
     try {
+        
         // Require customer permissions
         const user = await requirePermissions(event, ['create_bookings']);
         

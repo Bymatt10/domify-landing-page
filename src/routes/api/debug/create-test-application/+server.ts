@@ -1,5 +1,7 @@
 import { json } from '@sveltejs/kit';
-import type { RequestHandler } from '@sveltejs/kit';
+import type { RequestHandler } from './$types';
+import { PUBLIC_SUPABASE_URL } from '$env/static/public';
+import { PRIVATE_SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
 
 /**
  * @swagger
@@ -14,62 +16,103 @@ import type { RequestHandler } from '@sveltejs/kit';
  *       500:
  *         description: Error creating test application
  */
-export const POST: RequestHandler = async ({ locals }) => {
-  try {
-    // Create a test application with user_id
-    const { data, error } = await locals.supabaseAdmin
-      .from('provider_applications')
-      .insert({
-        user_id: 'dcb0aeba-9640-4683-8487-da9f6be21e3f', // Admin user ID
-        headline: 'Test Provider Application',
-        bio: 'Testing approval process with user_id',
-        hourly_rate: 25.00,
-        location: 'Managua',
-        phone: '12345678',
-        email: 'testwithuser@example.com',
-        application_data: {
-        experience_years: 3,
-        certifications: ['Test Certification'],
-          availability: { monday: true, tuesday: true }
-        },
-        status: 'submitted'
-      })
-      .select()
-      .single();
 
-    if (error) {
-      return json({
-        error: {
-          message: 'Error creating test application',
-          details: error.message
-        }
-      }, { status: 500 });
-    }
+// Función helper para hacer queries directas con fetch
+async function directSupabaseQuery(endpoint: string, method = 'GET', body?: any) {
+	const url = `${PUBLIC_SUPABASE_URL}/rest/v1/${endpoint}`;
+	const options: RequestInit = {
+		method,
+		headers: {
+			'Authorization': `Bearer ${PRIVATE_SUPABASE_SERVICE_ROLE_KEY}`,
+			'apikey': PRIVATE_SUPABASE_SERVICE_ROLE_KEY,
+			'Content-Type': 'application/json',
+			'Prefer': 'return=representation'
+		}
+	};
 
-    // Create category link for the application
-    const { error: categoryError } = await locals.supabaseAdmin
-      .from('provider_application_categories')
-      .insert({
-        application_id: data.id,
-        category_id: 1
-      });
+	if (body && method !== 'GET') {
+		options.body = JSON.stringify(body);
+	}
 
-    if (categoryError) {
-      console.error('Error creating category link:', categoryError);
-    }
+	const response = await fetch(url, options);
+	
+	if (!response.ok) {
+		const errorText = await response.text();
+		throw new Error(`Supabase query failed: ${response.status} ${errorText}`);
+	}
 
-    return json({
-      success: true,
-      application: data,
-      message: 'Test application created successfully'
-    });
+	return response.json();
+}
 
-  } catch (error) {
-    return json({
-      error: {
-        message: 'Failed to create test application',
-        details: error instanceof Error ? error.message : String(error)
-      }
-    }, { status: 500 });
-  }
+export const POST: RequestHandler = async () => {
+	try {
+		console.log('🧪 Creating test application directly in database...');
+
+		const testApplication = {
+			email: 'matthewreyesvanegas@icloud.com',
+			headline: 'Test Provider - SendGrid Email',
+			bio: 'Esta es una aplicación de prueba para verificar el envío de emails con SendGrid usando la dirección verificada.',
+			hourly_rate: 30,
+			location: 'Managua, Nicaragua',
+			phone: '+505 8888-0000',
+			status: 'submitted',
+			application_data: {
+				experience_years: 3,
+				certifications: ['Certificación de Limpieza Profesional'],
+				insurance: true,
+				tools_own: true,
+				availability: 'Lunes a Viernes, 8:00 AM - 5:00 PM'
+			},
+			submitted_at: new Date().toISOString(),
+			created_at: new Date().toISOString()
+		};
+
+		// Create the application directly in database
+		const createdApp = await directSupabaseQuery('provider_applications', 'POST', testApplication);
+		console.log('✅ Application created:', createdApp);
+
+		// Get categories for assignment
+		const categories = await directSupabaseQuery('categories?limit=3');
+		console.log('Available categories:', categories);
+
+		// Assign categories to the application
+		if (categories && categories.length > 0 && createdApp.length > 0) {
+			const appId = createdApp[0].id;
+			
+			// Create category assignments for cleaning and maintenance
+			const categoryAssignments = categories
+				.filter((cat: any) => ['cleaning', 'maintenance'].includes(cat.slug))
+				.map((category: any) => ({
+					application_id: appId,
+					category_id: category.id
+				}));
+
+			if (categoryAssignments.length > 0) {
+				await directSupabaseQuery('provider_application_categories', 'POST', categoryAssignments);
+				console.log('✅ Categories assigned successfully');
+			}
+		}
+
+		return json({
+			success: true,
+			message: 'Test application created successfully!',
+			application: createdApp[0],
+			testData: testApplication,
+			next_steps: [
+				'1. Go to http://localhost:5173/admin/provider-applications',
+				'2. Find the application for "Test Provider - SendGrid Email"',
+				'3. Click "Aprobar" to approve it',
+				'4. Check the email matthewreyesvanegas@icloud.com for credentials',
+				'5. Verify it appears in customers and providers pages'
+			]
+		});
+
+	} catch (error) {
+		console.error('Error creating test application:', error);
+		return json({
+			success: false,
+			error: error instanceof Error ? error.message : 'Unknown error',
+			details: error
+		}, { status: 500 });
+	}
 }; 

@@ -3,6 +3,7 @@
 	import { invalidateAll } from '$app/navigation';
 	import { supabase } from '$lib/supabase';
 	import Navbar from '$lib/components/Navbar.svelte';
+	import { theme, applyTheme } from '$lib/stores/theme';
 
 	export let data: any;
 
@@ -10,13 +11,22 @@
 	$: ({ session, user } = data);
 
 	onMount(() => {
+		// Aplicar el tema inicial
+		applyTheme($theme);
+
+		// Suscribirse a cambios de tema
+		const unsubscribeTheme = theme.subscribe(applyTheme);
+
 		const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
 			if (newSession?.expires_at !== session?.expires_at) {
 				invalidateAll();
 			}
 		});
 
-		return () => subscription.unsubscribe();
+		return () => {
+			subscription.unsubscribe();
+			unsubscribeTheme();
+		};
 	});
 </script>
 
@@ -109,7 +119,7 @@
 	.footer-section h4 {
 		font-size: var(--font-size-lg);
 		margin: 0;
-		color: var(--color-primary-light);
+		color: white;
 	}
 
 	.footer-section p {

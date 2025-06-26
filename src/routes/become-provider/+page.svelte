@@ -216,8 +216,18 @@
 </script>
 
 <svelte:head>
-	<title>Ser Domifito - Domify</title>
-	<meta name="description" content="Únete a nuestra comunidad de proveedores de servicios en Domify" />
+	<title>Conviértete en Proveedor - Domify</title>
+	<meta name="description" content="Regístrate como proveedor en Domify y ofrece tus servicios profesionales a miles de clientes. Únete al marketplace líder de servicios locales." />
+	<meta name="keywords" content="proveedor, registro, servicios, marketplace, Domify, profesional, ganar dinero, trabajo" />
+	<meta property="og:title" content="Conviértete en Proveedor - Domify" />
+	<meta property="og:description" content="Regístrate como proveedor en Domify y ofrece tus servicios profesionales a miles de clientes." />
+	<meta property="og:image" content="https://domify.app/img/og-image.png" />
+	<meta property="og:url" content="https://domify.app/become-provider" />
+	<meta property="og:type" content="website" />
+	<meta name="twitter:card" content="summary_large_image" />
+	<meta name="twitter:title" content="Conviértete en Proveedor - Domify" />
+	<meta name="twitter:description" content="Regístrate como proveedor en Domify y ofrece tus servicios profesionales a miles de clientes." />
+	<meta name="twitter:image" content="https://domify.app/img/og-image.png" />
 </svelte:head>
 
 <div class="container">

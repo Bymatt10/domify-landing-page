@@ -1,5 +1,53 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
+import { PUBLIC_SUPABASE_URL } from '$env/static/public';
+import { PRIVATE_SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
+
+// Función helper para hacer queries directas con fetch
+async function directSupabaseQuery(endpoint: string, options: any = {}) {
+  const url = `${PUBLIC_SUPABASE_URL}/rest/v1/${endpoint}`;
+  const response = await fetch(url, {
+    headers: {
+      'Authorization': `Bearer ${PRIVATE_SUPABASE_SERVICE_ROLE_KEY}`,
+      'apikey': PRIVATE_SUPABASE_SERVICE_ROLE_KEY,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation',
+      ...options.headers
+    },
+    ...options
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('Supabase query failed:', response.status, response.statusText, errorText);
+    throw new Error(`Supabase query failed: ${response.status} ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+// Función helper para obtener usuarios de auth con emails
+async function getAuthUsers(userIds: string[]) {
+  const url = `${PUBLIC_SUPABASE_URL}/auth/v1/admin/users`;
+  const response = await fetch(url, {
+    headers: {
+      'Authorization': `Bearer ${PRIVATE_SUPABASE_SERVICE_ROLE_KEY}`,
+      'apikey': PRIVATE_SUPABASE_SERVICE_ROLE_KEY,
+      'Content-Type': 'application/json'
+    }
+  });
+
+  if (!response.ok) {
+    console.error('Failed to fetch auth users');
+    return [];
+  }
+
+  const data = await response.json();
+  const users = data.users || [];
+  
+  // Filtrar solo los usuarios que necesitamos
+  return users.filter((user: any) => userIds.includes(user.id));
+}
 
 export const GET: RequestHandler = async ({ url, locals }) => {
     try {
@@ -13,43 +61,49 @@ export const GET: RequestHandler = async ({ url, locals }) => {
         const search = url.searchParams.get('search') || '';
         const offset = (page - 1) * limit;
 
-        // Intentar usar la vista completa primero
-        let query = locals.supabaseAdmin
-            .from('admin_customers_complete')
-            .select('*', { count: 'exact' });
+        console.log('Fetching customers...');
 
+        // Usar query directa simple
+        let queryParams = [`limit=${limit}`, `offset=${offset}`, `order=created_at.desc`];
+        
         if (search) {
-            query = query.or(`first_name.ilike.%${search}%,last_name.ilike.%${search}%,phone_number.ilike.%${search}%,user_email.ilike.%${search}%`);
+            queryParams.push(`or=(first_name.ilike.%${search}%,last_name.ilike.%${search}%,phone_number.ilike.%${search}%)`);
         }
 
-        query = query.order('created_at', { ascending: false }).range(offset, offset + limit - 1);
+        const queryString = queryParams.join('&');
+        const customers = await directSupabaseQuery(`customers?${queryString}`);
 
-        const { data: customers, error, count } = await query;
+        console.log('Customers fetched successfully:', customers.length);
 
-        if (error) {
-            console.error('Error fetching customers from view:', error);
-            
-            // Si la vista no existe, usar fallback
-            console.log('Trying fallback to customers table...');
-            return await getCustomersFallback(url, locals);
-        }
+        // Obtener los emails reales de auth.users
+        const userIds = customers.map((customer: any) => customer.user_id);
+        const authUsers = await getAuthUsers(userIds);
 
-        // Formatear los datos para mantener compatibilidad con el frontend
-        const formattedCustomers = (customers || []).map(customer => ({
+        // Crear un mapa de user_id -> email
+        const emailMap = new Map();
+        authUsers.forEach((authUser: any) => {
+            emailMap.set(authUser.id, authUser.email);
+        });
+
+        // Formatear los datos con emails reales
+        const formattedCustomers = (customers || []).map((customer: any) => ({
             ...customer,
             user: {
                 id: customer.user_id,
-                email: customer.user_email || 'Email no disponible',
-                raw_user_meta_data: customer.raw_user_meta_data
+                email: emailMap.get(customer.user_id) || 'Email no disponible',
+                raw_user_meta_data: {}
             }
         }));
 
+        const total = customers.length;
+        const totalPages = Math.ceil(total / limit);
+
         return json({
             customers: formattedCustomers,
-            total: count || 0,
+            total,
             page,
             limit,
-            totalPages: count ? Math.ceil(count / limit) : 0,
+            totalPages,
         });
 
     } catch (e) {
@@ -57,96 +111,4 @@ export const GET: RequestHandler = async ({ url, locals }) => {
         console.error('Error fetching customers:', error);
         return json({ error: error.message }, { status: 500 });
     }
-};
-
-// Función de respaldo que usa la tabla original
-async function getCustomersFallback(url: URL, locals: any) {
-    const page = parseInt(url.searchParams.get('page') || '1');
-    const limit = parseInt(url.searchParams.get('limit') || '10');
-    const search = url.searchParams.get('search') || '';
-    const offset = (page - 1) * limit;
-
-    // Consulta simple sin join problemático
-    let query = locals.supabaseAdmin
-        .from('customers')
-        .select(`
-            id,
-            user_id,
-            first_name,
-            last_name,
-            phone_number,
-            address,
-            profile_image_url,
-            role,
-            created_at,
-            updated_at
-        `, { count: 'exact' });
-
-    if (search) {
-        query = query.or(`first_name.ilike.%${search}%,last_name.ilike.%${search}%,phone_number.ilike.%${search}%`);
-    }
-
-    query = query.order('created_at', { ascending: false }).range(offset, offset + limit - 1);
-
-    const { data: customers, error, count } = await query;
-
-    if (error) {
-        throw new Error('Error al cargar los clientes: ' + error.message);
-    }
-
-    // Obtener datos de usuario por separado
-    let customersWithUsers = customers || [];
-    
-    if (customers && customers.length > 0) {
-        try {
-            const userIds = customers.map((customer: any) => customer.user_id).filter(Boolean);
-            
-            if (userIds.length > 0) {
-                const { data: users, error: usersError } = await locals.supabaseAdmin
-                    .from('auth.users')
-                    .select('id, email, raw_user_meta_data')
-                    .in('id', userIds);
-                
-                if (!usersError && users) {
-                    const usersMap = new Map(users.map((u: any) => [u.id, u]));
-                    customersWithUsers = customers.map((customer: any) => ({
-                        ...customer,
-                        user: usersMap.get(customer.user_id) || { 
-                            id: customer.user_id, 
-                            email: 'Email no disponible', 
-                            raw_user_meta_data: null 
-                        }
-                    }));
-                } else {
-                    customersWithUsers = customers.map((customer: any) => ({
-                        ...customer,
-                        user: { 
-                            id: customer.user_id, 
-                            email: 'Email no disponible', 
-                            raw_user_meta_data: null 
-                        }
-                    }));
-                }
-            }
-        } catch (userFetchError) {
-            console.warn('Error fetching users:', userFetchError);
-            // Continuar sin datos de usuario
-            customersWithUsers = customers.map((customer: any) => ({
-                ...customer,
-                user: { 
-                    id: customer.user_id, 
-                    email: 'Email no disponible', 
-                    raw_user_meta_data: null 
-                }
-            }));
-        }
-    }
-
-    return json({
-        customers: customersWithUsers,
-        total: count || 0,
-        page,
-        limit,
-        totalPages: count ? Math.ceil(count / limit) : 0,
-    });
-} 
+}; 

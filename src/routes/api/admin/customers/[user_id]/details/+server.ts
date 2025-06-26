@@ -1,6 +1,30 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { createSupabaseAdminClient } from '$lib/supabase-server';
+import { PUBLIC_SUPABASE_URL } from '$env/static/public';
+import { PRIVATE_SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
+
+// Función helper para hacer queries directas con fetch
+async function directSupabaseQuery(endpoint: string, options: any = {}) {
+	const url = `${PUBLIC_SUPABASE_URL}/rest/v1/${endpoint}`;
+	const response = await fetch(url, {
+		headers: {
+			'Authorization': `Bearer ${PRIVATE_SUPABASE_SERVICE_ROLE_KEY}`,
+			'apikey': PRIVATE_SUPABASE_SERVICE_ROLE_KEY,
+			'Content-Type': 'application/json',
+			'Prefer': 'return=representation',
+			...options.headers
+		},
+		...options
+	});
+
+	if (!response.ok) {
+		const errorText = await response.text();
+		console.error('Supabase query failed:', response.status, response.statusText, errorText);
+		throw new Error(`Supabase query failed: ${response.status} ${response.statusText}`);
+	}
+
+	return response.json();
+}
 
 export const GET: RequestHandler = async ({ params, locals, fetch }) => {
 	try {
@@ -15,42 +39,30 @@ export const GET: RequestHandler = async ({ params, locals, fetch }) => {
 			return json({ error: 'ID de usuario requerido' }, { status: 400 });
 		}
 
-		// Crear cliente de Supabase
-		const supabase = createSupabaseAdminClient(fetch);
+		console.log('Fetching customer details for user_id:', user_id);
 
-		// Obtener detalles del cliente usando la vista completa
-		const { data: customerData, error: customerError } = await supabase
-			.from('admin_customers_complete')
-			.select('*')
-			.eq('user_id', user_id)
-			.single();
+		// Obtener detalles del cliente usando query directa
+		const customerData = await directSupabaseQuery(`customers?user_id=eq.${user_id}`);
 
-		if (customerError) {
-			console.error('Error fetching customer details:', customerError);
-			return json({ error: 'Error al obtener detalles del cliente' }, { status: 500 });
-		}
-
-		if (!customerData) {
+		if (!customerData || customerData.length === 0) {
 			return json({ error: 'Cliente no encontrado' }, { status: 404 });
 		}
 
-		// Obtener estadísticas adicionales de reservas
-		const { data: bookingsData, error: bookingsError } = await supabase
-			.from('bookings')
-			.select('id, status, total_amount, created_at')
-			.eq('customer_id', user_id);
+		const customer = customerData[0];
 
-		if (bookingsError) {
+		// Obtener estadísticas adicionales de reservas
+		let bookingsData = [];
+		try {
+			bookingsData = await directSupabaseQuery(`bookings?client_user_id=eq.${user_id}&select=id,status,total_price,created_at`);
+		} catch (bookingsError) {
 			console.error('Error fetching bookings:', bookingsError);
 		}
 
 		// Obtener reseñas del cliente
-		const { data: reviewsData, error: reviewsError } = await supabase
-			.from('reviews')
-			.select('id, rating, created_at')
-			.eq('customer_id', user_id);
-
-		if (reviewsError) {
+		let reviewsData = [];
+		try {
+			reviewsData = await directSupabaseQuery(`reviews?reviewer_user_id=eq.${user_id}&select=id,rating,created_at`);
+		} catch (reviewsError) {
 			console.error('Error fetching reviews:', reviewsError);
 		}
 
@@ -60,7 +72,7 @@ export const GET: RequestHandler = async ({ params, locals, fetch }) => {
 		const totalReviews = reviewsData?.length || 0;
 		const totalSpent = bookingsData
 			?.filter((b: any) => b.status === 'completed')
-			.reduce((sum: number, b: any) => sum + (b.total_amount || 0), 0) || 0;
+			.reduce((sum: number, b: any) => sum + (b.total_price || 0), 0) || 0;
 		
 		const avgRating = reviewsData && reviewsData.length > 0
 			? (reviewsData.reduce((sum: number, r: any) => sum + (r.rating || 0), 0) / reviewsData.length).toFixed(1)
@@ -69,19 +81,19 @@ export const GET: RequestHandler = async ({ params, locals, fetch }) => {
 		// Preparar respuesta con detalles completos
 		const customerDetails = {
 			// Información básica del cliente
-			user_id: customerData.user_id,
-			first_name: customerData.first_name,
-			last_name: customerData.last_name,
-			phone_number: customerData.phone_number,
-			email: customerData.user_email,
-			created_at: customerData.created_at,
-			updated_at: customerData.updated_at,
+			user_id: customer.user_id,
+			first_name: customer.first_name,
+			last_name: customer.last_name,
+			phone_number: customer.phone_number,
+			email: customer.email || 'Email no disponible',
+			created_at: customer.created_at,
+			updated_at: customer.updated_at,
 			
 			// Estadísticas
 			total_bookings: totalBookings,
 			completed_bookings: completedBookings,
-			pending_bookings: bookingsData?.filter((b: any) => b.status === 'pending').length || 0,
-			cancelled_bookings: bookingsData?.filter((b: any) => b.status === 'cancelled').length || 0,
+			pending_bookings: bookingsData?.filter((b: any) => b.status === 'pending_confirmation').length || 0,
+			cancelled_bookings: bookingsData?.filter((b: any) => b.status === 'cancelled_by_client' || b.status === 'cancelled_by_provider').length || 0,
 			total_reviews: totalReviews,
 			avg_rating: avgRating,
 			total_spent: totalSpent,

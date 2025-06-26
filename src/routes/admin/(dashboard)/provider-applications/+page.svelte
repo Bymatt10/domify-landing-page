@@ -5,6 +5,7 @@
   interface ProviderApplication {
     id: number;
     user_id: string;
+    email?: string;
     status: 'submitted' | 'in_review' | 'approved' | 'rejected';
     headline: string;
     bio: string;
@@ -544,7 +545,7 @@
               <p class="application-meta">
                 <span class="user-info">
                   {application.user?.raw_user_meta_data?.first_name} {application.user?.raw_user_meta_data?.last_name} 
-                  ({application.user?.email})
+                  ({application.email || application.user?.email || 'Email no disponible'})
                 </span>
                 <span class="date">{formatDate(application.created_at)}</span>
               </p>
