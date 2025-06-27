@@ -3,6 +3,7 @@
 	import { invalidateAll } from '$app/navigation';
 	import { supabase } from '$lib/supabase';
 	import Navbar from '$lib/components/Navbar.svelte';
+	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import { theme, applyTheme } from '$lib/stores/theme';
 
 	export let data: any;
@@ -81,6 +82,7 @@
 		display: flex;
 		flex-direction: column;
 		min-height: 100vh;
+		background: var(--color-background);
 	}
 
 	main {
@@ -89,10 +91,21 @@
 		background-color: var(--color-background);
 	}
 
+	:global(.dark) main {
+		background: #101922;
+	}
+
 	footer {
 		background-color: var(--color-primary);
 		color: var(--color-text-white);
 		padding: var(--spacing-2xl) 0 var(--spacing-lg);
+		border-top: 1px solid var(--color-border-light, rgba(255, 255, 255, 0.1));
+	}
+
+	:global(.dark) footer {
+		background-color: #1e293b;
+		color: var(--color-text-white);
+		border-top: 1px solid var(--color-border);
 	}
 
 	.footer-content {
@@ -114,18 +127,20 @@
 		font-size: var(--font-size-2xl);
 		margin: 0;
 		color: var(--color-text-white);
+		font-weight: 700;
 	}
 
 	.footer-section h4 {
 		font-size: var(--font-size-lg);
 		margin: 0;
-		color: white;
+		color: var(--color-text-white);
+		font-weight: 600;
 	}
 
 	.footer-section p {
 		margin: 0;
 		color: var(--color-text-white);
-		opacity: 0.8;
+		opacity: 0.9;
 		line-height: 1.6;
 	}
 
@@ -133,11 +148,14 @@
 		color: var(--color-text-white);
 		text-decoration: none;
 		opacity: 0.8;
-		transition: opacity 0.2s;
+		transition: all var(--transition-fast);
+		font-weight: 500;
 	}
 
 	.footer-section a:hover {
 		opacity: 1;
+		color: var(--color-highlight);
+		transform: translateX(2px);
 	}
 
 	.social-links {
@@ -145,18 +163,65 @@
 		gap: var(--spacing-lg);
 	}
 
+	.social-links a {
+		padding: var(--spacing-sm);
+		border-radius: var(--border-radius-md);
+		transition: all var(--transition-fast);
+	}
+
+	.social-links a:hover {
+		background-color: rgba(255, 255, 255, 0.1);
+		transform: translateY(-2px);
+	}
+
 	.footer-bottom {
 		max-width: 1200px;
 		margin: var(--spacing-2xl) auto 0;
 		padding: var(--spacing-lg) var(--spacing-lg) 0;
-		border-top: 1px solid rgba(255, 255, 255, 0.1);
+		border-top: 1px solid var(--color-border-light, rgba(255, 255, 255, 0.1));
 		text-align: center;
+	}
+
+	:global(.dark) .footer-bottom {
+		border-top: 1px solid var(--color-border);
+		color: var(--color-text-white);
 	}
 
 	.footer-bottom p {
 		margin: 0;
-		opacity: 0.6;
+		opacity: 0.7;
 		font-size: var(--font-size-sm);
+		color: var(--color-text-white);
+	}
+
+	:global(.dark) .footer-section h3,
+	:global(.dark) .footer-section h4 {
+		color: var(--color-text-white);
+	}
+
+	:global(.dark) .footer-section a {
+		color: var(--color-text-white);
+		opacity: 0.85;
+	}
+
+	:global(.dark) .footer-section a:hover {
+		color: var(--color-highlight);
+		opacity: 1;
+	}
+
+	:global(.dark) .footer-section p {
+		color: var(--color-text-white);
+		opacity: 0.8;
+	}
+
+	:global(.dark) .social-links a {
+		color: var(--color-text-white);
+		background: rgba(255,255,255,0.05);
+	}
+
+	:global(.dark) .social-links a:hover {
+		background: var(--color-primary);
+		color: var(--color-text-white);
 	}
 
 	@media (max-width: 768px) {

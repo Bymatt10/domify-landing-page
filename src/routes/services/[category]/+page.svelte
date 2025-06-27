@@ -98,6 +98,9 @@ let specificTime = '';
 let priceRange = [10, 3000];
 let selectedProviderType: 'all' | 'individual' | 'company' = 'all';
 
+// Estado para el modal de filtros en mobile
+let showFiltersModal = false;
+
 const timeOptions = [
 	"I'm Flexible",
 	'8:00am', '8:30am', '9:00am', '9:30am', '10:00am', '10:30am', '11:00am', '11:30am',
@@ -112,7 +115,8 @@ const categoryMapping: { [key: string]: string } = {
 	'cleaning': 'Limpieza',
 	'gardening': 'Jardinería',
 	'moving': 'Mudanzas',
-	'assembly': 'Ensamblaje'
+	'assembly': 'Ensamblaje',
+	'ensamblaje': 'Ensamblaje'
 };
 
 // Mapeo inverso para obtener el ID de la categoría
@@ -121,7 +125,8 @@ const categoryIdMapping: { [key: string]: number } = {
 	'cleaning': 4, // Limpieza
 	'gardening': 5, // Jardinería
 	'moving': 3, // Mudanzas
-	'assembly': 1  // Ensamblaje
+	'assembly': 1,  // Ensamblaje
+	'ensamblaje': 1 // Soporta slug en español
 };
 
 // Obtener la categoría de la URL
@@ -198,6 +203,8 @@ function applyFilters() {
 	// Solo aplicar filtros si ya estamos en el cliente
 	if (typeof window !== 'undefined') {
 		fetchProviders();
+		// Cerrar modal en mobile
+		showFiltersModal = false;
 	}
 }
 
@@ -216,11 +223,132 @@ $: if (typeof window !== 'undefined' && selectedProviderType) {
 }
 </script>
 
+<div class="page-wrapper">
 <div class="providers-layout">
-	<aside class="filter-sidebar">
+	<!-- Botón de filtros para mobile -->
+	<button class="mobile-filters-btn" on:click={() => showFiltersModal = true}>
+		<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+			<path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z"/>
+		</svg>
+		Filtros
+	</button>
+
+	<!-- Sidebar para desktop -->
+	<aside class="desktop-sidebar">
 		<div class="filter-box">
-			<div class="filter-content">
+			<h2>Filtrar</h2>
+			<div class="filter-section">
+				<fieldset>
+					<legend class="filter-label">Fecha</legend>
+					<div class="filter-date-btns">
+						<button class:selected={selectedDate === 'today'} on:click={() => selectedDate = 'today'}>Hoy</button>
+						<button class:selected={selectedDate === '3days'} on:click={() => selectedDate = '3days'}>3 días</button>
+						<button class:selected={selectedDate === 'week'} on:click={() => selectedDate = 'week'}>Esta semana</button>
+						<button class:selected={selectedDate === 'custom'} on:click={() => selectedDate = 'custom'}>Elegir fecha</button>
+					</div>
+				</fieldset>
+			</div>
+			<div class="filter-section">
+				<fieldset>
+					<legend class="filter-label">Tipo de proveedor</legend>
+					<div class="filter-provider-type">
+						<label for="all-providers-desktop">
+							<input type="radio" id="all-providers-desktop" bind:group={selectedProviderType} value="all" />
+							Todos
+						</label>
+						<label for="individual-providers-desktop">
+							<input type="radio" id="individual-providers-desktop" bind:group={selectedProviderType} value="individual" />
+							Individuos
+						</label>
+						<label for="company-providers-desktop">
+							<input type="radio" id="company-providers-desktop" bind:group={selectedProviderType} value="company" />
+							Empresas
+						</label>
+					</div>
+				</fieldset>
+			</div>
+			<div class="filter-section">
+				<fieldset>
+					<legend class="filter-label">Hora del día</legend>
+					<div class="filter-checkboxes compact-checkboxes">
+						<label for="morning-checkbox-desktop">
+							<input type="checkbox" id="morning-checkbox-desktop" bind:checked={timeOfDay.morning} />
+							Mañana (7am - 12pm)
+						</label>
+						<label for="afternoon-checkbox-desktop">
+							<input type="checkbox" id="afternoon-checkbox-desktop" bind:checked={timeOfDay.afternoon} />
+							Tarde (12pm - 5pm)
+						</label>
+						<label for="evening-checkbox-desktop">
+							<input type="checkbox" id="evening-checkbox-desktop" bind:checked={timeOfDay.evening} />
+							Noche (5pm - 9pm)
+						</label>
+					</div>
+					<select class="time-select compact-select" bind:value={specificTime} id="time-select-desktop">
+						<option value="" disabled selected>Elegir hora específica</option>
+						{#each Array.from({ length: 14 }, (_, i) => i + 7) as hour}
+							<option value={hour}>
+								{hour}:00 {hour < 12 ? 'AM' : 'PM'}
+							</option>
+						{/each}
+					</select>
+				</fieldset>
+			</div>
+			<div class="filter-section">
+				<fieldset>
+					<legend class="filter-label">Precio por hora</legend>
+					<div class="filter-price-range">
+						<div class="price-inputs">
+							<div class="price-input-group">
+								<label class="price-input-label" for="price-from-desktop">Desde</label>
+								<input 
+									id="price-from-desktop"
+									type="number" 
+									bind:value={priceRange[0]} 
+									min="10" 
+									max="3000" 
+									class="price-input"
+								/>
+							</div>
+							<span class="price-separator">-</span>
+							<div class="price-input-group">
+								<label class="price-input-label" for="price-to-desktop">Hasta</label>
+								<input 
+									id="price-to-desktop"
+									type="number" 
+									bind:value={priceRange[1]} 
+									min="10" 
+									max="3000" 
+									class="price-input"
+								/>
+							</div>
+						</div>
+						<div class="price-separator">
+							El precio promedio es <b>C$300/hr</b>
+						</div>
+					</div>
+				</fieldset>
+			</div>
+		</div>
+	</aside>
+
+	<!-- Overlay para mobile -->
+	{#if showFiltersModal}
+		<div class="modal-overlay" on:click={() => showFiltersModal = false}></div>
+	{/if}
+
+	<!-- Modal para mobile -->
+	<aside class="mobile-sidebar" class:show-mobile={showFiltersModal}>
+		<div class="filter-box">
+			<div class="filter-header">
 				<h2>Filtrar</h2>
+				<button class="close-filters-btn" on:click={() => showFiltersModal = false}>
+					<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+						<path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+					</svg>
+				</button>
+			</div>
+			<div class="filter-content">
 				<div class="filter-section">
 					<fieldset>
 						<legend class="filter-label">Fecha</legend>
@@ -356,24 +484,45 @@ $: if (typeof window !== 'undefined' && selectedProviderType) {
 								<div class="provider-name-section">
 									<h2>{p.business_name}</h2>
 									<span class="provider-type-badge">
-										{p.provider_type === 'individual' ? '👤 Individual' : '🏢 Empresa'}
+										{#if p.provider_type === 'individual'}
+											<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" class="provider-icon">
+												<path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+											</svg>
+											Individual
+										{:else}
+											<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" class="provider-icon">
+												<path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z"/>
+											</svg>
+											Empresa
+										{/if}
 									</span>
 								</div>
 								<div class="provider-price">C${p.hourly_rate}/hr</div>
 							</div>
 							<div class="provider-rating">
-								⭐ {p.rating.toFixed(1)} ({p.total_reviews} reseñas)
+								<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" class="rating-icon">
+									<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+								</svg>
+								{p.rating.toFixed(1)} ({p.total_reviews} reseñas)
 							</div>
 							<p class="provider-description">{p.description}</p>
 							{#if p.location}
 								<div class="provider-location">
-									📍 {p.location}
+									<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" class="location-icon">
+										<path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+									</svg>
+									{p.location}
 								</div>
 							{/if}
 							<div class="provider-footer">
 								<button class="contact-btn">Contactar</button>
 								{#if p.phone}
-									<button class="phone-btn">📞 {p.phone}</button>
+									<button class="phone-btn">
+										<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" class="phone-icon">
+											<path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
+										</svg>
+										{p.phone}
+									</button>
 								{/if}
 							</div>
 						</div>
@@ -420,8 +569,14 @@ $: if (typeof window !== 'undefined' && selectedProviderType) {
 		{/if}
 	</main>
 </div>
+</div>
 
 <style>
+.page-wrapper {
+	min-height: 100vh;
+	background-color: #f9f9f9;
+}
+
 .providers-layout {
 	display: flex;
 	gap: 2.5rem;
@@ -441,7 +596,7 @@ $: if (typeof window !== 'undefined' && selectedProviderType) {
 	border-radius: 16px;
 	box-shadow: 0 4px 16px rgba(12, 59, 46, 0.1);
 	padding: 2rem;
-	display: flex;
+	display: flex; /* Visible por defecto para desktop */
 	flex-direction: column;
 	gap: 2rem;
 	margin-top: 7.2rem;
@@ -554,6 +709,12 @@ $: if (typeof window !== 'undefined' && selectedProviderType) {
 	font-weight: 500;
 	margin: 0 0 2rem 0;
 	font-size: 1rem;
+}
+
+.providers-list {
+	display: flex;
+	flex-direction: column;
+	gap: 1.5rem;
 }
 
 .provider-card {
@@ -714,31 +875,251 @@ $: if (typeof window !== 'undefined' && selectedProviderType) {
 	padding: 0 0.3rem;
 }
 
-@media (max-width: 900px) {
+/* MÓVIL - mostrar botón, ocultar sidebar desktop */
+@media (max-width: 1024px) {
 	.providers-layout {
 		flex-direction: column;
-		align-items: center;
+		align-items: stretch;
 		gap: 1.5rem;
-		padding: 0 1rem;
+		padding: 1rem;
+		width: 100%;
 	}
 
+	/* Ocultar sidebar desktop */
+	.desktop-sidebar {
+		display: none !important;
+	}
+	
+	.desktop-sidebar .filter-box {
+		display: none !important;
+	}
+
+	/* Mostrar botón filtros mobile */
+	.mobile-filters-btn {
+		display: flex !important;
+		position: relative;
+		z-index: 10;
+		margin: 1rem 0;
+		background: #0C3B2E !important;
+		color: white !important;
+		border: none !important;
+		border-radius: 12px !important;
+		padding: 1rem 1.5rem !important;
+		font-size: 1rem !important;
+		font-weight: 600 !important;
+		cursor: pointer !important;
+		align-items: center !important;
+		gap: 0.75rem !important;
+		width: 100% !important;
+		justify-content: center !important;
+		box-shadow: 0 4px 12px rgba(12, 59, 46, 0.3) !important;
+	}
+
+	/* Configurar modal mobile */
+	.mobile-sidebar:not(.show-mobile) {
+		display: none;
+	}
+
+	.mobile-sidebar {
+		position: fixed;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%) scale(0);
+		width: 90vw;
+		max-width: 400px;
+		max-height: 90vh;
+		background: white;
+		z-index: 1000;
+		transition: all 0.3s ease;
+		overflow: hidden;
+		padding: 0;
+		border-radius: 16px;
+		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+	}
+
+	.mobile-sidebar.show-mobile {
+		transform: translate(-50%, -50%) scale(1);
+		display: block;
+	}
+
+	.modal-overlay {
+		display: block;
+	}
+
+	.close-filters-btn {
+		display: flex;
+	}
+
+	.filter-content {
+		flex: 1;
+		overflow-y: auto;
+		padding: 0 1rem 0.25rem 1rem;
+		min-height: 0;
+		max-height: calc(90vh - 120px);
+	}
+
+	.filter-apply-btn {
+		margin: 0rem 1rem 0.5rem 1rem;
+		padding: 1rem 1.5rem;
+		background: #0C3B2E;
+		color: white;
+		border: none;
+		border-radius: 8px;
+		font-size: 1rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.2s;
+		flex-shrink: 0;
+		position: sticky;
+		bottom: 0;
+		z-index: 10;
+	}
+
+	.filter-apply-btn:hover {
+		background: #6D9773;
+	}
+
+	/* Dark mode para modal */
+	:global([data-theme="dark"]) .filter-sidebar {
+		background: #1e293b;
+	}
+
+	:global([data-theme="dark"]) .filter-box {
+		background: #1e293b;
+	}
+
+	:global([data-theme="dark"]) .filter-header {
+		border-bottom-color: #334155;
+	}
+
+	:global([data-theme="dark"]) .filter-header h2 {
+		color: white;
+	}
+
+	:global([data-theme="dark"]) .close-filters-btn {
+		background: #334155;
+		color: white;
+	}
+
+	:global([data-theme="dark"]) .close-filters-btn:hover {
+		background: #475569;
+	}
+
+	:global([data-theme="dark"]) .filter-apply-btn {
+		background: #10b981;
+	}
+
+	:global([data-theme="dark"]) .filter-apply-btn:hover {
+		background: #059669;
+	}
+
+	:global([data-theme="dark"]) .filter-header {
+		background: #1e293b;
+	}
+
+
+
+
+/* DESKTOP - mostrar sidebar, ocultar botón mobile */
+@media (min-width: 1025px) {
+	/* Mostrar sidebar desktop */
+	.desktop-sidebar {
+		display: block !important;
+	}
+	
+	.desktop-sidebar .filter-box {
+		display: flex !important;
+	}
+	
+	/* Ocultar elementos mobile */
+	.mobile-filters-btn {
+		display: none !important;
+	}
+	
+	.mobile-sidebar {
+		display: none !important;
+	}
+	
+	.modal-overlay {
+		display: none !important;
+	}
+	
+	/* Layout horizontal */
+	.providers-layout {
+		flex-direction: row;
+		align-items: flex-start;
+		padding: 1.5rem 1rem;
+		gap: 1.5rem;
+	}
+}
+
+	/* Estilos específicos para móviles pequeños */
+	@media (max-width: 480px) {
+		.mobile-sidebar {
+			width: 95vw;
+			max-height: 85vh;
+		}
+		
+		.filter-header {
+			padding: 0.75rem;
+		}
+		
+		.filter-header h2 {
+			font-size: 1.25rem;
+		}
+		
+		.close-filters-btn {
+			width: 36px;
+			height: 36px;
+		}
+		
+		.filter-content {
+			padding: 0 0.75rem 0.25rem 0.75rem;
+			max-height: calc(85vh - 120px);
+		}
+		
+		.filter-apply-btn {
+			margin: 0rem 0.75rem 0.5rem 0.75rem;
+			padding: 0.875rem 1.25rem;
+			font-size: 0.95rem;
+		}
+		
+		.mobile-filters-btn {
+			padding: 0.875rem 1.25rem !important;
+			font-size: 0.95rem !important;
+			margin: 0.5rem 0 !important;
+		}
+	}
+
+/* Asegurar visibilidad en todos los móviles */
+@media (max-width: 600px) {
+	.mobile-filters-btn {
+		display: flex !important;
+		visibility: visible !important;
+		opacity: 1 !important;
+	}
+}
+
 	.filter-box {
-		height: auto;
+		height: 100%;
+		margin-top: 0;
+		padding: 0;
+		box-shadow: none;
+		background: white;
+		border-radius: 16px;
+		display: flex;
+		flex-direction: column;
+		max-width: 100%;
+		overflow: hidden;
 	}
 
 	.filter-apply-btn {
 		margin-top: 1.5rem;
 	}
 
-	.filter-sidebar {
-		position: static;
-		width: 100%;
-		max-width: 600px;
-	}
-
 	.providers-main {
 		width: 100%;
-		max-width: 600px;
+		max-width: 100%;
 	}
 }
 
@@ -1047,5 +1428,391 @@ legend.filter-label {
 .phone-btn:hover {
 	background: #a67a45;
 	transform: translateY(-1px);
+}
+
+/* Estilos para iconos SVG */
+.provider-icon,
+.rating-icon,
+.location-icon,
+.phone-icon {
+	display: inline-block;
+	vertical-align: middle;
+	margin-right: 0.5rem;
+}
+
+.provider-type-badge {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+}
+
+.provider-rating {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+}
+
+.provider-location {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+}
+
+.phone-btn {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+}
+
+/* Desktop - sidebar visible por defecto */
+.desktop-sidebar {
+	display: block;
+}
+
+/* Mobile - botón oculto por defecto */
+.mobile-filters-btn {
+	display: none;
+	background: #0C3B2E;
+	color: white;
+	border: none;
+	border-radius: 12px;
+	padding: 1rem 1.5rem;
+	font-size: 1rem;
+	font-weight: 600;
+	cursor: pointer;
+	align-items: center;
+	gap: 0.75rem;
+	margin-bottom: 1.5rem;
+	width: 100%;
+	justify-content: center;
+	transition: all 0.3s;
+	box-shadow: 0 4px 12px rgba(12, 59, 46, 0.3);
+	order: -1;
+}
+
+/* Mobile - modal oculto por defecto */
+.mobile-sidebar {
+	display: none;
+}
+
+.mobile-filters-btn:hover {
+	background: #6D9773;
+}
+
+/* Modal overlay */
+.modal-overlay {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100vw;
+	height: 100vh;
+	background: rgba(0, 0, 0, 0.6);
+	z-index: 999;
+	display: none;
+	backdrop-filter: blur(3px);
+	-webkit-backdrop-filter: blur(3px);
+}
+
+/* Header de filtros con botón cerrar */
+	.filter-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 1rem;
+		padding: 1rem;
+		padding-bottom: 1rem;
+		border-bottom: 2px solid #e0e0e0;
+		background: white;
+		position: sticky;
+		top: 0;
+		z-index: 10;
+	}
+
+.filter-header h2 {
+	margin: 0;
+	color: #0C3B2E;
+	font-size: 1.5rem;
+	font-weight: 700;
+}
+
+.close-filters-btn {
+	display: none;
+	background: #f5f5f5;
+	border: none;
+	color: #666;
+	cursor: pointer;
+	padding: 0.5rem;
+	border-radius: 50%;
+	transition: all 0.2s;
+	width: 40px;
+	height: 40px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.close-filters-btn:hover {
+	background: #e0e0e0;
+	color: #333;
+}
+
+/* Dark mode styles */
+:global(.dark) .page-wrapper {
+	background-color: #0f172a;
+}
+
+:global(.dark) .providers-layout {
+	background-color: #0f172a;
+	color: white;
+}
+
+:global(.dark) .providers-main h1 {
+	color: white;
+}
+
+:global(.dark) .providers-count {
+	color: #cbd5e1;
+}
+
+:global(.dark) .filter-box {
+	background: #334155;
+	border: 1px solid #475569;
+}
+
+:global(.dark) .filter-box h2 {
+	color: white;
+	border-bottom-color: #10b981;
+}
+
+:global(.dark) .filter-label {
+	color: white;
+}
+
+:global(.dark) legend.filter-label {
+	color: white;
+}
+
+:global(.dark) .filter-date-btns button {
+	background: #475569;
+	color: white;
+	border-color: #64748b;
+}
+
+:global(.dark) .filter-date-btns button.selected,
+:global(.dark) .filter-date-btns button:hover {
+	background: #10b981;
+	color: white;
+	border-color: #10b981;
+}
+
+:global(.dark) .filter-checkboxes label {
+	color: white;
+}
+
+:global(.dark) .filter-checkboxes input[type="checkbox"] {
+	accent-color: #10b981;
+}
+
+:global(.dark) .price-input-label {
+	color: #cbd5e1;
+}
+
+:global(.dark) .price-input {
+	background: #475569;
+	border-color: #64748b;
+	color: white;
+}
+
+:global(.dark) .price-input:focus {
+	border-color: #10b981;
+}
+
+:global(.dark) .price-separator {
+	color: #cbd5e1;
+}
+
+:global(.dark) .time-select {
+	background: #475569;
+	border-color: #64748b;
+	color: white;
+}
+
+:global(.dark) .time-select:focus {
+	border-color: #10b981;
+}
+
+:global(.dark) .filter-provider-type label {
+	color: white;
+}
+
+:global(.dark) .filter-provider-type input[type="radio"] {
+	accent-color: #10b981;
+}
+
+:global(.dark) .providers-list {
+	background: transparent;
+}
+
+:global(.dark) .filter-apply-btn {
+	background: #10b981;
+	color: white;
+}
+
+:global(.dark) .filter-apply-btn:hover {
+	background: #059669;
+}
+
+:global(.dark) .provider-card {
+	background: #334155;
+	border-color: #475569;
+	color: white;
+}
+
+:global(.dark) .provider-card:hover {
+	box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+:global(.dark) .provider-header h2 {
+	color: white;
+}
+
+:global(.dark) .provider-rating {
+	color: #cbd5e1;
+}
+
+:global(.dark) .provider-price {
+	color: #10b981;
+}
+
+:global(.dark) .provider-description {
+	color: #cbd5e1;
+}
+
+:global(.dark) .provider-type-badge {
+	background: #10b981;
+	color: white;
+}
+
+:global(.dark) .provider-location {
+	color: #cbd5e1;
+}
+
+/* Iconos SVG en modo oscuro - blancos */
+:global(.dark) .provider-icon,
+:global(.dark) .rating-icon,
+:global(.dark) .location-icon,
+:global(.dark) .phone-icon {
+	color: white;
+}
+
+:global(.dark) .provider-type-badge {
+	background: #10b981;
+	color: white;
+}
+
+:global(.dark) .provider-rating {
+	color: #cbd5e1;
+}
+
+:global(.dark) .provider-rating .rating-icon {
+	color: #fbbf24;
+}
+
+:global(.dark) .provider-location {
+	color: #cbd5e1;
+}
+
+:global(.dark) .phone-btn {
+	background: #10b981;
+	color: white;
+}
+
+:global(.dark) .contact-btn {
+	background: #10b981;
+	color: white;
+}
+
+:global(.dark) .contact-btn:hover {
+	background: #059669;
+}
+
+:global(.dark) .phone-btn {
+	background: #10b981;
+	color: white;
+}
+
+:global(.dark) .phone-btn:hover {
+	background: #059669;
+}
+
+:global(.dark) .pagination {
+	background: #334155;
+	border: 1px solid #475569;
+}
+
+:global(.dark) .pagination-btn {
+	background: #475569;
+	color: white;
+	border-color: #64748b;
+}
+
+:global(.dark) .pagination-btn:hover:not(:disabled) {
+	background: #10b981;
+	border-color: #10b981;
+}
+
+:global(.dark) .pagination-num {
+	background: #475569;
+	color: white;
+	border: 1px solid #64748b;
+}
+
+:global(.dark) .pagination-num.active {
+	background: #10b981;
+	color: white;
+	border-color: #10b981;
+}
+
+:global(.dark) .loading-state,
+:global(.dark) .error-state,
+:global(.dark) .empty-state {
+	color: white;
+}
+
+:global(.dark) .loading-spinner {
+	border-color: #475569;
+	border-top-color: #10b981;
+}
+
+:global(.dark) .retry-btn {
+	background: #10b981;
+	color: white;
+}
+
+:global(.dark) .retry-btn:hover {
+	background: #059669;
+}
+
+/* Estilos de modo oscuro para mobile modal */
+:global(.dark) .mobile-filters-btn {
+	background: #10b981;
+	color: white;
+}
+
+:global(.dark) .mobile-filters-btn:hover {
+	background: #059669;
+}
+
+:global(.dark) .filter-sidebar {
+	background: #334155;
+}
+
+:global(.dark) .close-filters-btn {
+	color: #cbd5e1;
+}
+
+:global(.dark) .close-filters-btn:hover {
+	background: #475569;
+	color: white;
 }
 </style> 

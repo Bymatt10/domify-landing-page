@@ -45,21 +45,21 @@
 			id: 'houses',
 			name: 'Casas',
 			description: 'Servicios completos para casas unifamiliares',
-			icon: `<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#0C3B2E" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5L12 4l9 7.5V20a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1v-4h-4v4a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V11.5z"/><path d="M9 21V12h6v9"/></svg>`,
+			icon: `<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5L12 4l9 7.5V20a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1v-4h-4v4a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V11.5z"/><path d="M9 21V12h6v9"/></svg>`,
 			services: ['Limpieza profunda', 'Jardinería', 'Mantenimiento', 'Mudanzas']
 		},
 		{
 			id: 'apartments',
 			name: 'Apartamentos',
 			description: 'Soluciones especializadas para espacios urbanos',
-			icon: `<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#0C3B2E" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="7" height="13" rx="2"/><rect x="14" y="3" width="7" height="17" rx="2"/><path d="M7.5 10.5h.01M7.5 14.5h.01M18.5 7.5h.01M18.5 11.5h.01M18.5 15.5h.01"/></svg>`,
+			icon: `<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="7" height="13" rx="2"/><rect x="14" y="3" width="7" height="17" rx="2"/><path d="M7.5 10.5h.01M7.5 14.5h.01M18.5 7.5h.01M18.5 11.5h.01M18.5 15.5h.01"/></svg>`,
 			services: ['Limpieza regular', 'Montaje de muebles', 'Instalaciones', 'Organización']
 		},
 		{
 			id: 'commercial',
 			name: 'Plazas Comerciales',
 			description: 'Servicios corporativos y comerciales',
-			icon: `<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#0C3B2E" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="13" rx="2"/><path d="M6 7V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v3"/><path d="M9 21V12h6v9"/><path d="M12 17h.01"/></svg>`,
+			icon: `<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="13" rx="2"/><path d="M6 7V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v3"/><path d="M9 21V12h6v9"/><path d="M12 17h.01"/></svg>`,
 			services: ['Limpieza comercial', 'Mantenimiento', 'Logística', 'Seguridad']
 		}
 	];
@@ -482,22 +482,22 @@
 					<h2>¿Por qué elegir Domify?</h2>
 					<div class="features-grid">
 						<div class="feature-card">
-							<div class="feature-icon">{@html `<svg width='32' height='32' viewBox='0 0 24 24' fill='none' stroke='#0C3B2E' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='10'/><path d='M16 10l-4.5 4.5L8 12'/></svg>`}</div>
+							<div class="feature-icon">{@html `<svg width='32' height='32' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='10'/><path d='M16 10l-4.5 4.5L8 12'/></svg>`}</div>
 							<h3>Profesionales Verificados</h3>
 							<p>Todos nuestros proveedores pasan por un riguroso proceso de verificación.</p>
 						</div>
 						<div class="feature-card">
-							<div class="feature-icon">{@html `<svg width='32' height='32' viewBox='0 0 24 24' fill='none' stroke='#0C3B2E' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><rect x='2' y='7' width='20' height='13' rx='2'/><path d='M6 7V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v3'/></svg>`}</div>
+							<div class="feature-icon">{@html `<svg width='32' height='32' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><rect x='2' y='7' width='20' height='13' rx='2'/><path d='M6 7V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v3'/></svg>`}</div>
 							<h3>Precios Transparentes</h3>
 							<p>Sin sorpresas ni costos ocultos. Conoce el precio antes de contratar.</p>
 						</div>
 						<div class="feature-card">
-							<div class="feature-icon">{@html `<svg width='32' height='32' viewBox='0 0 24 24' fill='none' stroke='#0C3B2E' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M12 2l2 7h7l-5.5 4 2 7-5.5-4-5.5 4 2-7L3 9h7z'/></svg>`}</div>
+							<div class="feature-icon">{@html `<svg width='32' height='32' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M12 2l2 7h7l-5.5 4 2 7-5.5-4-5.5 4 2-7L3 9h7z'/></svg>`}</div>
 							<h3>Servicio Garantizado</h3>
 							<p>Satisfacción garantizada en todos nuestros servicios.</p>
 						</div>
 						<div class="feature-card">
-							<div class="feature-icon">{@html `<svg width='32' height='32' viewBox='0 0 24 24' fill='none' stroke='#0C3B2E' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M13 2v8h8'/><path d='M2 12a10 10 0 1 0 10-10'/></svg>`}</div>
+							<div class="feature-icon">{@html `<svg width='32' height='32' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M13 2v8h8'/><path d='M2 12a10 10 0 1 0 10-10'/></svg>`}</div>
 							<h3>Respuesta Rápida</h3>
 							<p>Conectamos con profesionales disponibles en tu zona en minutos.</p>
 						</div>
@@ -506,32 +506,6 @@
 			</section>
 
 
-
-			<section class="cta-section">
-				<div class="container">
-					<div class="cta-content">
-						<div class="cta-group">
-							<h2>¿Necesitas un servicio?</h2>
-							<p>Únete a miles de clientes satisfechos que confían en Domify</p>
-							<div class="cta-buttons">
-								<a href="/auth/signup" class="cta-button primary">Registrarse</a>
-								<a href="/services" class="cta-button secondary">Explorar Servicios</a>
-							</div>
-						</div>
-
-						<div class="cta-divider"></div>
-
-						<div class="cta-group">
-							<h2>¿Eres un profesional?</h2>
-							<p>Únete a nuestra red de proveedores y haz crecer tu negocio</p>
-							<div class="cta-buttons">
-								<a href="/become-provider" class="cta-button primary">Conviértete en Domifito</a>
-								<a href="/provider-benefits" class="cta-button secondary">Conoce los beneficios</a>
-							</div>
-						</div>
-					</div>
-				</div>
-			</section>
 		</main>
 
 		<!-- Sidebar derecho para anuncios -->
@@ -578,6 +552,31 @@
 			</div>
 		</aside>
 	</div>
+
+	<!-- CTA Section - Full Width -->
+	<section class="cta-section">
+		<div class="cta-content">
+			<div class="cta-group">
+				<h2>¿Necesitas un servicio?</h2>
+				<p>Únete a miles de clientes satisfechos que confían en Domify</p>
+				<div class="cta-buttons">
+					<a href="/auth/signup" class="cta-button primary">Registrarse</a>
+					<a href="/services" class="cta-button secondary">Explorar Servicios</a>
+				</div>
+			</div>
+
+			<div class="cta-divider"></div>
+
+			<div class="cta-group">
+				<h2>¿Eres un profesional?</h2>
+				<p>Únete a nuestra red de proveedores y haz crecer tu negocio</p>
+				<div class="cta-buttons">
+					<a href="/become-provider" class="cta-button primary">Conviértete en Domifito</a>
+					<a href="/provider-benefits" class="cta-button secondary">Conoce los beneficios</a>
+				</div>
+			</div>
+		</div>
+	</section>
 </div>
 
 <style>
@@ -702,7 +701,7 @@
 		cursor: pointer;
 		transition: all var(--transition-fast);
 		background: var(--color-highlight);
-		color: var(--color-primary);
+		color: #fff;
 	}
 
 	.ad-button:hover {
@@ -717,6 +716,10 @@
 
 	.ad-button.secondary:hover {
 		background: var(--color-primary-dark);
+	}
+
+	:global(.dark) .ad-button {
+		color: #fff;
 	}
 
 	/* Estilos específicos para diferentes tipos de anuncios */
@@ -744,8 +747,8 @@
 	}
 
 	.hero {
-		background-color: var(--color-primary);
-		color: var(--color-text-white);
+		background: linear-gradient(135deg, #0C3B2E 0%, #1a5d47 100%);
+		color: white;
 		padding: var(--spacing-3xl) 0;
 		text-align: center;
 	}
@@ -760,12 +763,14 @@
 		font-size: var(--font-size-4xl);
 		margin: 0 0 var(--spacing-lg);
 		line-height: 1.2;
+		color: white;
 	}
 
 	.hero p {
 		font-size: var(--font-size-xl);
 		margin: 0 0 var(--spacing-2xl);
 		opacity: 0.9;
+		color: white;
 	}
 
 	.search-container {
@@ -826,9 +831,28 @@
 	}
 
 	.search-icon {
-		stroke: #111;
-		width: 28px;
-		height: 28px;
+		color: var(--color-text-white);
+	}
+
+	:global(.dark) .search-input-group {
+		background: #232b36;
+	}
+	:global(.dark) .search-input {
+		background-color: #232b36;
+		color: var(--color-text-white);
+		border-radius: 999px 0 0 999px;
+	}
+	:global(.dark) .search-input::placeholder {
+		color: var(--color-text-white);
+		opacity: 0.7;
+	}
+
+	.search-spinner {
+		color: var(--color-text-white);
+	}
+
+	:global(.dark) .search-spinner {
+		color: var(--color-text-white);
 	}
 
 	@media (max-width: 600px) {
@@ -1270,8 +1294,13 @@
 	}
 
 	.feature-icon {
-		font-size: 2.5rem;
+		font-size: 2rem;
 		margin-bottom: var(--spacing-md);
+		color: var(--color-primary);
+	}
+
+	:global(.dark) .feature-icon {
+		color: var(--color-primary);
 	}
 
 	.feature-card h3 {
@@ -1286,71 +1315,13 @@
 		line-height: 1.6;
 	}
 
-	/* Sponsors Section */
-	.sponsors {
-		padding: var(--spacing-2xl) 0;
-		background: var(--color-background-white);
-		border-top: 1px solid rgba(0, 0, 0, 0.1);
-	}
-
-	.sponsors h2 {
-		text-align: center;
-		color: var(--color-primary);
-		font-size: var(--font-size-3xl);
-		margin: 0 0 var(--spacing-md);
-	}
-
-	.sponsors .section-subtitle {
-		text-align: center;
-		color: var(--color-text-light);
-		font-size: var(--font-size-lg);
-		margin-bottom: var(--spacing-xl);
-	}
-
-	.sponsors-grid {
-		display: grid;
-		grid-template-columns: repeat(3, 1fr);
-		gap: var(--spacing-lg);
-	}
-
-	.sponsor-card {
-		background: transparent;
-		padding: var(--spacing-lg);
-		border-radius: var(--border-radius-md);
-		text-align: center;
-		border: none;
-	}
-
-	.sponsor-logo {
-		width: 140px;
-		height: 80px;
-		margin: 0 auto var(--spacing-sm);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
-
-	.sponsor-logo img {
-		width: 140px;
-		height: 80px;
-		object-fit: contain;
-		filter: grayscale(100%);
-	}
-
-	.sponsor-card p {
-		color: var(--color-text);
-		margin: 0;
-		font-size: var(--font-size-sm);
-		line-height: 1.4;
-		font-weight: 500;
-	}
-
-	/* CTA Section */
+	/* CTA Section - estilos para modo claro y oscuro */
 	.cta-section {
-		background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
-		color: var(--color-text-white);
+		background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+		color: var(--color-text);
 		padding: var(--spacing-3xl) 0;
 		text-align: center;
+		border-top: 1px solid var(--color-border-light, rgba(0, 0, 0, 0.1));
 	}
 
 	.cta-content {
@@ -1370,14 +1341,15 @@
 
 	.cta-divider {
 		width: 1px;
-		background: rgba(255, 255, 255, 0.2);
+		background: var(--color-border, rgba(0, 0, 0, 0.1));
 		margin: 0 var(--spacing-xl);
 	}
 
 	.cta-content h2 {
 		font-size: var(--font-size-3xl);
 		margin: 0 0 var(--spacing-md);
-		color: white;
+		color: var(--color-primary);
+		font-weight: 700;
 	}
 
 	.cta-content p {
@@ -1404,24 +1376,24 @@
 	}
 
 	.cta-button.primary {
-		background: var(--color-highlight);
-		color: var(--color-primary);
+		background: var(--color-primary);
+		color: white;
 	}
 
 	.cta-button.primary:hover {
-		background: #e6a800;
+		background: var(--color-primary-hover);
 		transform: translateY(-2px);
 	}
 
 	.cta-button.secondary {
 		background: transparent;
-		color: var(--color-text-white);
-		border: 2px solid var(--color-text-white);
+		color: var(--color-primary);
+		border: 2px solid var(--color-primary);
 	}
 
 	.cta-button.secondary:hover {
-		background: var(--color-text-white);
-		color: var(--color-primary);
+		background: var(--color-primary);
+		color: white;
 		transform: translateY(-2px);
 	}
 
@@ -1555,11 +1527,6 @@
 		
 		.popular-searches span {
 			font-size: var(--font-size-sm);
-		}
-		
-		.popular-searches a {
-			font-size: var(--font-size-sm);
-			padding: var(--spacing-sm) var(--spacing-md);
 		}
 
 		.stats-grid {
@@ -1817,19 +1784,183 @@
 	
 	:global(.dark) .ad-space {
 		background: var(--color-background-card);
+		border: 1px solid var(--color-border);
 	}
 	
 	:global(.dark) .ad-example {
 		background: var(--color-background-card);
+		border: 1px solid var(--color-border);
 	}
 	
 	:global(.dark) .hero {
+		background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+		color: white;
+	}
+
+	:global(.dark) .hero h1 {
+		color: white;
+	}
+
+	:global(.dark) .hero p {
+		color: white;
+	}
+	
+	:global(.dark) .search-input {
+		background-color: var(--color-background-white);
+		border-color: var(--color-border);
+		color: var(--color-text);
+	}
+	
+	:global(.dark) .search-input:focus {
+		border-color: var(--color-primary);
+		box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+	}
+	
+	:global(.dark) .search-button {
+		background-color: var(--color-primary);
+		color: var(--color-text-white);
+	}
+	
+	:global(.dark) .search-button:hover {
+		background-color: var(--color-primary-hover);
+	}
+	
+	:global(.dark) .search-suggestions {
+		background-color: var(--color-background-white);
+		border: 1px solid var(--color-border);
+		box-shadow: var(--shadow-lg);
+	}
+	
+	:global(.dark) .suggestion-item {
+		border-bottom: 1px solid var(--color-border);
+	}
+	
+	:global(.dark) .suggestion-item:hover {
+		background-color: var(--color-background);
+	}
+	
+	:global(.dark) .popular-tag {
+		background-color: var(--color-background-card);
+		color: var(--color-text);
+		border: 1px solid var(--color-border);
+	}
+	
+	:global(.dark) .popular-tag:hover {
+		background-color: var(--color-primary);
+		color: var(--color-text-white);
+		border-color: var(--color-primary);
+	}
+	
+	:global(.dark) .stat-card {
+		background-color: var(--color-background-card);
+		border: 1px solid var(--color-border);
+		box-shadow: var(--shadow-md);
+	}
+	
+	:global(.dark) .stat-number {
+		color: var(--color-primary);
+	}
+	
+	:global(.dark) .stat-label {
+		color: var(--color-text-light);
+	}
+	
+	:global(.dark) .property-card {
+		background-color: var(--color-background-card);
+		border: 1px solid var(--color-border);
+		box-shadow: var(--shadow-md);
+	}
+	
+	:global(.dark) .property-card:hover {
+		box-shadow: var(--shadow-lg);
+		border-color: var(--color-primary);
+	}
+	
+	:global(.dark) .category-card {
+		background-color: var(--color-background-card);
+		border: 1px solid var(--color-border);
+		box-shadow: var(--shadow-md);
+	}
+	
+	:global(.dark) .category-card:hover {
+		box-shadow: var(--shadow-lg);
+		border-color: var(--color-primary);
+		transform: translateY(-2px);
+	}
+	
+	:global(.dark) .testimonial-card {
+		background-color: var(--color-background-card);
+		border: 1px solid var(--color-border);
+		box-shadow: var(--shadow-md);
+	}
+	
+	:global(.dark) .testimonial-card:hover {
+		box-shadow: var(--shadow-lg);
+		border-color: var(--color-primary);
+	}
+	
+	:global(.dark) .feature-card {
+		background-color: var(--color-background-card);
+		border: 1px solid var(--color-border);
+		box-shadow: var(--shadow-md);
+	}
+	
+	:global(.dark) .feature-card:hover {
+		box-shadow: var(--shadow-lg);
+		border-color: var(--color-primary);
+		transform: translateY(-2px);
+	}
+	
+		:global(.dark) .cta-section {
+		background: #1e293b;
+		color: var(--color-text-white);
+		border-top: 1px solid var(--color-border);
+	}
+
+	:global(.dark) .cta-divider {
+		background: rgba(255, 255, 255, 0.2);
+	}
+
+	:global(.dark) .cta-content h2 {
+		color: var(--color-text-white);
+	}
+
+	:global(.dark) .cta-button.primary {
+		background: var(--color-highlight);
+		color: white;
+	}
+
+	:global(.dark) .cta-button.primary:hover {
+		background: var(--color-accent);
+		transform: translateY(-2px);
+	}
+
+	:global(.dark) .cta-button.secondary {
+		background: transparent;
+		color: white;
+		border: 2px solid white;
+	}
+
+	:global(.dark) .cta-button.secondary:hover {
+		background: white;
+		color: var(--color-primary);
+		transform: translateY(-2px);
+	}
+	
+	:global(.dark) .section-subtitle {
+		color: var(--color-text-light);
+	}
+	
+	:global(.dark) .ad-image-placeholder {
 		background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
 	}
 	
-	:global(.dark) .navbar {
-		background-color: var(--color-background-white);
-		border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+	:global(.dark) .ad-image-placeholder.google-style {
+		background: linear-gradient(135deg, var(--color-info) 0%, var(--color-primary) 100%);
+	}
+	
+	:global(.dark) .ad-image-placeholder.facebook-style {
+		background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-highlight) 100%);
 	}
 	
 	/* Nuevo diseño para placeholder de imagen */
@@ -1876,16 +2007,6 @@
 		text-shadow: 0 2px 4px rgba(0,0,0,0.3);
 	}
 
-	/* Estilo específico para anuncio de Facebook */
-	.ad-image-placeholder.facebook-style {
-		background: linear-gradient(135deg, #FF6B6B 0%, #EE5A52 100%);
-	}
-
-	/* Estilo específico para anuncio de Google AdSense */
-	.ad-image-placeholder.google-style {
-		background: linear-gradient(135deg, #4A90E2 0%, #357ABD 100%);
-	}
-
 	/* Estilo general para section-subtitle */
 	.section-subtitle {
 		text-align: center;
@@ -1896,5 +2017,22 @@
 		margin-left: auto;
 		margin-right: auto;
 		line-height: 1.5;
+	}
+
+	.feature-icon svg,
+	.property-icon svg {
+		color: var(--color-primary);
+		stroke: var(--color-primary);
+	}
+
+	:global(.dark) .feature-icon svg,
+	:global(.dark) .property-icon svg {
+		color: #fff !important;
+		stroke: #fff !important;
+	}
+
+	/* Si hay iconos de img en .category-icon, invertirlos en dark mode */
+	:global(.dark) .category-icon img {
+		filter: brightness(0) invert(1);
 	}
 </style> 
