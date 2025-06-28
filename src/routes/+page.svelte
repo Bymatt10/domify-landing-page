@@ -571,7 +571,7 @@
 				<h2>¿Eres un profesional?</h2>
 				<p>Únete a nuestra red de proveedores y haz crecer tu negocio</p>
 				<div class="cta-buttons">
-					<a href="/become-provider" class="cta-button primary">Conviértete en Domifito</a>
+					<a href="/become-provider" class="cta-button primary">Quiero ser un proveedor</a>
 					<a href="/provider-benefits" class="cta-button secondary">Conoce los beneficios</a>
 				</div>
 			</div>

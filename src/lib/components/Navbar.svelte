@@ -2,12 +2,15 @@
 	import { supabase } from '$lib/supabase';
 	import { goto, invalidateAll } from '$app/navigation';
 	import { page } from '$app/stores';
-	import ThemeToggle from './ThemeToggle.svelte';
+	// import ThemeToggle from './ThemeToggle.svelte';
 
 	let isMenuOpen = false;
+	let isDropdownOpen = false;
 
 	export let session: any = null;
 	export let user: any = null;
+
+	console.log('USER OBJETO:', user);
 
 	async function handleLogout() {
 		const { error } = await supabase.auth.signOut();
@@ -25,6 +28,11 @@
 	function toggleMenu() {
 		isMenuOpen = !isMenuOpen;
 	}
+
+	function getInitial(user: any) {
+		const name = user?.user_metadata?.first_name || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email || '';
+		return name.charAt(0).toUpperCase();
+	}
 </script>
 
 <nav class="navbar">
@@ -39,32 +47,44 @@
 				<div class="nav-links-desktop">
 					<a href="/" class="nav-link">Inicio</a>
 					<a href="/services" class="nav-link">Servicios</a>
+					<a href="/about" class="nav-link">Quiénes somos</a>
 					{#if session}
 						{#if isAdmin}
 							<a href="/admin" class="nav-link">Panel Admin</a>
 						{/if}
 						<div class="user-menu" role="group" aria-label="Menú de usuario">
-							<span class="user-name">{user?.user_metadata?.first_name || user?.email}</span>
-							<button 
-								class="btn btn-secondary" 
-								on:click={handleLogout}
-								type="button"
-							>
-								Cerrar Sesión
-							</button>
-							<div class="theme-toggle-small"><ThemeToggle iconOnly={true} /></div>
+							<div class="dropdown" tabIndex="0" on:blur={() => isDropdownOpen = false}>
+								<button class="user-dropdown-toggle" on:click={() => isDropdownOpen = !isDropdownOpen} aria-haspopup="true" aria-expanded={isDropdownOpen}>
+									{#if user?.user_metadata?.avatar_url || user?.user_metadata?.picture}
+										<img src={user.user_metadata.avatar_url || user.user_metadata.picture} alt="Avatar" class="avatar" />
+									{:else if (user?.user_metadata?.first_name || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email)}
+										<div class="avatar avatar-initial">{getInitial(user)}</div>
+									{:else}
+										<svg class="avatar avatar-default" width="40" height="40" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2" fill="none"/><path d="M4 20c0-4 4-7 8-7s8 3 8 7" stroke="currentColor" stroke-width="2" fill="none"/></svg>
+									{/if}
+									<span class="user-name">{user?.user_metadata?.first_name || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email}</span>
+									<svg class="dropdown-arrow" width="16" height="16" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5" stroke="currentColor" stroke-width="2" fill="none"/></svg>
+								</button>
+								{#if isDropdownOpen}
+									<div class="dropdown-menu">
+										<a href="/" class="dropdown-item"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M3 12l9-9 9 9v8a2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-8z" stroke="currentColor" stroke-width="2" fill="none"/></svg> Inicio</a>
+										<a href="/profile" class="dropdown-item"><svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2" fill="none"/><path d="M4 20c0-4 4-7 8-7s8 3 8 7" stroke="currentColor" stroke-width="2" fill="none"/></svg> Mi perfil</a>
+										<a href="/ayuda" class="dropdown-item"><svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/><path d="M9 9a3 3 0 0 1 6 0c0 2-3 3-3 5" stroke="currentColor" stroke-width="2" fill="none"/><circle cx="12" cy="17" r="1" fill="currentColor"/></svg> Ayuda en línea</a>
+									</div>
+								{/if}
+							</div>
 						</div>
 					{:else}
 						<div class="auth-buttons" role="group" aria-label="Botones de autenticación">
 							<a href="/auth/login" class="btn btn-secondary">Iniciar Sesión</a>
 							<a href="/auth/signup" class="btn btn-primary">Registrarse</a>
-							<div class="theme-toggle-small"><ThemeToggle iconOnly={true} /></div>
+							<!-- <div class="theme-toggle-small"><ThemeToggle iconOnly={true} /></div> -->
 						</div>
 					{/if}
 				</div>
 				<!-- ThemeToggle y menú hamburguesa en mobile -->
 				<div class="mobile-controls">
-					<div class="theme-toggle-small"><ThemeToggle iconOnly={true} /></div>
+					<!-- <div class="theme-toggle-small"><ThemeToggle iconOnly={true} /></div> -->
 					<button 
 						class="menu-toggle" 
 						on:click={toggleMenu}
@@ -87,19 +107,32 @@
 		>
 			<a href="/" class="nav-link">Inicio</a>
 			<a href="/services" class="nav-link">Servicios</a>
+			<a href="/about" class="nav-link">Quiénes somos</a>
 			{#if session}
 				{#if isAdmin}
 					<a href="/admin" class="nav-link">Panel Admin</a>
 				{/if}
 				<div class="user-menu" role="group" aria-label="Menú de usuario">
-					<span class="user-name">{user?.user_metadata?.first_name || user?.email}</span>
-					<button 
-						class="btn btn-secondary" 
-						on:click={handleLogout}
-						type="button"
-					>
-						Cerrar Sesión
-					</button>
+					<div class="dropdown" tabIndex="0" on:blur={() => isDropdownOpen = false}>
+						<button class="user-dropdown-toggle" on:click={() => isDropdownOpen = !isDropdownOpen} aria-haspopup="true" aria-expanded={isDropdownOpen}>
+							{#if user?.user_metadata?.avatar_url || user?.user_metadata?.picture}
+								<img src={user.user_metadata.avatar_url || user.user_metadata.picture} alt="Avatar" class="avatar" />
+							{:else if (user?.user_metadata?.first_name || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email)}
+								<div class="avatar avatar-initial">{getInitial(user)}</div>
+							{:else}
+								<svg class="avatar avatar-default" width="40" height="40" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2" fill="none"/><path d="M4 20c0-4 4-7 8-7s8 3 8 7" stroke="currentColor" stroke-width="2" fill="none"/></svg>
+							{/if}
+							<span class="user-name">{user?.user_metadata?.first_name || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email}</span>
+							<svg class="dropdown-arrow" width="16" height="16" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5" stroke="currentColor" stroke-width="2" fill="none"/></svg>
+						</button>
+						{#if isDropdownOpen}
+							<div class="dropdown-menu">
+								<a href="/" class="dropdown-item"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M3 12l9-9 9 9v8a2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-8z" stroke="currentColor" stroke-width="2" fill="none"/></svg> Inicio</a>
+								<a href="/profile" class="dropdown-item"><svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2" fill="none"/><path d="M4 20c0-4 4-7 8-7s8 3 8 7" stroke="currentColor" stroke-width="2" fill="none"/></svg> Mi perfil</a>
+								<a href="/ayuda" class="dropdown-item"><svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/><path d="M9 9a3 3 0 0 1 6 0c0 2-3 3-3 5" stroke="currentColor" stroke-width="2" fill="none"/><circle cx="12" cy="17" r="1" fill="currentColor"/></svg> Ayuda en línea</a>
+							</div>
+						{/if}
+					</div>
 				</div>
 			{:else}
 				<div class="auth-buttons-mobile">
@@ -167,7 +200,7 @@
 	.nav-links-desktop {
 		display: none;
 		align-items: center;
-		gap: var(--spacing-md);
+		gap: 1.5rem;
 	}
 
 	.nav-link {
@@ -175,6 +208,7 @@
 		font-size: var(--font-size-base);
 		transition: color var(--transition-fast);
 		font-weight: 500;
+		white-space: nowrap;
 	}
 
 	:global(.dark) .nav-link {
@@ -417,5 +451,77 @@
 		width: 100%;
 		justify-content: center;
 		font-size: 1.1rem;
+	}
+
+	.avatar {
+		width: 40px;
+		height: 40px;
+		border-radius: 50%;
+		object-fit: cover;
+		margin-right: 0.5rem;
+	}
+	.user-dropdown-toggle {
+		display: flex;
+		align-items: center;
+		background: none;
+		border: none;
+		cursor: pointer;
+		padding: 0.5rem 1rem;
+		font-size: 1rem;
+		font-weight: 500;
+		color: var(--color-text);
+	}
+	.dropdown-arrow {
+		margin-left: 0.5rem;
+	}
+	.dropdown {
+		position: relative;
+		display: inline-block;
+	}
+	.dropdown-menu {
+		position: absolute;
+		top: 100%;
+		right: 0;
+		background: var(--color-background-white);
+		box-shadow: var(--shadow-md);
+		border-radius: var(--border-radius-md);
+		padding: 0.5rem 0;
+		min-width: 200px;
+		z-index: 1000;
+		display: flex;
+		flex-direction: column;
+	}
+	.dropdown-item {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		padding: 0.75rem 1.5rem;
+		color: var(--color-text);
+		text-decoration: none;
+		font-size: 1rem;
+		transition: background 0.2s;
+	}
+	.dropdown-item:hover {
+		background: var(--color-primary-light);
+		color: var(--color-text-white);
+	}
+	.avatar-default {
+		background: var(--color-background-card);
+		border-radius: 50%;
+		padding: 4px;
+	}
+	.avatar-initial {
+		width: 40px;
+		height: 40px;
+		border-radius: 50%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: var(--color-primary, #2d6a4f);
+		color: #fff;
+		font-size: 1.5rem;
+		font-weight: 700;
+		margin-right: 0.5rem;
+		user-select: none;
 	}
 </style> 

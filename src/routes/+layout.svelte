@@ -3,7 +3,7 @@
 	import { invalidateAll } from '$app/navigation';
 	import { supabase } from '$lib/supabase';
 	import Navbar from '$lib/components/Navbar.svelte';
-	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
+	// import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import { theme, applyTheme } from '$lib/stores/theme';
 
 	export let data: any;

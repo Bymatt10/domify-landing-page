@@ -116,14 +116,15 @@
 		margin-bottom: 1rem;
 		font-weight: 700;
 		text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-		color: #fff;
+		color: #fff !important;
 	}
 
 	.hero p {
 		font-size: var(--font-size-xl);
 		max-width: 700px;
 		margin: 0 auto;
-		opacity: 0.9;
+		opacity: 0.95;
+		color: #fff !important;
 	}
 
 	.page-content {

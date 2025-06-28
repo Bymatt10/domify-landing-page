@@ -10,6 +10,7 @@ export const load = async ({ data, depends }) => {
 
   return { 
     session: data?.session,
+    user: data?.user,
     supabase 
   }
 } 
