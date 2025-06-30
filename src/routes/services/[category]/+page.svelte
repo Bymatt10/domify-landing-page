@@ -221,6 +221,10 @@ $: if (typeof window !== 'undefined' && priceRange) {
 $: if (typeof window !== 'undefined' && selectedProviderType) {
 	applyFilters();
 }
+
+function verMasInformacion(provider: Provider) {
+	window.location.href = `/provider/${provider.id}`;
+}
 </script>
 
 <div class="page-wrapper">
@@ -515,7 +519,7 @@ $: if (typeof window !== 'undefined' && selectedProviderType) {
 								</div>
 							{/if}
 							<div class="provider-footer">
-								<button class="contact-btn">Contactar</button>
+								<button class="contact-btn" on:click={() => verMasInformacion(p)}>Ver más información</button>
 								{#if p.phone}
 									<button class="phone-btn">
 										<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" class="phone-icon">

@@ -12,6 +12,22 @@
 
 	console.log('USER OBJETO:', user);
 
+	// Función para generar un hash simple del avatar_url para cache busting
+	function getAvatarHash(avatarUrl: string): string {
+		if (!avatarUrl) return '0';
+		// Crear un hash simple basado en la URL
+		let hash = 0;
+		for (let i = 0; i < avatarUrl.length; i++) {
+			const char = avatarUrl.charCodeAt(i);
+			hash = ((hash << 5) - hash) + char;
+			hash = hash & hash; // Convertir a 32-bit integer
+		}
+		return Math.abs(hash).toString();
+	}
+
+	// Variable reactiva para cache busting del avatar
+	$: avatarVersion = user?.user_metadata?.avatar_url ? getAvatarHash(user.user_metadata.avatar_url) : '0';
+
 	async function handleLogout() {
 		const { error } = await supabase.auth.signOut();
 		if (error) {
@@ -56,7 +72,7 @@
 							<div class="dropdown" tabIndex="0" on:blur={() => isDropdownOpen = false}>
 								<button class="user-dropdown-toggle" on:click={() => isDropdownOpen = !isDropdownOpen} aria-haspopup="true" aria-expanded={isDropdownOpen}>
 									{#if user?.user_metadata?.avatar_url || user?.user_metadata?.picture}
-										<img src={user.user_metadata.avatar_url || user.user_metadata.picture} alt="Avatar" class="avatar" />
+										<img src={(user.user_metadata.avatar_url || user.user_metadata.picture) + '?v=' + avatarVersion} alt="Avatar" class="avatar" on:error={(e) => { const img = e.target as HTMLImageElement; if (img) img.style.display = 'none'; }} />
 									{:else if (user?.user_metadata?.first_name || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email)}
 										<div class="avatar avatar-initial">{getInitial(user)}</div>
 									{:else}
@@ -116,7 +132,7 @@
 					<div class="dropdown" tabIndex="0" on:blur={() => isDropdownOpen = false}>
 						<button class="user-dropdown-toggle" on:click={() => isDropdownOpen = !isDropdownOpen} aria-haspopup="true" aria-expanded={isDropdownOpen}>
 							{#if user?.user_metadata?.avatar_url || user?.user_metadata?.picture}
-								<img src={user.user_metadata.avatar_url || user.user_metadata.picture} alt="Avatar" class="avatar" />
+								<img src={(user.user_metadata.avatar_url || user.user_metadata.picture) + '?v=' + avatarVersion} alt="Avatar" class="avatar" on:error={(e) => { const img = e.target as HTMLImageElement; if (img) img.style.display = 'none'; }} />
 							{:else if (user?.user_metadata?.first_name || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email)}
 								<div class="avatar avatar-initial">{getInitial(user)}</div>
 							{:else}
