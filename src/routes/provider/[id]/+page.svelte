@@ -47,7 +47,24 @@ onMount(async () => {
 
 function whatsapp(phone: string) {
   const cleanPhone = phone.replace(/[^0-9+]/g, '');
-  const url = `https://wa.me/${cleanPhone}?text=Hola%20necesito%20ayuda!!`;
+  
+  // Crear mensaje formal y personalizado
+  const message = `Hola ${provider.business_name}, 
+
+Me interesa contratar sus servicios. 
+
+¿Podría proporcionarme más información sobre:
+• Disponibilidad y horarios
+• Tarifa por hora (actualmente $${provider.hourly_rate}/hr)
+• Zonas de cobertura
+• Experiencia y referencias
+
+Gracias por su atención.
+
+Saludos cordiales.`;
+  
+  const encodedMessage = encodeURIComponent(message);
+  const url = `https://wa.me/${cleanPhone}?text=${encodedMessage}`;
   window.open(url, '_blank');
 }
 

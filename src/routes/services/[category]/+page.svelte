@@ -101,6 +101,43 @@ let selectedProviderType: 'all' | 'individual' | 'company' = 'all';
 // Estado para el modal de filtros en mobile
 let showFiltersModal = false;
 
+// Funciones para manejo de teléfono
+function whatsapp(phone: string, provider: Provider) {
+	const cleanPhone = phone.replace(/[^0-9+]/g, '');
+	
+	// Obtener el nombre del servicio de las categorías del proveedor
+	const serviceName = provider.provider_categories?.[0]?.categories?.name || 'servicio';
+	
+	// Crear mensaje formal y personalizado
+	const message = `Hola ${provider.business_name}, 
+
+Me interesa contratar sus servicios de ${serviceName}. 
+
+¿Podría proporcionarme más información sobre:
+• Disponibilidad y horarios
+• Tarifa por hora (actualmente $${provider.hourly_rate}/hr)
+• Zonas de cobertura
+• Experiencia y referencias
+
+Gracias por su atención.
+
+Saludos cordiales.`;
+	
+	const encodedMessage = encodeURIComponent(message);
+	const url = `https://wa.me/${cleanPhone}?text=${encodedMessage}`;
+	window.open(url, '_blank');
+}
+
+function llamar(phone: string) {
+	const cleanPhone = phone.replace(/[^0-9+]/g, '');
+	window.location.href = `tel:${cleanPhone}`;
+}
+
+function verMasInformacion(provider: Provider) {
+	// Navegar a la página de detalle del proveedor
+	window.location.href = `/provider/${provider.id}`;
+}
+
 const timeOptions = [
 	"I'm Flexible",
 	'8:00am', '8:30am', '9:00am', '9:30am', '10:00am', '10:30am', '11:00am', '11:30am',
@@ -220,10 +257,6 @@ $: if (typeof window !== 'undefined' && priceRange) {
 
 $: if (typeof window !== 'undefined' && selectedProviderType) {
 	applyFilters();
-}
-
-function verMasInformacion(provider: Provider) {
-	window.location.href = `/provider/${provider.id}`;
 }
 </script>
 
@@ -521,12 +554,21 @@ function verMasInformacion(provider: Provider) {
 							<div class="provider-footer">
 								<button class="contact-btn" on:click={() => verMasInformacion(p)}>Ver más información</button>
 								{#if p.phone}
-									<button class="phone-btn">
-										<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" class="phone-icon">
-											<path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
-										</svg>
-										{p.phone}
-									</button>
+									{#if p.phone.startsWith('22')}
+										<button class="phone-btn" on:click={() => p.phone && llamar(p.phone)}>
+											<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" class="phone-icon">
+												<path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
+											</svg>
+											Llamar
+										</button>
+									{:else}
+										<button class="phone-btn" on:click={() => p.phone && whatsapp(p.phone, p)}>
+											<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" class="phone-icon">
+												<path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
+											</svg>
+											WhatsApp
+										</button>
+									{/if}
 								{/if}
 							</div>
 						</div>
