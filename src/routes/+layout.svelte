@@ -5,6 +5,7 @@
 	import Navbar from '$lib/components/Navbar.svelte';
 	// import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import { theme, applyTheme } from '$lib/stores/theme';
+	import { injectSpeedInsights } from '@vercel/speed-insights/sveltekit';
 
 	export let data: any;
 
@@ -17,6 +18,9 @@
 
 		// Suscribirse a cambios de tema
 		const unsubscribeTheme = theme.subscribe(applyTheme);
+
+		// Inyectar Speed Insights
+		injectSpeedInsights();
 
 		const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
 			if (newSession?.expires_at !== session?.expires_at) {
