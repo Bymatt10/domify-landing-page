@@ -2,15 +2,18 @@
 	import { supabase } from '$lib/supabase';
 	import { goto, invalidateAll } from '$app/navigation';
 	import { page } from '$app/stores';
-	// import ThemeToggle from './ThemeToggle.svelte';
+
 
 	let isMenuOpen = false;
 	let isDropdownOpen = false;
 
 	export let session: any = null;
 	export let user: any = null;
+	export let isProvider: boolean = false;
+	export let isAdmin: boolean = false;
 
 	console.log('USER OBJETO:', user);
+	console.log('isProvider:', isProvider, 'isAdmin:', isAdmin);
 
 	// Función para generar un hash simple del avatar_url para cache busting
 	function getAvatarHash(avatarUrl: string): string {
@@ -38,9 +41,6 @@
 		}
 	}
 
-	// Verificar si el usuario es administrador
-	$: isAdmin = user?.user_metadata?.role === 'admin';
-
 	function toggleMenu() {
 		isMenuOpen = !isMenuOpen;
 	}
@@ -58,7 +58,7 @@
 				<span>Domify</span>
 			</a>
 
-			<!-- Desktop: links y ThemeToggle a la derecha -->
+			<!-- Desktop: links a la derecha -->
 			<div class="navbar-right">
 				<div class="nav-links-desktop">
 					<a href="/" class="nav-link">Inicio</a>
@@ -85,6 +85,12 @@
 									<div class="dropdown-menu">
 										<a href="/" class="dropdown-item"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M3 12l9-9 9 9v8a2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-8z" stroke="currentColor" stroke-width="2" fill="none"/></svg> Inicio</a>
 										<a href="/profile" class="dropdown-item"><svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2" fill="none"/><path d="M4 20c0-4 4-7 8-7s8 3 8 7" stroke="currentColor" stroke-width="2" fill="none"/></svg> Mi perfil</a>
+										{#if isAdmin}
+											<a href="/admin" class="dropdown-item"><svg width="20" height="20" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2" fill="none"/><path d="M7 7h10v10H7z" stroke="currentColor" stroke-width="2" fill="none"/></svg> Panel Admin</a>
+										{/if}
+										{#if isProvider}
+											<a href="/provider" class="dropdown-item"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M3 3h18v18H3z" stroke="currentColor" stroke-width="2" fill="none"/><path d="M9 9h6v6H9z" stroke="currentColor" stroke-width="2" fill="none"/></svg> Dashboard Proveedor</a>
+										{/if}
 										<a href="/ayuda" class="dropdown-item"><svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/><path d="M9 9a3 3 0 0 1 6 0c0 2-3 3-3 5" stroke="currentColor" stroke-width="2" fill="none"/><circle cx="12" cy="17" r="1" fill="currentColor"/></svg> Ayuda en línea</a>
 									</div>
 								{/if}
@@ -94,13 +100,12 @@
 						<div class="auth-buttons" role="group" aria-label="Botones de autenticación">
 							<a href="/auth/login" class="btn btn-secondary">Iniciar Sesión</a>
 							<a href="/auth/signup" class="btn btn-primary">Registrarse</a>
-							<!-- <div class="theme-toggle-small"><ThemeToggle iconOnly={true} /></div> -->
+
 						</div>
 					{/if}
 				</div>
-				<!-- ThemeToggle y menú hamburguesa en mobile -->
+				<!-- Menú hamburguesa en mobile -->
 				<div class="mobile-controls">
-					<!-- <div class="theme-toggle-small"><ThemeToggle iconOnly={true} /></div> -->
 					<button 
 						class="menu-toggle" 
 						on:click={toggleMenu}
@@ -145,6 +150,12 @@
 							<div class="dropdown-menu">
 								<a href="/" class="dropdown-item"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M3 12l9-9 9 9v8a2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-8z" stroke="currentColor" stroke-width="2" fill="none"/></svg> Inicio</a>
 								<a href="/profile" class="dropdown-item"><svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2" fill="none"/><path d="M4 20c0-4 4-7 8-7s8 3 8 7" stroke="currentColor" stroke-width="2" fill="none"/></svg> Mi perfil</a>
+								{#if isAdmin}
+									<a href="/admin" class="dropdown-item"><svg width="20" height="20" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2" fill="none"/><path d="M7 7h10v10H7z" stroke="currentColor" stroke-width="2" fill="none"/></svg> Panel Admin</a>
+								{/if}
+								{#if isProvider}
+									<a href="/provider" class="dropdown-item"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M3 3h18v18H3z" stroke="currentColor" stroke-width="2" fill="none"/><path d="M9 9h6v6H9z" stroke="currentColor" stroke-width="2" fill="none"/></svg> Dashboard Proveedor</a>
+								{/if}
 								<a href="/ayuda" class="dropdown-item"><svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/><path d="M9 9a3 3 0 0 1 6 0c0 2-3 3-3 5" stroke="currentColor" stroke-width="2" fill="none"/><circle cx="12" cy="17" r="1" fill="currentColor"/></svg> Ayuda en línea</a>
 							</div>
 						{/if}
@@ -171,11 +182,7 @@
 		border-bottom: 1px solid var(--color-border-light, rgba(0, 0, 0, 0.1));
 	}
 
-	:global(.dark) .navbar {
-		background-color: var(--color-background-card);
-		border-bottom: 1px solid var(--color-border);
-		box-shadow: var(--shadow-sm);
-	}
+
 
 	.navbar-content {
 		display: flex;
@@ -201,16 +208,8 @@
 		transition: color var(--transition-fast);
 	}
 
-	:global(.dark) .logo {
-		color: var(--color-text-white);
-	}
-
 	.logo:hover {
 		color: var(--color-primary);
-	}
-
-	:global(.dark) .logo:hover {
-		color: var(--color-primary-light);
 	}
 
 	.nav-links-desktop {
@@ -227,16 +226,8 @@
 		white-space: nowrap;
 	}
 
-	:global(.dark) .nav-link {
-		color: var(--color-text-white);
-	}
-
 	.nav-link:hover {
 		color: var(--color-primary);
-	}
-
-	:global(.dark) .nav-link:hover {
-		color: var(--color-primary-light);
 	}
 
 	.user-menu {
@@ -251,9 +242,7 @@
 		font-weight: 500;
 	}
 
-	:global(.dark) .user-name {
-		color: var(--color-text-white);
-	}
+
 
 	.auth-buttons {
 		display: flex;
@@ -304,17 +293,7 @@
 		box-shadow: var(--shadow-sm);
 	}
 
-	:global(.dark) .btn-secondary {
-		background-color: var(--color-background);
-		color: var(--color-primary);
-		border-color: var(--color-primary);
-	}
 
-	:global(.dark) .btn-secondary:hover {
-		background-color: var(--color-primary);
-		color: var(--color-text-white);
-		border-color: var(--color-primary-hover);
-	}
 
 	.menu-toggle {
 		display: block;
@@ -338,23 +317,9 @@
 		color: var(--color-text);
 	}
 
-	:global(.dark) .menu-toggle {
-		background: rgba(255, 255, 255, 0.1);
-		border: 1px solid rgba(255, 255, 255, 0.2);
-		color: var(--color-text-white);
-	}
-
-	:global(.dark) .menu-toggle .icon {
-		color: var(--color-text-white);
-	}
-
 	.menu-toggle:hover {
 		background-color: rgba(0, 0, 0, 0.2);
 		transform: scale(1.05);
-	}
-
-	:global(.dark) .menu-toggle:hover {
-		background-color: rgba(255, 255, 255, 0.2);
 	}
 
 	.nav-links-mobile {
@@ -402,10 +367,7 @@
 		.nav-links-mobile.open {
 			display: flex;
 		}
-		:global(.dark) .nav-links-mobile {
-			background-color: var(--color-background-card);
-			border: 1px solid var(--color-border);
-		}
+
 	}
 
 	@media (max-width: 480px) {
@@ -420,35 +382,7 @@
 		}
 	}
 
-	.theme-toggle-small {
-		height: 32px;
-		width: 32px;
-		min-width: 32px;
-		min-height: 32px;
-		padding: 0;
-		margin-left: var(--spacing-sm);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		border-radius: 50%;
-		box-shadow: none;
-		background: none;
-	}
 
-	.theme-toggle-small :global(button),
-	.theme-toggle-small :global(.toggle-switch) {
-		width: 32px !important;
-		height: 32px !important;
-		padding: 0 !important;
-		border-radius: 50% !important;
-		box-shadow: none !important;
-		background: none !important;
-	}
-
-	.theme-toggle-small :global(svg) {
-		width: 20px;
-		height: 20px;
-	}
 
 	.user-menu, .auth-buttons {
 		display: flex;

@@ -3,22 +3,14 @@
 	import { invalidateAll } from '$app/navigation';
 	import { supabase } from '$lib/supabase';
 	import Navbar from '$lib/components/Navbar.svelte';
-	// import ThemeToggle from '$lib/components/ThemeToggle.svelte';
-	import { theme, applyTheme } from '$lib/stores/theme';
 	import { injectSpeedInsights } from '@vercel/speed-insights/sveltekit';
 
 	export let data: any;
 
-	let { session, user } = data;
-	$: ({ session, user } = data);
+	let { session, user, isProvider, isAdmin } = data;
+	$: ({ session, user, isProvider, isAdmin } = data);
 
 	onMount(() => {
-		// Aplicar el tema inicial
-		applyTheme($theme);
-
-		// Suscribirse a cambios de tema
-		const unsubscribeTheme = theme.subscribe(applyTheme);
-
 		// Inyectar Speed Insights
 		injectSpeedInsights();
 
@@ -30,7 +22,6 @@
 
 		return () => {
 			subscription.unsubscribe();
-			unsubscribeTheme();
 		};
 	});
 </script>
@@ -41,7 +32,7 @@
 </svelte:head>
 
 <div class="app">
-	<Navbar {session} {user} />
+	<Navbar {session} {user} {isProvider} {isAdmin} />
 	<main>
 		<slot />
 	</main>
@@ -95,21 +86,11 @@
 		background-color: var(--color-background);
 	}
 
-	:global(.dark) main {
-		background: #101922;
-	}
-
 	footer {
 		background-color: var(--color-primary);
 		color: var(--color-text-white);
 		padding: var(--spacing-2xl) 0 var(--spacing-lg);
 		border-top: 1px solid var(--color-border-light, rgba(255, 255, 255, 0.1));
-	}
-
-	:global(.dark) footer {
-		background-color: #1e293b;
-		color: var(--color-text-white);
-		border-top: 1px solid var(--color-border);
 	}
 
 	.footer-content {
@@ -184,11 +165,6 @@
 		padding: var(--spacing-lg) var(--spacing-lg) 0;
 		border-top: 1px solid var(--color-border-light, rgba(255, 255, 255, 0.1));
 		text-align: center;
-	}
-
-	:global(.dark) .footer-bottom {
-		border-top: 1px solid var(--color-border);
-		color: var(--color-text-white);
 	}
 
 	.footer-bottom p {
