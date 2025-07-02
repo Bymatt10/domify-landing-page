@@ -142,10 +142,10 @@
 
 			<!-- Stats -->
 			<div class="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-4xl mx-auto">
-				<StatsCard number="500+" label="Profesionales Verificados" delay={0} icon="👥" />
-				<StatsCard number="2000+" label="Servicios Completados" delay={200} icon="✅" />
-				<StatsCard number="4.9" label="Calificación Promedio" delay={400} icon="⭐" />
-				<StatsCard number="24/7" label="Soporte Disponible" delay={600} icon="🕒" />
+				<StatsCard number="500+" label="Profesionales Verificados" delay={0} iconName="users" />
+				<StatsCard number="2000+" label="Servicios Completados" delay={200} iconName="check" />
+				<StatsCard number="4.9" label="Calificación Promedio" delay={400} iconName="star" />
+				<StatsCard number="24/7" label="Soporte Disponible" delay={600} iconName="clock" />
 			</div>
 		</div>
 	</div>

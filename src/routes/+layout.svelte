@@ -68,7 +68,7 @@
 			</div>
 		</div>
 		<div class="max-w-7xl mx-auto mt-8 pt-6 px-6 border-t border-white/10 text-center">
-			<p class="text-white/70 text-sm">&copy; 2024 Domify. Todos los derechos reservados.</p>
+			<p class="text-white/70 text-sm">&copy; 2025 Domify. Todos los derechos reservados.</p>
 		</div>
 	</footer>
 </div>

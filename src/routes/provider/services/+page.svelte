@@ -69,33 +69,35 @@
 </svelte:head>
 
 {#if loading}
-	<div class="loading-container">
-		<div class="loading-spinner"></div>
-		<p>Cargando servicios...</p>
+	<div class="flex flex-col items-center justify-center min-h-[50vh] gap-4">
+		<div class="w-10 h-10 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+		<p class="text-gray-600">Cargando servicios...</p>
 	</div>
 {:else}
-	<div class="services-page">
-		<header class="page-header">
-			<h1>Mis Servicios</h1>
-			<p>Gestiona los servicios que ofreces a tus clientes</p>
+	<div class="max-w-6xl mx-auto px-4">
+		<header class="mb-8">
+			<h1 class="text-3xl font-bold text-gray-900 mb-2">Mis Servicios</h1>
+			<p class="text-lg text-gray-600">Gestiona los servicios que ofreces a tus clientes</p>
 		</header>
 
-		<div class="services-content">
+		<div class="bg-white rounded-lg p-8 shadow-sm border border-gray-200">
 			{#if services.length > 0}
-				<div class="services-grid">
+				<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 					{#each services as service}
-						<div class="service-card">
-							<div class="service-header">
-								<h3>{service.title}</h3>
-								<span class="service-category">{service.categories?.name}</span>
+						<div class="border border-gray-200 rounded-lg p-6 transition-all duration-200 hover:-translate-y-1 hover:shadow-md hover:border-blue-500">
+							<div class="flex justify-between items-start mb-4">
+								<h3 class="text-lg font-semibold text-gray-900 flex-1">{service.title}</h3>
+								<span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-semibold uppercase tracking-wide ml-2">
+									{service.categories?.name}
+								</span>
 							</div>
-							<p class="service-description">{service.description}</p>
-							<div class="service-details">
-								<span class="service-price">{formatCurrency(service.price)}</span>
-								<span class="service-location">📍 {service.location || 'Sin ubicación'}</span>
+							<p class="text-gray-600 text-sm mb-4 leading-relaxed">{service.description}</p>
+							<div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-4">
+								<span class="text-lg font-bold text-blue-600">{formatCurrency(service.price)}</span>
+								<span class="text-sm text-gray-500">📍 {service.location || 'Sin ubicación'}</span>
 							</div>
-							<div class="service-status">
-								<span class="status-badge {service.is_active ? 'active' : 'inactive'}">
+							<div class="flex justify-end">
+								<span class="px-2 py-1 rounded-full text-xs font-semibold uppercase tracking-wide {service.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
 									{service.is_active ? 'Activo' : 'Inactivo'}
 								</span>
 							</div>
@@ -103,229 +105,15 @@
 					{/each}
 				</div>
 			{:else}
-				<div class="empty-state">
-					<div class="empty-icon">🛠️</div>
-					<h3>No tienes servicios configurados</h3>
-					<p>Comienza agregando los servicios que ofreces a tus clientes.</p>
-					<button class="btn btn-primary">Agregar Primer Servicio</button>
+				<div class="text-center py-12">
+					<div class="text-4xl mb-4">🛠️</div>
+					<h3 class="text-xl font-semibold text-gray-900 mb-2">No tienes servicios configurados</h3>
+					<p class="text-gray-600 mb-6">Comienza agregando los servicios que ofreces a tus clientes.</p>
+					<button class="btn-primary">Agregar Primer Servicio</button>
 				</div>
 			{/if}
 		</div>
 	</div>
 {/if}
 
-<style>
-	.loading-container {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		min-height: 50vh;
-		gap: var(--spacing-md);
-	}
-
-	.loading-spinner {
-		width: 40px;
-		height: 40px;
-		border: 4px solid var(--color-primary-light);
-		border-top: 4px solid var(--color-primary);
-		border-radius: 50%;
-		animation: spin 1s linear infinite;
-	}
-
-	@keyframes spin {
-		0% { transform: rotate(0deg); }
-		100% { transform: rotate(360deg); }
-	}
-
-	.services-page {
-		max-width: 1200px;
-		margin: 0 auto;
-	}
-
-	.page-header {
-		margin-bottom: var(--spacing-2xl);
-	}
-
-	.page-header h1 {
-		margin: 0 0 var(--spacing-sm) 0;
-		color: var(--color-text);
-		font-size: var(--font-size-3xl);
-		font-weight: 700;
-	}
-
-	.page-header p {
-		margin: 0;
-		color: var(--color-text-light);
-		font-size: var(--font-size-lg);
-	}
-
-	.services-content {
-		background: var(--color-background-white);
-		border-radius: var(--border-radius-lg);
-		padding: var(--spacing-2xl);
-		box-shadow: var(--shadow-sm);
-	}
-
-	.services-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-		gap: var(--spacing-lg);
-	}
-
-	.service-card {
-		border: 1px solid var(--color-border-light, rgba(0, 0, 0, 0.1));
-		border-radius: var(--border-radius-md);
-		padding: var(--spacing-lg);
-		transition: all var(--transition-fast);
-	}
-
-	.service-card:hover {
-		transform: translateY(-2px);
-		box-shadow: var(--shadow-md);
-		border-color: var(--color-primary);
-	}
-
-	.service-header {
-		display: flex;
-		justify-content: space-between;
-		align-items: flex-start;
-		margin-bottom: var(--spacing-md);
-	}
-
-	.service-header h3 {
-		margin: 0;
-		color: var(--color-text);
-		font-size: var(--font-size-lg);
-		font-weight: 600;
-	}
-
-	.service-category {
-		background: var(--color-primary-light);
-		color: var(--color-primary);
-		padding: var(--spacing-xs) var(--spacing-sm);
-		border-radius: var(--border-radius-full);
-		font-size: var(--font-size-xs);
-		font-weight: 600;
-		text-transform: uppercase;
-		letter-spacing: 0.5px;
-	}
-
-	.service-description {
-		margin: 0 0 var(--spacing-md) 0;
-		color: var(--color-text-light);
-		font-size: var(--font-size-sm);
-		line-height: 1.5;
-	}
-
-	.service-details {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		margin-bottom: var(--spacing-md);
-	}
-
-	.service-price {
-		font-size: var(--font-size-lg);
-		font-weight: 700;
-		color: var(--color-primary);
-	}
-
-	.service-location {
-		font-size: var(--font-size-sm);
-		color: var(--color-text-light);
-	}
-
-	.service-status {
-		display: flex;
-		justify-content: flex-end;
-	}
-
-	.status-badge {
-		padding: var(--spacing-xs) var(--spacing-sm);
-		border-radius: var(--border-radius-full);
-		font-size: var(--font-size-xs);
-		font-weight: 600;
-		text-transform: uppercase;
-		letter-spacing: 0.5px;
-	}
-
-	.status-badge.active {
-		background: #d1fae5;
-		color: #065f46;
-	}
-
-	.status-badge.inactive {
-		background: #fee2e2;
-		color: #991b1b;
-	}
-
-	.empty-state {
-		text-align: center;
-		padding: var(--spacing-3xl) var(--spacing-lg);
-	}
-
-	.empty-icon {
-		font-size: var(--font-size-4xl);
-		margin-bottom: var(--spacing-md);
-	}
-
-	.empty-state h3 {
-		margin: 0 0 var(--spacing-sm) 0;
-		color: var(--color-text);
-		font-size: var(--font-size-xl);
-		font-weight: 600;
-	}
-
-	.empty-state p {
-		margin: 0 0 var(--spacing-lg) 0;
-		color: var(--color-text-light);
-		font-size: var(--font-size-base);
-	}
-
-	.btn {
-		padding: var(--spacing-sm) var(--spacing-lg);
-		border-radius: var(--border-radius-md);
-		font-size: var(--font-size-base);
-		font-weight: 600;
-		text-decoration: none;
-		transition: all var(--transition-fast);
-		border: none;
-		cursor: pointer;
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-	}
-
-	.btn-primary {
-		background: var(--color-primary);
-		color: white;
-	}
-
-	.btn-primary:hover {
-		background: var(--color-primary-hover);
-		transform: translateY(-1px);
-	}
-
-	/* Responsive */
-	@media (max-width: 768px) {
-		.services-content {
-			padding: var(--spacing-lg);
-		}
-
-		.services-grid {
-			grid-template-columns: 1fr;
-		}
-
-		.service-header {
-			flex-direction: column;
-			gap: var(--spacing-sm);
-		}
-
-		.service-details {
-			flex-direction: column;
-			gap: var(--spacing-sm);
-			align-items: flex-start;
-		}
-	}
-</style> 
+<!-- CSS convertido a clases de Tailwind --> 

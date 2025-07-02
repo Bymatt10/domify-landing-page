@@ -206,56 +206,70 @@
   }
 </script>
 
-<div class="profile-card">
-  <h2>Mi cuenta</h2>
-  {#if loading}
-    <p>Cargando...</p>
-  {:else}
+<div class="bg-white rounded-2xl shadow-sm max-w-2xl mx-auto mt-10 mb-8 p-10 border border-gray-100">
+  <h2 class="text-2xl font-bold mb-8 text-gray-900">Información personal</h2>
+  
+  {#if user}
+    <div class="flex justify-center mb-8">
+      <div class="relative w-20 h-20">
+        {#if user.user_metadata?.avatar_url}
+          <img src={user.user_metadata.avatar_url} alt="Avatar" class="w-20 h-20 rounded-full object-cover" />
+        {:else}
+          <div class="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center">
+            <svg class="w-8 h-8 text-gray-400" viewBox="0 0 24 24">
+              <circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2" fill="none"/>
+              <path d="M4 20c0-4 4-7 8-7s8 3 8 7" stroke="currentColor" stroke-width="2" fill="none"/>
+            </svg>
+          </div>
+        {/if}
+        <input 
+          type="file" 
+          id="avatar-upload" 
+          accept="image/*" 
+          style="display: none;" 
+          on:change={handleAvatarChange}
+        />
+        <button 
+          class="absolute bottom-0 right-0 bg-white border-2 border-green-500 rounded-full w-8 h-8 flex items-center justify-center cursor-pointer shadow-sm transition-colors duration-200 hover:bg-green-50"
+          on:click={() => document.getElementById('avatar-upload')?.click()}
+        >
+          <svg class="w-4 h-4 text-green-500" viewBox="0 0 24 24">
+            <path d="M12 4v16m8-8H4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
     {#if error}
       <div class="error-message">{error}</div>
     {/if}
     {#if success}
       <div class="success-message">{success}</div>
     {/if}
-    <form on:submit|preventDefault={handleUpdate} class="profile-form">
-      <div class="avatar-section">
-        <div class="avatar-wrapper">
-          {#if avatar_url}
-            <img class="avatar-img" src={avatar_url ? avatar_url + '?v=' + avatarVersion : ''} alt="Avatar" on:error={(e) => { const img = e.target as HTMLImageElement; if (img) img.src = '/img/default-avatar.png'; }} />
-          {:else}
-            <div class="avatar-placeholder">
-              <svg width="60" height="60" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" stroke="#bbb" stroke-width="2" fill="none"/><path d="M4 20c0-4 4-7 8-7s8 3 8 7" stroke="#bbb" stroke-width="2" fill="none"/></svg>
-            </div>
-          {/if}
-          <label class="avatar-upload-btn" title="Cambiar foto de perfil">
-            <input type="file" accept="image/*" on:change={handleAvatarChange} style="display:none" />
-            <svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="#10b981" stroke-width="2" fill="none"/><path d="M12 8v8M8 12h8" stroke="#10b981" stroke-width="2"/></svg>
-          </label>
+    <form on:submit|preventDefault={handleUpdate} class="mt-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div class="flex flex-col">
+          <label for="firstName" class="font-medium mb-1 text-gray-700">Nombre</label>
+          <input id="firstName" type="text" bind:value={first_name} class="p-3 border-2 border-gray-200 rounded-lg text-base focus:border-blue-500 focus:outline-none transition-colors" />
+        </div>
+        <div class="flex flex-col">
+          <label for="lastName" class="font-medium mb-1 text-gray-700">Apellidos</label>
+          <input id="lastName" type="text" bind:value={last_name} class="p-3 border-2 border-gray-200 rounded-lg text-base focus:border-blue-500 focus:outline-none transition-colors" />
+        </div>
+        <div class="flex flex-col">
+          <label for="birthdate" class="font-medium mb-1 text-gray-700">Fecha de nacimiento</label>
+          <input id="birthdate" type="text" bind:value={birthdate} placeholder="DD/MM/AAAA" class="p-3 border-2 border-gray-200 rounded-lg text-base focus:border-blue-500 focus:outline-none transition-colors" />
+        </div>
+        <div class="flex flex-col">
+          <label for="phone" class="font-medium mb-1 text-gray-700">Número de celular</label>
+          <input id="phone" type="tel" bind:value={phone} placeholder="Ej: +50588889999" class="p-3 border-2 border-gray-200 rounded-lg text-base focus:border-blue-500 focus:outline-none transition-colors" />
+        </div>
+        <div class="flex flex-col md:col-span-2">
+          <label for="email" class="font-medium mb-1 text-gray-700">Email</label>
+          <input id="email" type="email" value={email} disabled class="p-3 border-2 border-gray-200 rounded-lg text-base bg-gray-50 text-gray-500" />
         </div>
       </div>
-      <div class="form-grid">
-        <div class="form-group">
-          <label for="first_name">Nombre</label>
-          <input id="first_name" type="text" bind:value={first_name} required />
-        </div>
-        <div class="form-group">
-          <label for="last_name">Apellido</label>
-          <input id="last_name" type="text" bind:value={last_name} required />
-        </div>
-        <div class="form-group">
-          <label for="birthdate">Fecha de nacimiento</label>
-          <input id="birthdate" type="text" bind:value={birthdate} placeholder="DD/MM/AAAA" />
-        </div>
-        <div class="form-group">
-          <label for="phone">Número de celular</label>
-          <input id="phone" type="tel" bind:value={phone} placeholder="Ej: +50588889999" />
-        </div>
-        <div class="form-group full-width">
-          <label for="email">Email</label>
-          <input id="email" type="email" value={email} disabled />
-        </div>
-      </div>
-      <div class="form-actions">
+      <div class="flex justify-end mt-8">
         <button type="submit" class="btn-primary" disabled={loading}>
           {loading ? 'Guardando...' : 'Guardar'}
         </button>
@@ -264,34 +278,34 @@
   {/if}
 </div>
 
-<div class="profile-card">
-  <h2>Resetear contraseña</h2>
+<div class="bg-white rounded-2xl shadow-sm max-w-2xl mx-auto mb-8 p-10 border border-gray-100">
+  <h2 class="text-2xl font-bold mb-8 text-gray-900">Resetear contraseña</h2>
   {#if passwordError}
     <div class="error-message">{passwordError}</div>
   {/if}
   {#if passwordSuccess}
     <div class="success-message">{passwordSuccess}</div>
   {/if}
-  <form on:submit|preventDefault={handlePasswordChange} class="password-form">
-    <div class="form-grid">
-      <div class="form-group full-width">
-        <label for="currentPassword">Contraseña actual</label>
-        <input id="currentPassword" type="password" bind:value={currentPassword} required />
+  <form on:submit|preventDefault={handlePasswordChange} class="mt-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <div class="flex flex-col md:col-span-2">
+        <label for="currentPassword" class="font-medium mb-1 text-gray-700">Contraseña actual</label>
+        <input id="currentPassword" type="password" bind:value={currentPassword} required class="p-3 border-2 border-gray-200 rounded-lg text-base focus:border-blue-500 focus:outline-none transition-colors" />
       </div>
-      <div class="form-group">
-        <label for="newPassword">Nueva contraseña</label>
-        <input id="newPassword" type="password" bind:value={newPassword} required />
+      <div class="flex flex-col">
+        <label for="newPassword" class="font-medium mb-1 text-gray-700">Nueva contraseña</label>
+        <input id="newPassword" type="password" bind:value={newPassword} required class="p-3 border-2 border-gray-200 rounded-lg text-base focus:border-blue-500 focus:outline-none transition-colors" />
       </div>
-      <div class="form-group">
-        <label for="confirmPassword">Confirmar contraseña</label>
-        <input id="confirmPassword" type="password" bind:value={confirmPassword} required />
+      <div class="flex flex-col">
+        <label for="confirmPassword" class="font-medium mb-1 text-gray-700">Confirmar contraseña</label>
+        <input id="confirmPassword" type="password" bind:value={confirmPassword} required class="p-3 border-2 border-gray-200 rounded-lg text-base focus:border-blue-500 focus:outline-none transition-colors" />
       </div>
     </div>
-    <ul class="password-rules">
+    <ul class="mt-4 mb-2 pl-5 text-gray-600 text-base">
       <li>● Mínimo 10 caracteres</li>
       <li>● Al menos 1 número, 1 mayúscula, 1 minúscula y 1 carácter especial</li>
     </ul>
-    <div class="form-actions">
+    <div class="flex justify-end mt-8">
       <button type="submit" class="btn-primary" disabled={passwordLoading}>
         {passwordLoading ? 'Guardando...' : 'Guardar'}
       </button>
@@ -300,146 +314,10 @@
 </div>
 
 {#if uploading}
-  <div class="uploading-message">Subiendo imagen...</div>
+  <div class="text-center text-blue-600 font-medium">Subiendo imagen...</div>
 {/if}
 {#if uploadError}
   <div class="error-message">{uploadError}</div>
 {/if}
 
-<style>
-.profile-card {
-  background: #fff;
-  border-radius: 1.2rem;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-  max-width: 700px;
-  margin: 2.5rem auto 2rem auto;
-  padding: 2.5rem 2rem 2rem 2rem;
-}
-.profile-card h2 {
-  font-size: 1.5rem;
-  font-weight: 700;
-  margin-bottom: 2rem;
-  color: #222;
-}
-.avatar-section {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 2rem;
-}
-.avatar-wrapper {
-  position: relative;
-  width: 80px;
-  height: 80px;
-}
-.avatar-img, .avatar-placeholder {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  object-fit: cover;
-  background: #f6f6f8;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.avatar-upload-btn {
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  background: #fff;
-  border: 2px solid #10b981;
-  border-radius: 50%;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  box-shadow: 0 2px 8px rgba(16,185,129,0.08);
-  transition: background 0.2s;
-}
-.avatar-upload-btn:hover {
-  background: #e0f2f1;
-}
-.form-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.2rem 2rem;
-}
-.form-group {
-  display: flex;
-  flex-direction: column;
-}
-.form-group.full-width {
-  grid-column: 1 / -1;
-}
-label {
-  font-weight: 500;
-  margin-bottom: 0.3rem;
-}
-input[type="text"], input[type="email"], input[type="tel"], input[type="password"] {
-  padding: 0.7rem;
-  border: 1.5px solid #e1e5e9;
-  border-radius: 0.6rem;
-  font-size: 1rem;
-}
-input:disabled {
-  background: #f5f5f5;
-  color: #aaa;
-}
-.form-actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 2rem;
-}
-.btn-primary {
-  padding: 0.8rem 2.2rem;
-  background: var(--color-primary, #10b981);
-  color: #fff;
-  border: none;
-  border-radius: 0.6rem;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-.btn-primary:disabled {
-  background: #ccc;
-  cursor: not-allowed;
-}
-.error-message {
-  background: #fee;
-  color: #c33;
-  padding: 0.7rem;
-  border-radius: 0.5rem;
-  margin-bottom: 1rem;
-  border: 1px solid #fcc;
-  text-align: center;
-}
-.success-message {
-  background: #e6ffed;
-  color: #1a7f37;
-  padding: 0.7rem;
-  border-radius: 0.5rem;
-  margin-bottom: 1rem;
-  border: 1px solid #b7eb8f;
-  text-align: center;
-}
-.password-form {
-  margin-top: 1.5rem;
-}
-.password-rules {
-  margin: 1rem 0 0.5rem 0;
-  padding-left: 1.2rem;
-  color: #666;
-  font-size: 0.98rem;
-}
-@media (max-width: 700px) {
-  .profile-card {
-    padding: 1.2rem 0.5rem 1.5rem 0.5rem;
-  }
-  .form-grid {
-    grid-template-columns: 1fr;
-    gap: 1.1rem 0;
-  }
-}
-</style> 
+<!-- CSS convertido a clases de Tailwind --> 

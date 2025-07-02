@@ -113,7 +113,7 @@
 					on:keydown={handleKeyPress}
 					on:focus={handleFocus}
 					on:blur={handleBlur}
-					class="w-full pl-12 px-6 py-4 text-lg text-secondary-900 placeholder-secondary-400 border-0 focus:outline-none focus:ring-0 bg-transparent"
+					class="w-full pl-10 px-4 py-3 text-sm sm:text-base text-secondary-900 placeholder-secondary-400 border-0 focus:outline-none focus:ring-0 bg-transparent"
 					aria-label="Buscar servicio o profesional"
 					aria-expanded={showSuggestions && searchQuery && (filteredCategories.length > 0 || people.length > 0) ? true : false}
 					aria-haspopup="listbox"
@@ -121,8 +121,8 @@
 					role="combobox"
 				/>
 				<!-- Search Icon (always visible, centered) -->
-				<div class="absolute left-6 top-1/2 transform -translate-y-1/2 pointer-events-none">
-					<svg class="w-5 h-5 text-secondary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<div class="absolute left-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+					<svg class="w-4 h-4 text-secondary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
 					</svg>
 				</div>
