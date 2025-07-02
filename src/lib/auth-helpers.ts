@@ -41,8 +41,7 @@ export async function createCustomerProfile(profile: UserProfile, authUserId: st
 			.insert({
 				user_id: authUserId,
 				first_name: profile.first_name,
-				last_name: profile.last_name,
-				role: role
+				last_name: profile.last_name
 			})
 			.select()
 			.single();

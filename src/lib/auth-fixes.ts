@@ -59,7 +59,6 @@ export async function safeCreateUserProfile(
   userData: {
     first_name?: string;
     last_name?: string;
-    role?: 'customer' | 'provider' | 'admin';
     phone_number?: string;
   }
 ) {
@@ -70,7 +69,6 @@ export async function safeCreateUserProfile(
         user_id: userId,
         first_name: userData.first_name || 'Usuario',
         last_name: userData.last_name || 'Nuevo',
-        role: userData.role || 'customer',
         phone_number: userData.phone_number,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
@@ -100,7 +98,6 @@ export async function getOrCreateUserProfile(
   userData?: {
     first_name?: string;
     last_name?: string;
-    role?: 'customer' | 'provider' | 'admin';
     phone_number?: string;
   }
 ) {
@@ -131,21 +128,30 @@ export async function getOrCreateUserProfile(
 
 /**
  * Verifica si un usuario tiene un rol específico
+ * Ahora obtiene el rol desde auth.users en lugar de customers
  */
 export async function checkUserRole(
   supabase: SupabaseClient,
   userId: string,
   requiredRole: 'customer' | 'provider' | 'admin'
 ) {
-  const { profile, error } = await safeGetUserProfile(supabase, userId);
-  
-  if (error || !profile) {
-    return { hasRole: false, profile: null, error };
+  try {
+    // Obtener el rol desde auth.users
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    
+    if (userError || !user) {
+      return { hasRole: false, profile: null, error: userError };
+    }
+    
+    const userRole = user.user_metadata?.role || 'customer';
+    
+    return { 
+      hasRole: userRole === requiredRole, 
+      profile: null, 
+      error: null 
+    };
+  } catch (err) {
+    console.error('Exception checking user role:', err);
+    return { hasRole: false, profile: null, error: err };
   }
-  
-  return { 
-    hasRole: profile.role === requiredRole, 
-    profile, 
-    error: null 
-  };
 } 

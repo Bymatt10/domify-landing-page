@@ -13,12 +13,14 @@
   });
 </script>
 
-<div class="admin-layout">
+<div class="min-h-screen bg-secondary-50">
   <AdminSidebar {currentUser} />
   
   <!-- Main Content -->
-  <main class="admin-main">
-    <slot />
+  <main class="lg:ml-64 transition-all duration-300 ease-in-out">
+    <div class="p-4 lg:p-6">
+      <slot />
+    </div>
   </main>
 </div>
 

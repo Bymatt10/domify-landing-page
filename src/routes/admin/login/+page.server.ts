@@ -5,14 +5,10 @@ export const load: PageServerLoad = async ({ locals: { supabase }, url }) => {
 	const { data: { session } } = await supabase.auth.getSession();
 
 	if (session) {
-        // Si hay una sesión, verificamos el rol del usuario
-		const { data: profile } = await supabase
-			.from('customers')
-			.select('role')
-			.eq('user_id', session.user.id)
-			.single();
+        // Si hay una sesión, verificamos el rol del usuario desde auth.users
+        const userRole = session.user.user_metadata?.role;
 
-        if (profile?.role === 'admin') {
+        if (userRole === 'admin') {
             // Si el usuario ya es un admin logueado, lo mandamos al dashboard
             throw redirect(303, '/admin');
         }

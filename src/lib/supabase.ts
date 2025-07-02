@@ -14,7 +14,6 @@ if (!supabaseAnonKey) {
     throw new Error('PUBLIC_SUPABASE_ANON_KEY no está definida');
 }
 
-// Cliente para el navegador
 export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey, {
     auth: {
         autoRefreshToken: true,
@@ -23,7 +22,6 @@ export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey, {
     }
 })
 
-// Cliente para el servidor
 export const createSupabaseServerClient = (fetch: typeof globalThis.fetch) => {
     return createServerClient(supabaseUrl, supabaseAnonKey, {
         global: {
@@ -39,10 +37,8 @@ export const createSupabaseServerClient = (fetch: typeof globalThis.fetch) => {
                 return undefined
             },
             set(key, value, options) {
-                // Server-side cookie setting will be handled by hooks
             },
             remove(key, options) {
-                // Server-side cookie removal will be handled by hooks
             },
         }
     })

@@ -3,6 +3,9 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
 	plugins: [sveltekit()],
+	css: {
+		postcss: './postcss.config.js',
+	},
 	envPrefix: ['PUBLIC_', 'VITE_', 'MAILER_', 'SMTP_', 'FROM_'],
 	define: {
 		// Make environment variables available to the server

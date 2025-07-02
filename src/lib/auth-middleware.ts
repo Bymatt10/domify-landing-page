@@ -52,7 +52,10 @@ export async function authenticateUser(event: RequestEvent): Promise<Authenticat
     throw new AuthenticationException('No valid session found');
   }
 
-  // Get user profile from database (source of truth for role)
+  // Get user role from auth.users (source of truth for role)
+  const userRole = userMetadata?.role || 'customer';
+  
+  // Get customer profile from database (for profile data, not role)
   const { data: customerData, error: customerError } = await locals.supabase
     .from('customers')
     .select('*')
@@ -72,8 +75,7 @@ export async function authenticateUser(event: RequestEvent): Promise<Authenticat
           .insert({
             user_id: userId,
             first_name: userMetadata?.first_name || 'Usuario',
-            last_name: userMetadata?.last_name || 'Nuevo',
-            role: userMetadata?.role || 'customer'
+            last_name: userMetadata?.last_name || 'Nuevo'
           })
           .select('*')
           .single();
@@ -118,7 +120,7 @@ export async function authenticateUser(event: RequestEvent): Promise<Authenticat
   return {
     id: userId,
     email: userEmail,
-    role: customerData.role,
+    role: userRole,
     customerProfile: customerData,
     providerProfile: providerData || null
   };

@@ -107,10 +107,10 @@ export const POST: RequestHandler = async ({ request, locals }) => {
             return json(errorResponse, { status: 401 });
         }
 
-        // Get user details from customers table
+        // Get user details from customers table (for profile data, not role)
         const { data: customerData, error: customerError } = await locals.supabase
             .from('customers')
-            .select('id, user_id, first_name, last_name, role, created_at')
+            .select('id, user_id, first_name, last_name, created_at')
             .eq('user_id', data.user.id)
             .single();
 
@@ -118,10 +118,18 @@ export const POST: RequestHandler = async ({ request, locals }) => {
             console.error('Error fetching user data:', customerError);
         }
 
-        const user = customerData || {
+        // Get role from user metadata
+        const userRole = data.user.user_metadata?.role || 'customer';
+
+        const user = {
             id: data.user.id,
             email: data.user.email,
-            role: 'customer'
+            role: userRole,
+            ...(customerData && { 
+                first_name: customerData.first_name,
+                last_name: customerData.last_name,
+                created_at: customerData.created_at
+            })
         };
 
         return json({

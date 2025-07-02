@@ -35,21 +35,10 @@
 			}
 
 			if (loginData.user) {
-				// Después del login, verificamos el rol del usuario desde nuestra base de datos
-				const { data: profile, error: profileError } = await supabase
-					.from('customers')
-					.select('role')
-					.eq('user_id', loginData.user.id)
-					.single();
+				// Después del login, verificamos el rol del usuario desde auth.users
+				const userRole = loginData.user.user_metadata?.role;
 
-				if (profileError || !profile) {
-					error = 'No se pudo verificar el rol del usuario.';
-					await supabase.auth.signOut(); // Cerramos sesión si no tiene perfil
-					return;
-				}
-
-				if (profile.role === 'admin') {
-
+				if (userRole === 'admin') {
 					// Si es admin, lo redirigimos al dashboard de admin
 					window.location.href = '/admin';
 				} else {

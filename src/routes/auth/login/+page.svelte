@@ -3,11 +3,31 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { invalidateAll } from '$app/navigation';
+	import { onMount } from 'svelte';
 
 	let email = '';
 	let password = '';
 	let loading = false;
 	let error = '';
+
+	// Capturar error de URL (desde OAuth callback)
+	onMount(() => {
+		const urlError = $page.url.searchParams.get('error');
+		if (urlError) {
+			// Decodificar y limpiar el mensaje de error
+			const decodedError = decodeURIComponent(urlError);
+			
+			if (decodedError.includes('exception:')) {
+				error = 'Error en la autenticación con Google. Por favor, inténtalo de nuevo.';
+			} else if (decodedError.includes('oauthError:')) {
+				error = decodedError.replace('oauthError:', '');
+			} else if (decodedError.includes('profileError:')) {
+				error = 'Error creando tu perfil. Por favor, inténtalo de nuevo.';
+			} else {
+				error = decodedError;
+			}
+		}
+	});
 
 	async function handleLogin() {
 		try {

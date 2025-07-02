@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
+  import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
 
   interface ProviderApplication {
     id: number;
@@ -98,8 +99,8 @@
   }
 
   async function loadApplications() {
-      loading = true;
-      error = '';
+    loading = true;
+    error = '';
 
     try {
       const url = new URL('/api/provider-applications', window.location.origin);
@@ -122,8 +123,7 @@
 
         if (applications.length === 0) {
           console.log('No applications found for the current filters.');
-      }
-
+        }
       } else {
         const errorData = await response.json();
         error = errorData.error?.message || 'Error al cargar aplicaciones. Mostrando datos de ejemplo.';
@@ -272,56 +272,50 @@
     ];
   }
 
-  async function updateApplicationStatus(applicationId: number, newStatus: string) {
-    try {
-      updatingStatus.add(applicationId);
+  async function updateApplicationStatus(applicationId: number, newStatus: string, rejectionReason?: string) {
+    updatingStatus.add(applicationId);
+    updatingStatus = updatingStatus;
 
-      const response = await fetch(`/api/provider-applications?id=${applicationId}`, {
-        method: 'PUT',
+    try {
+      const response = await fetch(`/api/provider-applications/${applicationId}`, {
+        method: 'PATCH',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ status: newStatus })
+        body: JSON.stringify({
+          status: newStatus,
+          rejection_reason: rejectionReason
+        })
       });
 
-      if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
+      if (response.ok) {
+        await loadApplications();
+      } else {
+        const errorData = await response.json();
+        alert(`Error: ${errorData.error?.message || 'No se pudo actualizar el estado'}`);
       }
-
-      const result = await response.json();
-      
-      if (result.error) {
-        throw new Error(result.error.message);
-      }
-
-      // Actualizar la aplicación en la lista
-      applications = applications.map(app => 
-        app.id === applicationId 
-          ? { ...app, status: newStatus as any, updated_at: new Date().toISOString() }
-          : app
-      );
-
-    } catch (err) {
-      error = err instanceof Error ? err.message : 'Error al actualizar el estado';
-      console.error('Error updating application status:', err);
+    } catch (error) {
+      console.error('Error updating application status:', error);
+      alert('Error de conexión al actualizar el estado');
     } finally {
       updatingStatus.delete(applicationId);
+      updatingStatus = updatingStatus;
     }
   }
 
   function getStatusColor(status: string) {
     switch (status) {
-      case 'submitted': return 'yellow';
-      case 'in_review': return 'blue';
-      case 'approved': return 'green';
-      case 'rejected': return 'red';
-      default: return 'gray';
+      case 'submitted': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'in_review': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'approved': return 'bg-green-100 text-green-800 border-green-200';
+      case 'rejected': return 'bg-red-100 text-red-800 border-red-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   }
 
   function getStatusText(status: string) {
     switch (status) {
-      case 'submitted': return 'Pendiente';
+      case 'submitted': return 'Enviada';
       case 'in_review': return 'En Revisión';
       case 'approved': return 'Aprobada';
       case 'rejected': return 'Rechazada';
@@ -339,28 +333,15 @@
     });
   }
 
-  function goToPage(page: number) {
-    if (page >= 1 && page <= totalPages) {
-      currentPage = page;
-      loadApplications();
+  function getUserDisplayName(application: ProviderApplication) {
+    if (application.user?.raw_user_meta_data?.first_name) {
+      const firstName = application.user.raw_user_meta_data.first_name;
+      const lastName = application.user.raw_user_meta_data.last_name || '';
+      return `${firstName} ${lastName}`.trim();
     }
+    return application.user?.email || application.email || 'Usuario desconocido';
   }
 
-  function applyFilters() {
-    currentPage = 1;
-    loadApplications();
-  }
-
-  function clearFilters() {
-    statusFilter = 'all';
-    searchFilter = '';
-    categoryFilter = 'all';
-    dateFilter = 'all';
-    currentPage = 1;
-    loadApplications();
-  }
-
-  // Funciones para edición
   function openEditModal(application: ProviderApplication) {
     editingApplication = application;
     editForm = {
@@ -371,7 +352,7 @@
       phone: application.phone,
       experience_years: application.experience_years,
       categories: Array.isArray(application.categories) 
-        ? application.categories.map(cat => typeof cat === 'object' ? cat.category_id : cat)
+        ? application.categories.map(c => typeof c === 'number' ? c : c.category_id)
         : []
     };
     showEditModal = true;
@@ -383,254 +364,289 @@
     savingEdit = false;
   }
 
-  async function saveApplicationEdit() {
+  async function saveEdit() {
     if (!editingApplication) return;
 
     savingEdit = true;
     try {
-      const response = await fetch(`/api/provider-applications?id=${editingApplication.id}`, {
-        method: 'PUT',
+      const response = await fetch(`/api/provider-applications/${editingApplication.id}`, {
+        method: 'PATCH',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          headline: editForm.headline,
-          bio: editForm.bio,
-          hourly_rate: editForm.hourly_rate,
-          location: editForm.location,
-          phone: editForm.phone,
-          experience_years: editForm.experience_years,
-          categories: editForm.categories
-        })
+        body: JSON.stringify(editForm)
       });
 
       if (response.ok) {
+        await loadApplications();
         closeEditModal();
-        await loadApplications(); // Recargar la lista
       } else {
         const errorData = await response.json();
-        alert(`Error al actualizar: ${errorData.error || 'Error desconocido'}`);
+        alert(`Error: ${errorData.error?.message || 'No se pudo guardar la edición'}`);
       }
-    } catch (err) {
-      console.error('Error updating application:', err);
-      alert('Error de conexión al actualizar la aplicación');
+    } catch (error) {
+      console.error('Error saving edit:', error);
+      alert('Error de conexión al guardar');
     } finally {
       savingEdit = false;
     }
   }
 
-  function toggleCategory(categoryId: number) {
-    if (editForm.categories.includes(categoryId)) {
-      editForm.categories = editForm.categories.filter(id => id !== categoryId);
-    } else {
-      editForm.categories = [...editForm.categories, categoryId];
+  // Reactive statements para filtros
+  $: {
+    if (statusFilter || searchFilter || categoryFilter || dateFilter) {
+      currentPage = 1;
+      loadApplications();
     }
   }
 </script>
 
-<div class="admin-page">
-  <!-- Header -->
-  <header class="page-header">
-    <div class="header-content">
-      <h1>Aplicaciones de Proveedores</h1>
-      <p>Gestiona las solicitudes de nuevos proveedores</p>
-    </div>
-  </header>
+<svelte:head>
+  <title>Aplicaciones de Proveedores - Domify Admin</title>
+</svelte:head>
 
-  <!-- Filtros -->
-  <div class="filters-section">
-    <div class="filters-grid">
-      <div class="filter-group">
-        <label for="status-filter">Estado:</label>
-        <select id="status-filter" bind:value={statusFilter} on:change={applyFilters}>
+<div class="space-y-6">
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h1 class="text-3xl font-bold text-secondary-900">Aplicaciones de Proveedores</h1>
+      <p class="mt-2 text-secondary-600">Gestiona las solicitudes de nuevos proveedores</p>
+    </div>
+    <div class="mt-4 sm:mt-0">
+      <div class="flex items-center space-x-2 text-sm text-secondary-500">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+        </svg>
+        <span>Total: {totalApplications} aplicaciones</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error Banner -->
+  {#if error}
+    <div class="bg-gradient-to-r from-yellow-50 to-yellow-100 border border-yellow-200 rounded-xl p-4">
+      <div class="flex items-start space-x-3">
+        <div class="flex-shrink-0">
+          <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+          </svg>
+        </div>
+        <div>
+          <h4 class="text-sm font-semibold text-yellow-800">Aviso</h4>
+          <p class="mt-1 text-sm text-yellow-700">{error}</p>
+        </div>
+      </div>
+    </div>
+  {/if}
+
+  <!-- Filters -->
+  <div class="bg-white rounded-xl shadow-sm border border-secondary-200 p-6">
+    <h3 class="text-lg font-semibold text-secondary-900 mb-4">Filtros</h3>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <!-- Search Filter -->
+      <div>
+        <label for="search" class="block text-sm font-medium text-secondary-700 mb-2">
+          Buscar
+        </label>
+        <div class="relative">
+          <input
+            id="search"
+            type="text"
+            bind:value={searchFilter}
+            placeholder="Nombre, email, headline..."
+            class="w-full pl-10 pr-4 py-2 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors duration-200"
+          />
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <svg class="h-5 w-5 text-secondary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Status Filter -->
+      <div>
+        <label for="status" class="block text-sm font-medium text-secondary-700 mb-2">
+          Estado
+        </label>
+        <select
+          id="status"
+          bind:value={statusFilter}
+          class="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors duration-200"
+        >
           <option value="all">Todos los estados</option>
-          <option value="submitted">Pendiente</option>
+          <option value="submitted">Enviadas</option>
           <option value="in_review">En Revisión</option>
-          <option value="approved">Aprobada</option>
-          <option value="rejected">Rechazada</option>
+          <option value="approved">Aprobadas</option>
+          <option value="rejected">Rechazadas</option>
         </select>
       </div>
 
-      <div class="filter-group">
-        <label for="search-filter">Buscar:</label>
-        <input 
-          id="search-filter"
-          type="text" 
-          placeholder="Buscar por título..." 
-          bind:value={searchFilter}
-          on:keyup={(e) => e.key === 'Enter' && applyFilters()}
-        />
+      <!-- Category Filter -->
+      <div>
+        <label for="category" class="block text-sm font-medium text-secondary-700 mb-2">
+          Categoría
+        </label>
+        <select
+          id="category"
+          bind:value={categoryFilter}
+          class="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors duration-200"
+        >
+          <option value="all">Todas las categorías</option>
+          {#each categories as category}
+            <option value={category.id.toString()}>{category.name}</option>
+          {/each}
+        </select>
       </div>
 
-      <div class="filter-group">
-        <label for="date-filter">Fecha:</label>
-        <select id="date-filter" bind:value={dateFilter} on:change={applyFilters}>
+      <!-- Date Filter -->
+      <div>
+        <label for="date" class="block text-sm font-medium text-secondary-700 mb-2">
+          Fecha
+        </label>
+        <select
+          id="date"
+          bind:value={dateFilter}
+          class="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors duration-200"
+        >
           <option value="all">Todas las fechas</option>
           <option value="today">Hoy</option>
           <option value="week">Esta semana</option>
           <option value="month">Este mes</option>
         </select>
       </div>
-
-      <div class="filter-actions">
-        <button class="btn btn-primary" on:click={applyFilters}>
-          Aplicar Filtros
-        </button>
-        <button class="btn btn-secondary" on:click={clearFilters}>
-          Limpiar
-        </button>
-      </div>
     </div>
   </div>
 
-  <!-- Solo mostrar aviso si realmente hay error y se usan datos de ejemplo -->
-  {#if error && applications.length > 0 && applications[0].id === 1}
-    <div class="notice-banner warning">
-      <div class="notice-icon">⚠️</div>
-      <div class="notice-content">
-        <h4>Mostrando Datos de Ejemplo</h4>
-        <p>{error}</p>
-      </div>
-    </div>
-  {/if}
-
-  <!-- Estadísticas -->
-  <div class="stats-bar">
-    <div class="stat-item">
-      <span class="stat-label">Total:</span>
-      <span class="stat-value">{totalApplications}</span>
-    </div>
-    <div class="stat-item">
-      <span class="stat-label">Pendientes:</span>
-      <span class="stat-value yellow">{applications.filter(app => app.status === 'submitted').length}</span>
-    </div>
-    <div class="stat-item">
-      <span class="stat-label">En Revisión:</span>
-      <span class="stat-value blue">{applications.filter(app => app.status === 'in_review').length}</span>
-    </div>
-  </div>
-
-  <!-- Error Message -->
-  {#if error}
-    <div class="error-message">
-      <p>{error}</p>
-      <button class="btn btn-secondary" on:click={() => { error = ''; loadApplications(); }}>
-        Reintentar
-      </button>
-    </div>
-  {/if}
-
-  <!-- Loading State -->
+  <!-- Applications List -->
   {#if loading}
-    <div class="loading-state">
-      <div class="spinner"></div>
-      <p>Cargando aplicaciones...</p>
+    <div class="flex items-center justify-center py-12">
+      <LoadingSpinner size="lg" color="primary" text="Cargando aplicaciones..." />
     </div>
   {:else if applications.length === 0}
-    <div class="empty-state">
-      <svg class="empty-icon" viewBox="0 0 24 24">
-        <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-      </svg>
-      <h3>No hay aplicaciones</h3>
-      <p>No se encontraron aplicaciones con los filtros actuales.</p>
+    <div class="bg-white rounded-xl shadow-sm border border-secondary-200 p-12">
+      <div class="text-center">
+        <svg class="w-16 h-16 text-secondary-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+        </svg>
+        <h3 class="text-lg font-semibold text-secondary-900 mb-2">No hay aplicaciones</h3>
+        <p class="text-secondary-600">No se encontraron aplicaciones con los filtros actuales.</p>
+      </div>
     </div>
   {:else}
-    <!-- Applications List -->
-    <div class="applications-list">
+    <div class="space-y-4">
       {#each applications as application}
-        <div class="application-card">
-          <div class="application-header">
-            <div class="application-info">
-              <h3>{application.headline}</h3>
-              <p class="application-meta">
-                <span class="user-info">
-                  {application.user?.raw_user_meta_data?.first_name} {application.user?.raw_user_meta_data?.last_name} 
-                  ({application.email || application.user?.email || 'Email no disponible'})
-                </span>
-                <span class="date">{formatDate(application.created_at)}</span>
+        <div class="bg-white rounded-xl shadow-sm border border-secondary-200 p-6 hover:shadow-md transition-shadow duration-200">
+          <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+            <!-- Application Info -->
+            <div class="flex-1">
+              <div class="flex items-start justify-between mb-4">
+                <div>
+                  <h3 class="text-lg font-semibold text-secondary-900 mb-1">
+                    {application.headline}
+                  </h3>
+                  <p class="text-sm text-secondary-600">
+                    {getUserDisplayName(application)} • {application.user?.email || application.email}
+                  </p>
+                </div>
+                <div class="flex items-center space-x-2">
+                  <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border {getStatusColor(application.status)}">
+                    {getStatusText(application.status)}
+                  </span>
+                </div>
+              </div>
+
+              <p class="text-secondary-700 mb-4 line-clamp-2">
+                {application.bio}
               </p>
-            </div>
-            <div class="status-badge {getStatusColor(application.status)}">
-              {getStatusText(application.status)}
-            </div>
-          </div>
 
-          <div class="application-content">
-            <p class="description">{application.bio}</p>
-            
-            <div class="application-details">
-              <div class="detail-item">
-                <span class="label">Experiencia:</span>
-                <span class="value">{application.experience_years} años</span>
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div>
+                  <span class="text-secondary-500">Tarifa:</span>
+                  <span class="font-medium text-secondary-900 ml-1">C${application.hourly_rate}/hora</span>
+                </div>
+                <div>
+                  <span class="text-secondary-500">Experiencia:</span>
+                  <span class="font-medium text-secondary-900 ml-1">{application.experience_years} años</span>
+                </div>
+                <div>
+                  <span class="text-secondary-500">Ubicación:</span>
+                  <span class="font-medium text-secondary-900 ml-1">{application.location}</span>
+                </div>
+                <div>
+                  <span class="text-secondary-500">Fecha:</span>
+                  <span class="font-medium text-secondary-900 ml-1">{formatDate(application.created_at)}</span>
+                </div>
               </div>
-              <div class="detail-item">
-                <span class="label">Tarifa por hora:</span>
-                <span class="value">${application.hourly_rate}</span>
-              </div>
-              <div class="detail-item">
-                <span class="label">Ubicación:</span>
-                <span class="value">{application.location}</span>
-              </div>
-              <div class="detail-item">
-                <span class="label">Teléfono:</span>
-                <span class="value">{application.phone}</span>
-              </div>
-                              {#if application.categories && application.categories.length > 0}
-                  <div class="detail-item">
-                    <span class="label">Categorías:</span>
-                    <span class="value">
-                      {#each application.categories as category, index}
-                        {getCategoryName(typeof category === 'object' ? category.category_id : category)}{index < application.categories.length - 1 ? ', ' : ''}
-                      {/each}
-                    </span>
+
+              {#if Array.isArray(application.categories) && application.categories.length > 0}
+                <div class="mt-3">
+                  <span class="text-secondary-500 text-sm">Categorías:</span>
+                  <div class="flex flex-wrap gap-2 mt-1">
+                    {#each application.categories as categoryId}
+                      <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-primary-100 text-primary-800">
+                        {getCategoryName(typeof categoryId === 'number' ? categoryId : categoryId.category_id)}
+                      </span>
+                    {/each}
                   </div>
-                {/if}
+                </div>
+              {/if}
             </div>
-          </div>
 
-          <div class="application-actions">
-            <!-- Botón de editar siempre disponible -->
-            <button 
-              class="btn btn-secondary"
-              on:click={() => openEditModal(application)}
-            >
-              📝 Editar
-            </button>
-
-            {#if application.status === 'submitted'}
-              <button 
-                class="btn btn-primary"
-                disabled={updatingStatus.has(application.id)}
-                on:click={() => updateApplicationStatus(application.id, 'in_review')}
-              >
-                {updatingStatus.has(application.id) ? 'Actualizando...' : 'Poner en Revisión'}
-              </button>
-            {/if}
-            
-            {#if application.status === 'in_review'}
-              <button 
-                class="btn btn-success"
-                disabled={updatingStatus.has(application.id)}
-                on:click={() => updateApplicationStatus(application.id, 'approved')}
-              >
-                {updatingStatus.has(application.id) ? 'Actualizando...' : 'Aprobar'}
-              </button>
-              <button 
-                class="btn btn-danger"
-                disabled={updatingStatus.has(application.id)}
-                on:click={() => updateApplicationStatus(application.id, 'rejected')}
-              >
-                {updatingStatus.has(application.id) ? 'Actualizando...' : 'Rechazar'}
-              </button>
-            {/if}
-
-            {#if application.status === 'approved'}
-              <span class="status-message success">✓ Aplicación aprobada</span>
-            {/if}
-
-            {#if application.status === 'rejected'}
-              <span class="status-message error">✗ Aplicación rechazada</span>
-            {/if}
+            <!-- Actions -->
+            <div class="mt-4 lg:mt-0 lg:ml-6">
+              <div class="flex flex-col space-y-2">
+                {#if application.status === 'submitted' || application.status === 'in_review'}
+                  <button
+                    class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={updatingStatus.has(application.id)}
+                    on:click={() => updateApplicationStatus(application.id, 'approved')}
+                  >
+                    {#if updatingStatus.has(application.id)}
+                      <LoadingSpinner size="sm" color="white" />
+                    {:else}
+                      ✓ Aprobar
+                    {/if}
+                  </button>
+                  
+                  <button
+                    class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={updatingStatus.has(application.id)}
+                    on:click={() => updateApplicationStatus(application.id, 'rejected', 'No cumple con los requisitos')}
+                  >
+                    {#if updatingStatus.has(application.id)}
+                      <LoadingSpinner size="sm" color="white" />
+                    {:else}
+                      ✗ Rechazar
+                    {/if}
+                  </button>
+                {:else if application.status === 'approved'}
+                  <button
+                    class="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors duration-200 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={updatingStatus.has(application.id)}
+                    on:click={() => updateApplicationStatus(application.id, 'in_review')}
+                  >
+                    🔄 Revisar
+                  </button>
+                {:else if application.status === 'rejected'}
+                  <button
+                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={updatingStatus.has(application.id)}
+                    on:click={() => updateApplicationStatus(application.id, 'in_review')}
+                  >
+                    🔄 Revisar
+                  </button>
+                {/if}
+                
+                <button
+                  class="px-4 py-2 bg-secondary-600 text-white rounded-lg hover:bg-secondary-700 transition-colors duration-200 text-sm font-medium"
+                  on:click={() => openEditModal(application)}
+                >
+                  ✏️ Editar
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       {/each}
@@ -638,731 +654,157 @@
 
     <!-- Pagination -->
     {#if totalPages > 1}
-      <div class="pagination">
-        <button 
-          class="btn btn-secondary" 
-          disabled={currentPage === 1}
-          on:click={() => goToPage(currentPage - 1)}
-        >
-          Anterior
-        </button>
-        
-        <div class="page-numbers">
-          {#each Array.from({length: totalPages}, (_, i) => i + 1) as page}
-            <button 
-              class="btn {currentPage === page ? 'btn-primary' : 'btn-secondary'}"
-              on:click={() => goToPage(page)}
+      <div class="bg-white rounded-xl shadow-sm border border-secondary-200 p-4">
+        <div class="flex items-center justify-between">
+          <div class="text-sm text-secondary-600">
+            Mostrando {(currentPage - 1) * limit + 1} - {Math.min(currentPage * limit, totalApplications)} de {totalApplications} aplicaciones
+          </div>
+          
+          <div class="flex items-center space-x-2">
+            <button
+              class="px-3 py-2 border border-secondary-300 rounded-lg text-sm font-medium text-secondary-700 hover:bg-secondary-50 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={currentPage === 1}
+              on:click={() => { currentPage = Math.max(1, currentPage - 1); loadApplications(); }}
             >
-              {page}
+              Anterior
             </button>
-          {/each}
+            
+            {#each Array.from({length: totalPages}, (_, i) => i + 1) as page}
+              {#if page === currentPage || page === 1 || page === totalPages || (page >= currentPage - 1 && page <= currentPage + 1)}
+                <button
+                  class="px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200"
+                  class:bg-primary-600={page === currentPage}
+                  class:text-white={page === currentPage}
+                  class:border-primary-600={page === currentPage}
+                  class:border={page === currentPage}
+                  class:text-secondary-700={page !== currentPage}
+                  class:hover:bg-secondary-50={page !== currentPage}
+                  on:click={() => { currentPage = page; loadApplications(); }}
+                >
+                  {page}
+                </button>
+              {:else if page === currentPage - 2 || page === currentPage + 2}
+                <span class="px-3 py-2 text-secondary-400">...</span>
+              {/if}
+            {/each}
+            
+            <button
+              class="px-3 py-2 border border-secondary-300 rounded-lg text-sm font-medium text-secondary-700 hover:bg-secondary-50 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={currentPage === totalPages}
+              on:click={() => { currentPage = Math.min(totalPages, currentPage + 1); loadApplications(); }}
+            >
+              Siguiente
+            </button>
+          </div>
         </div>
-        
-        <button 
-          class="btn btn-secondary" 
-          disabled={currentPage === totalPages}
-          on:click={() => goToPage(currentPage + 1)}
-        >
-          Siguiente
-        </button>
       </div>
     {/if}
   {/if}
 </div>
 
-<!-- Modal de Edición -->
+<!-- Edit Modal -->
 {#if showEditModal && editingApplication}
-  <div class="modal-overlay" on:click={closeEditModal}>
-    <div class="modal-content" on:click|stopPropagation>
-      <div class="modal-header">
-        <h2>Editar Aplicación</h2>
-        <button class="modal-close" on:click={closeEditModal}>×</button>
+  <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div class="p-6 border-b border-secondary-200">
+        <h3 class="text-lg font-semibold text-secondary-900">
+          Editar Aplicación - {editingApplication.headline}
+        </h3>
       </div>
-
-      <div class="modal-body">
-        <form on:submit|preventDefault={saveApplicationEdit}>
-          <div class="form-grid">
-            <div class="form-group">
-              <label for="edit-headline">Título del Servicio *</label>
-              <input 
-                id="edit-headline"
-                type="text" 
-                bind:value={editForm.headline}
-                required
-                placeholder="Ej: Plomero Profesional"
-              />
-            </div>
-
-            <div class="form-group">
-              <label for="edit-hourly-rate">Tarifa por Hora *</label>
-              <input 
-                id="edit-hourly-rate"
-                type="number" 
-                bind:value={editForm.hourly_rate}
-                min="1"
-                required
-                placeholder="150"
-              />
-            </div>
-
-            <div class="form-group">
-              <label for="edit-location">Ubicación *</label>
-              <input 
-                id="edit-location"
-                type="text" 
-                bind:value={editForm.location}
-                required
-                placeholder="Managua, Nicaragua"
-              />
-            </div>
-
-            <div class="form-group">
-              <label for="edit-phone">Teléfono *</label>
-              <input 
-                id="edit-phone"
-                type="tel" 
-                bind:value={editForm.phone}
-                required
-                placeholder="8456-7890"
-              />
-            </div>
-
-            <div class="form-group">
-              <label for="edit-experience">Años de Experiencia *</label>
-              <input 
-                id="edit-experience"
-                type="number" 
-                bind:value={editForm.experience_years}
-                min="0"
-                required
-                placeholder="5"
-              />
-            </div>
+      
+      <div class="p-6 space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-secondary-700 mb-2">
+            Título del Servicio
+          </label>
+          <input
+            type="text"
+            bind:value={editForm.headline}
+            class="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+          />
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-secondary-700 mb-2">
+            Descripción
+          </label>
+          <textarea
+            bind:value={editForm.bio}
+            rows="4"
+            class="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+          ></textarea>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-secondary-700 mb-2">
+              Tarifa por Hora (C$)
+            </label>
+            <input
+              type="number"
+              bind:value={editForm.hourly_rate}
+              min="0"
+              step="50"
+              class="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            />
           </div>
-
-          <div class="form-group">
-            <label for="edit-bio">Descripción del Servicio *</label>
-            <textarea 
-              id="edit-bio"
-              bind:value={editForm.bio}
-              required
-              rows="4"
-              placeholder="Describe tu experiencia y servicios..."
-            ></textarea>
+          
+          <div>
+            <label class="block text-sm font-medium text-secondary-700 mb-2">
+              Años de Experiencia
+            </label>
+            <input
+              type="number"
+              bind:value={editForm.experience_years}
+              min="0"
+              class="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            />
           </div>
-
-          <div class="form-group">
-            <label>Categorías de Servicio</label>
-            <div class="categories-grid">
-              {#each categories as category}
-                <label class="category-checkbox">
-                  <input 
-                    type="checkbox" 
-                    checked={editForm.categories.includes(category.id)}
-                    on:change={() => toggleCategory(category.id)}
-                  />
-                  <span class="checkmark"></span>
-                  {category.name}
-                </label>
-              {/each}
-            </div>
-          </div>
-
-          <div class="modal-actions">
-            <button type="button" class="btn btn-secondary" on:click={closeEditModal}>
-              Cancelar
-            </button>
-            <button type="submit" class="btn btn-primary" disabled={savingEdit}>
-              {savingEdit ? 'Guardando...' : 'Guardar Cambios'}
-            </button>
-          </div>
-        </form>
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-secondary-700 mb-2">
+            Ubicación
+          </label>
+          <input
+            type="text"
+            bind:value={editForm.location}
+            class="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+          />
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-secondary-700 mb-2">
+            Teléfono
+          </label>
+          <input
+            type="tel"
+            bind:value={editForm.phone}
+            class="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+          />
+        </div>
+      </div>
+      
+      <div class="p-6 border-t border-secondary-200 flex justify-end space-x-3">
+        <button
+          class="px-4 py-2 border border-secondary-300 text-secondary-700 rounded-lg hover:bg-secondary-50 transition-colors duration-200"
+          on:click={closeEditModal}
+          disabled={savingEdit}
+        >
+          Cancelar
+        </button>
+        <button
+          class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          on:click={saveEdit}
+          disabled={savingEdit}
+        >
+          {#if savingEdit}
+            <LoadingSpinner size="sm" color="white" />
+          {:else}
+            Guardar Cambios
+          {/if}
+        </button>
       </div>
     </div>
   </div>
-{/if}
-
-<style>
-  .admin-page {
-    padding: 2rem;
-    max-width: 1200px;
-    margin: 0 auto;
-  }
-
-  .page-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2rem;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid #e5e7eb;
-  }
-
-  .header-content h1 {
-    margin: 0;
-    font-size: 2rem;
-    font-weight: 700;
-    color: #1f2937;
-  }
-
-  .header-content p {
-    margin: 0.5rem 0 0 0;
-    color: #6b7280;
-  }
-
-  .filters-section {
-    background: white;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    padding: 1.5rem;
-    margin-bottom: 2rem;
-  }
-
-  .filters-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
-    align-items: end;
-  }
-
-  .filter-group {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  .filter-group label {
-    font-weight: 500;
-    color: #374151;
-    font-size: 0.875rem;
-  }
-
-  .filter-group select,
-  .filter-group input {
-    padding: 0.5rem;
-    border: 1px solid #d1d5db;
-    border-radius: 4px;
-    font-size: 0.875rem;
-  }
-
-  .filter-actions {
-    display: flex;
-    gap: 0.5rem;
-  }
-
-  .stats-bar {
-    display: flex;
-    gap: 2rem;
-    margin-bottom: 2rem;
-    padding: 1rem;
-    background: #f9fafb;
-    border-radius: 8px;
-  }
-
-  .stat-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .stat-label {
-    font-size: 0.875rem;
-    color: #6b7280;
-    margin-bottom: 0.25rem;
-  }
-
-  .stat-value {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: #1f2937;
-  }
-
-  .stat-value.yellow { color: #f59e0b; }
-  .stat-value.blue { color: #3b82f6; }
-
-  .notice-banner {
-    background: linear-gradient(135deg, #fef3c7 0%, #fbbf24 100%);
-    border: 1px solid #f59e0b;
-    border-radius: 8px;
-    padding: 1rem;
-    margin-bottom: 2rem;
-    display: flex;
-    align-items: flex-start;
-    gap: 0.75rem;
-  }
-
-  .notice-banner.warning {
-    background: linear-gradient(135deg, #fee2e2 0%, #fca5a5 100%);
-    border-color: #f87171;
-  }
-
-  .notice-icon {
-    font-size: 1.5rem;
-    flex-shrink: 0;
-  }
-
-  .notice-content h4 {
-    margin: 0 0 0.5rem 0;
-    font-size: 1rem;
-    font-weight: 600;
-    color: #92400e;
-  }
-
-  .notice-banner.warning .notice-content h4 {
-    color: #991b1b;
-  }
-
-  .notice-content p {
-    margin: 0;
-    font-size: 0.875rem;
-    color: #78350f;
-    line-height: 1.5;
-  }
-
-  .notice-banner.warning .notice-content p {
-    color: #7f1d1d;
-  }
-
-  .error-message {
-    background: #fef2f2;
-    border: 1px solid #fecaca;
-    color: #dc2626;
-    padding: 1rem;
-    border-radius: 8px;
-    margin-bottom: 2rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .loading-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 3rem;
-    color: #6b7280;
-  }
-
-  .spinner {
-    width: 2rem;
-    height: 2rem;
-    border: 2px solid #e5e7eb;
-    border-top: 2px solid #3b82f6;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin-bottom: 1rem;
-  }
-
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
-
-  .empty-state {
-    text-align: center;
-    padding: 3rem;
-    color: #6b7280;
-  }
-
-  .empty-icon {
-    width: 4rem;
-    height: 4rem;
-    margin-bottom: 1rem;
-    fill: #d1d5db;
-  }
-
-  .applications-list {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-  }
-
-  .application-card {
-    background: white;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    padding: 1.5rem;
-  }
-
-  .application-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 1rem;
-  }
-
-  .application-info h3 {
-    margin: 0 0 0.5rem 0;
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: #1f2937;
-  }
-
-  .application-meta {
-    display: flex;
-    gap: 1rem;
-    font-size: 0.875rem;
-    color: #6b7280;
-  }
-
-  .status-badge {
-    padding: 0.25rem 0.75rem;
-    border-radius: 9999px;
-    font-size: 0.75rem;
-    font-weight: 500;
-    text-transform: uppercase;
-  }
-
-  .status-badge.yellow {
-    background: #fef3c7;
-    color: #92400e;
-  }
-
-  .status-badge.blue {
-    background: #dbeafe;
-    color: #1e40af;
-  }
-
-  .status-badge.green {
-    background: #d1fae5;
-    color: #065f46;
-  }
-
-  .status-badge.red {
-    background: #fee2e2;
-    color: #991b1b;
-  }
-
-  .application-content {
-    margin-bottom: 1.5rem;
-  }
-
-  .description {
-    color: #4b5563;
-    margin-bottom: 1rem;
-    line-height: 1.6;
-  }
-
-  .application-details {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
-  }
-
-  .detail-item {
-    display: flex;
-    justify-content: space-between;
-    padding: 0.5rem 0;
-    border-bottom: 1px solid #f3f4f6;
-  }
-
-  .detail-item .label {
-    font-weight: 500;
-    color: #374151;
-  }
-
-  .detail-item .value {
-    color: #6b7280;
-  }
-
-  .application-actions {
-    display: flex;
-    gap: 0.5rem;
-    align-items: center;
-  }
-
-  .status-message {
-    font-weight: 500;
-  }
-
-  .status-message.success {
-    color: #059669;
-  }
-
-  .status-message.error {
-    color: #dc2626;
-  }
-
-  .pagination {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 1rem;
-    margin-top: 2rem;
-    padding: 1rem;
-  }
-
-  .page-numbers {
-    display: flex;
-    gap: 0.25rem;
-  }
-
-  .btn {
-    padding: 0.5rem 1rem;
-    border: none;
-    border-radius: 4px;
-    font-size: 0.875rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  .btn-primary {
-    background: #3b82f6;
-    color: white;
-  }
-
-  .btn-primary:hover:not(:disabled) {
-    background: #2563eb;
-  }
-
-  .btn-secondary {
-    background: #f3f4f6;
-    color: #374151;
-  }
-
-  .btn-secondary:hover:not(:disabled) {
-    background: #e5e7eb;
-  }
-
-  .btn-success {
-    background: #10b981;
-    color: white;
-  }
-
-  .btn-success:hover:not(:disabled) {
-    background: #059669;
-  }
-
-  .btn-danger {
-    background: #ef4444;
-    color: white;
-  }
-
-  .btn-danger:hover:not(:disabled) {
-    background: #dc2626;
-  }
-
-  @media (max-width: 768px) {
-    .admin-page {
-      padding: 1rem;
-    }
-
-    .page-header {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 1rem;
-    }
-
-    .filters-grid {
-      grid-template-columns: 1fr;
-    }
-
-    .filter-actions {
-      justify-content: stretch;
-    }
-
-    .stats-bar {
-      flex-direction: column;
-      gap: 1rem;
-    }
-
-    .application-header {
-      flex-direction: column;
-      gap: 1rem;
-    }
-
-    .application-details {
-      grid-template-columns: 1fr;
-    }
-
-    .application-actions {
-      flex-direction: column;
-      align-items: stretch;
-    }
-  }
-
-  /* Estilos del Modal */
-  .modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-    padding: 1rem;
-  }
-
-  .modal-content {
-    background: white;
-    border-radius: 12px;
-    width: 100%;
-    max-width: 600px;
-    max-height: 90vh;
-    overflow: hidden;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-  }
-
-  .modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1.5rem;
-    border-bottom: 1px solid #e5e7eb;
-    background: #f9fafb;
-  }
-
-  .modal-header h2 {
-    margin: 0;
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: #0C3B2E;
-  }
-
-  .modal-close {
-    background: none;
-    border: none;
-    font-size: 1.5rem;
-    cursor: pointer;
-    color: #6b7280;
-    padding: 0.25rem;
-    border-radius: 4px;
-    transition: background 0.2s;
-  }
-
-  .modal-close:hover {
-    background: #e5e7eb;
-  }
-
-  .modal-body {
-    padding: 1.5rem;
-    max-height: calc(90vh - 120px);
-    overflow-y: auto;
-  }
-
-  .form-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-    margin-bottom: 1rem;
-  }
-
-  .form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-  }
-
-  .form-group label {
-    font-weight: 600;
-    color: #374151;
-    font-size: 0.875rem;
-  }
-
-  .form-group input,
-  .form-group textarea {
-    padding: 0.75rem;
-    border: 2px solid #e5e7eb;
-    border-radius: 8px;
-    font-size: 1rem;
-    transition: border-color 0.2s;
-  }
-
-  .form-group input:focus,
-  .form-group textarea:focus {
-    outline: none;
-    border-color: #6D9773;
-    box-shadow: 0 0 0 3px rgba(109, 151, 115, 0.1);
-  }
-
-  .categories-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 0.75rem;
-    margin-top: 0.5rem;
-  }
-
-  .category-checkbox {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    cursor: pointer;
-    padding: 0.5rem;
-    border: 1px solid #e5e7eb;
-    border-radius: 6px;
-    transition: all 0.2s;
-  }
-
-  .category-checkbox:hover {
-    background: #f9fafb;
-    border-color: #6D9773;
-  }
-
-  .category-checkbox input[type="checkbox"] {
-    display: none;
-  }
-
-  .checkmark {
-    width: 20px;
-    height: 20px;
-    border: 2px solid #d1d5db;
-    border-radius: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s;
-  }
-
-  .category-checkbox input[type="checkbox"]:checked + .checkmark {
-    background: #6D9773;
-    border-color: #6D9773;
-  }
-
-  .category-checkbox input[type="checkbox"]:checked + .checkmark::after {
-    content: '✓';
-    color: white;
-    font-size: 12px;
-    font-weight: bold;
-  }
-
-  .modal-actions {
-    display: flex;
-    gap: 1rem;
-    justify-content: flex-end;
-    margin-top: 2rem;
-    padding-top: 1rem;
-    border-top: 1px solid #e5e7eb;
-  }
-
-  @media (max-width: 640px) {
-    .modal-overlay {
-      padding: 0.5rem;
-    }
-
-    .modal-content {
-      max-height: 95vh;
-    }
-
-    .form-grid {
-      grid-template-columns: 1fr;
-    }
-
-    .categories-grid {
-      grid-template-columns: 1fr;
-    }
-
-    .modal-actions {
-      flex-direction: column;
-    }
-  }
-</style> 
+{/if} 

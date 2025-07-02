@@ -1,6 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
+  import StatsCard from '$lib/components/StatsCard.svelte';
+  import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
 
   let stats = {
     totalApplications: 0,
@@ -11,6 +13,32 @@
   };
 
   let loading = true;
+  let recentActivities = [
+    {
+      id: 1,
+      type: 'application',
+      title: 'Nueva aplicación de proveedor',
+      description: 'Juan Pérez ha enviado una solicitud para servicios de limpieza',
+      time: 'Hace 2 horas',
+      status: 'pending'
+    },
+    {
+      id: 2,
+      type: 'approval',
+      title: 'Aplicación aprobada',
+      description: 'María González ha sido aprobada como proveedora de jardinería',
+      time: 'Hace 4 horas',
+      status: 'approved'
+    },
+    {
+      id: 3,
+      type: 'category',
+      title: 'Nueva categoría agregada',
+      description: 'Se agregó la categoría "Reparaciones Eléctricas"',
+      time: 'Hace 1 día',
+      status: 'info'
+    }
+  ];
 
   onMount(async () => {
     try {
@@ -34,16 +62,14 @@
 
       if (applicationsRes.ok) {
         const applicationsData = await applicationsRes.json();
-        // Solo usar datos reales si están disponibles
         if (applicationsData.total !== undefined) {
           stats.totalApplications = applicationsData.total;
-        stats.pendingApplications = applicationsData.pending || 0;
-        stats.approvedApplications = applicationsData.approved || 0;
+          stats.pendingApplications = applicationsData.pending || 0;
+          stats.approvedApplications = applicationsData.approved || 0;
           applicationsLoaded = true;
         }
       }
 
-      // Solo usar fallback si no se pudieron cargar datos reales
       if (!applicationsLoaded) {
         console.warn('No real applications data available, using fallback');
         stats.totalApplications = fallbackStats.totalApplications;
@@ -68,7 +94,6 @@
       }
     } catch (error) {
       console.error('Error loading dashboard stats:', error);
-      // En caso de error, mostrar datos de ejemplo
       stats = {
         totalApplications: 12,
         pendingApplications: 5,
@@ -80,290 +105,256 @@
       loading = false;
     }
   });
+
+  function getStatusIcon(status: string) {
+    switch (status) {
+      case 'pending': return '⏳';
+      case 'approved': return '✅';
+      case 'info': return 'ℹ️';
+      default: return '📝';
+    }
+  }
+
+  function getStatusColor(status: string) {
+    switch (status) {
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'approved': return 'bg-green-100 text-green-800';
+      case 'info': return 'bg-blue-100 text-blue-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  }
 </script>
 
-<div class="admin-dashboard">
+<svelte:head>
+  <title>Dashboard - Domify Admin</title>
+</svelte:head>
+
+{#if loading}
+  <div class="flex items-center justify-center min-h-96">
+    <LoadingSpinner size="lg" color="primary" text="Cargando estadísticas..." />
+  </div>
+{:else}
   <!-- Header -->
-  <header class="page-header">
-    <div class="header-content">
-      <h1>Dashboard de Administración</h1>
-      <p>Bienvenido al panel de control de Domify</p>
-    </div>
-  </header>
-
-  {#if loading}
-    <div class="loading-state">
-      <div class="spinner"></div>
-      <p>Cargando estadísticas...</p>
-    </div>
-  {:else}
-    <!-- Solo mostrar aviso si TODOS los datos son de ejemplo -->
-    {#if stats.totalApplications === 12 && stats.pendingApplications === 5 && stats.approvedApplications === 4}
-      <div class="notice-banner">
-        <div class="notice-icon">ℹ️</div>
-        <div class="notice-content">
-          <h4>Datos de Ejemplo</h4>
-          <p>Actualmente mostrando datos de ejemplo mientras se resuelven los problemas de conexión con la base de datos. Las cifras reales se mostrarán una vez que se solucione el problema de permisos.</p>
-        </div>
+  <div class="mb-8">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <h1 class="text-3xl font-bold text-secondary-900">Dashboard</h1>
+        <p class="mt-2 text-secondary-600">Bienvenido al panel de administración de Domify</p>
       </div>
-    {/if}
-    <!-- Stats Grid -->
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-icon">📝</div>
-        <div class="stat-content">
-          <h3>{stats.totalApplications}</h3>
-          <p>Aplicaciones Totales</p>
-        </div>
-      </div>
-
-      <div class="stat-card">
-        <div class="stat-icon">⏳</div>
-        <div class="stat-content">
-          <h3>{stats.pendingApplications}</h3>
-          <p>Aplicaciones Pendientes</p>
-        </div>
-      </div>
-
-      <div class="stat-card">
-        <div class="stat-icon">✅</div>
-        <div class="stat-content">
-          <h3>{stats.approvedApplications}</h3>
-          <p>Aplicaciones Aprobadas</p>
-        </div>
-      </div>
-
-      <div class="stat-card">
-        <div class="stat-icon">👥</div>
-        <div class="stat-content">
-          <h3>{stats.totalProviders}</h3>
-          <p>Proveedores Activos</p>
-        </div>
-      </div>
-
-      <div class="stat-card">
-        <div class="stat-icon">🏷️</div>
-        <div class="stat-content">
-          <h3>{stats.totalCategories}</h3>
-          <p>Categorías de Servicios</p>
+      <div class="mt-4 sm:mt-0">
+        <div class="flex items-center space-x-2 text-sm text-secondary-500">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <span>Última actualización: {new Date().toLocaleString('es-ES')}</span>
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- Quick Actions -->
-    <div class="quick-actions">
-      <h2>Acciones Rápidas</h2>
-      <div class="actions-grid">
-        <a href="/admin/provider-applications" class="action-card">
-          <div class="action-icon">📋</div>
-          <h3>Revisar Aplicaciones</h3>
-          <p>Gestiona las solicitudes de nuevos proveedores</p>
-        </a>
-
-        <a href="/admin/categories" class="action-card">
-          <div class="action-icon">🏷️</div>
-          <h3>Gestionar Categorías</h3>
-          <p>Administra las categorías de servicios</p>
-        </a>
-
-        <a href="/services" class="action-card">
-          <div class="action-icon">🔍</div>
-          <h3>Ver Servicios</h3>
-          <p>Explora los servicios disponibles</p>
-        </a>
+  <!-- Notice Banner -->
+  {#if stats.totalApplications === 12 && stats.pendingApplications === 5 && stats.approvedApplications === 4}
+    <div class="mb-8 bg-gradient-to-r from-yellow-50 to-yellow-100 border border-yellow-200 rounded-xl p-4">
+      <div class="flex items-start space-x-3">
+        <div class="flex-shrink-0">
+          <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+        </div>
+        <div>
+          <h4 class="text-sm font-semibold text-yellow-800">Datos de Ejemplo</h4>
+          <p class="mt-1 text-sm text-yellow-700">
+            Actualmente mostrando datos de ejemplo mientras se resuelven los problemas de conexión con la base de datos.
+          </p>
+        </div>
       </div>
     </div>
   {/if}
-</div>
 
-<style>
-  .admin-dashboard {
-    /* Eliminado max-width para que ocupe todo el ancho */
-  }
+  <!-- Stats Grid -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+    <StatsCard
+      label="Aplicaciones Totales"
+      number={stats.totalApplications.toString()}
+      icon="📝"
+    />
+    
+    <StatsCard
+      label="Pendientes"
+      number={stats.pendingApplications.toString()}
+      icon="⏳"
+      delay={200}
+    />
+    
+    <StatsCard
+      label="Aprobadas"
+      number={stats.approvedApplications.toString()}
+      icon="✅"
+      delay={400}
+    />
+    
+    <StatsCard
+      label="Proveedores Activos"
+      number={stats.totalProviders.toString()}
+      icon="👥"
+      delay={600}
+    />
+    
+    <StatsCard
+      label="Categorías"
+      number={stats.totalCategories.toString()}
+      icon="🏷️"
+      delay={800}
+    />
+  </div>
 
-  .notice-banner {
-    background: linear-gradient(135deg, #fef3c7 0%, #fbbf24 100%);
-    border: 1px solid #f59e0b;
-    border-radius: 8px;
-    padding: 1rem;
-    margin-bottom: 2rem;
-    display: flex;
-    align-items: flex-start;
-    gap: 0.75rem;
-  }
+  <!-- Main Content Grid -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- Quick Actions -->
+    <div class="lg:col-span-2">
+      <div class="bg-white rounded-xl shadow-sm border border-secondary-200 p-6">
+        <h2 class="text-xl font-semibold text-secondary-900 mb-6">Acciones Rápidas</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <button
+            class="group p-6 bg-gradient-to-br from-primary-50 to-primary-100 rounded-xl border border-primary-200 hover:shadow-md transition-all duration-200 text-left"
+            on:click={() => goto('/admin/provider-applications')}
+          >
+            <div class="flex items-center justify-between mb-4">
+              <div class="w-12 h-12 bg-primary-500 rounded-xl flex items-center justify-center text-white text-xl group-hover:scale-110 transition-transform duration-200">
+                📋
+              </div>
+              <div class="text-right">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                  {stats.pendingApplications} pendientes
+                </span>
+              </div>
+            </div>
+            <h3 class="text-lg font-semibold text-secondary-900 mb-2">Revisar Aplicaciones</h3>
+            <p class="text-secondary-600 text-sm">Gestiona las solicitudes de nuevos proveedores</p>
+          </button>
 
-  .notice-icon {
-    font-size: 1.5rem;
-    flex-shrink: 0;
-  }
+          <button
+            class="group p-6 bg-gradient-to-br from-green-50 to-green-100 rounded-xl border border-green-200 hover:shadow-md transition-all duration-200 text-left"
+            on:click={() => goto('/admin/categories')}
+          >
+            <div class="flex items-center justify-between mb-4">
+              <div class="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center text-white text-xl group-hover:scale-110 transition-transform duration-200">
+                🏷️
+              </div>
+            </div>
+            <h3 class="text-lg font-semibold text-secondary-900 mb-2">Gestionar Categorías</h3>
+            <p class="text-secondary-600 text-sm">Administra las categorías de servicios</p>
+          </button>
 
-  .notice-content h4 {
-    margin: 0 0 0.5rem 0;
-    font-size: 1rem;
-    font-weight: 600;
-    color: #92400e;
-  }
+          <button
+            class="group p-6 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl border border-purple-200 hover:shadow-md transition-all duration-200 text-left"
+            on:click={() => goto('/admin/providers')}
+          >
+            <div class="flex items-center justify-between mb-4">
+              <div class="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center text-white text-xl group-hover:scale-110 transition-transform duration-200">
+                🏭
+              </div>
+            </div>
+            <h3 class="text-lg font-semibold text-secondary-900 mb-2">Ver Proveedores</h3>
+            <p class="text-secondary-600 text-sm">Administra los proveedores registrados</p>
+          </button>
 
-  .notice-content p {
-    margin: 0;
-    font-size: 0.875rem;
-    color: #78350f;
-    line-height: 1.5;
-  }
+          <button
+            class="group p-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200 hover:shadow-md transition-all duration-200 text-left"
+            on:click={() => goto('/services')}
+          >
+            <div class="flex items-center justify-between mb-4">
+              <div class="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center text-white text-xl group-hover:scale-110 transition-transform duration-200">
+                🔍
+              </div>
+            </div>
+            <h3 class="text-lg font-semibold text-secondary-900 mb-2">Ver Servicios</h3>
+            <p class="text-secondary-600 text-sm">Explora los servicios disponibles</p>
+          </button>
+        </div>
+      </div>
+    </div>
 
-  .page-header {
-    margin-bottom: 2rem;
-  }
+    <!-- Recent Activity -->
+    <div class="lg:col-span-1">
+      <div class="bg-white rounded-xl shadow-sm border border-secondary-200 p-6">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-xl font-semibold text-secondary-900">Actividad Reciente</h2>
+          <button class="text-primary-600 hover:text-primary-700 text-sm font-medium">
+            Ver todo
+          </button>
+        </div>
+        
+        <div class="space-y-4">
+          {#each recentActivities as activity}
+            <div class="flex items-start space-x-3 p-3 rounded-lg hover:bg-secondary-50 transition-colors duration-200">
+              <div class="flex-shrink-0">
+                <span class="text-lg">{getStatusIcon(activity.status)}</span>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium text-secondary-900 truncate">
+                  {activity.title}
+                </p>
+                <p class="text-xs text-secondary-600 mt-1">
+                  {activity.description}
+                </p>
+                <div class="flex items-center justify-between mt-2">
+                  <span class="text-xs text-secondary-500">{activity.time}</span>
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {getStatusColor(activity.status)}">
+                    {activity.status === 'pending' ? 'Pendiente' : activity.status === 'approved' ? 'Aprobado' : 'Info'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          {/each}
+        </div>
+      </div>
+    </div>
+  </div>
 
-  .page-header h1 {
-    font-size: 2.5rem;
-    font-weight: 700;
-    color: #0C3B2E;
-    margin: 0 0 0.5rem 0;
-  }
+  <!-- Additional Stats -->
+  <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+    <!-- Performance Chart Placeholder -->
+    <div class="bg-white rounded-xl shadow-sm border border-secondary-200 p-6">
+      <h3 class="text-lg font-semibold text-secondary-900 mb-4">Rendimiento del Mes</h3>
+      <div class="h-48 bg-gradient-to-br from-primary-50 to-primary-100 rounded-lg flex items-center justify-center">
+        <div class="text-center">
+          <div class="text-4xl mb-2">📈</div>
+          <p class="text-secondary-600">Gráfico de rendimiento</p>
+          <p class="text-sm text-secondary-500">Próximamente disponible</p>
+        </div>
+      </div>
+    </div>
 
-  .page-header p {
-    font-size: 1.1rem;
-    color: #6D9773;
-    margin: 0;
-  }
-
-  .loading-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 4rem 2rem;
-    text-align: center;
-  }
-
-  .spinner {
-    width: 40px;
-    height: 40px;
-    border: 4px solid #E2E8F0;
-    border-top: 4px solid #6D9773;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin-bottom: 1rem;
-  }
-
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
-
-  .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1.5rem;
-    margin-bottom: 3rem;
-  }
-
-  .stat-card {
-    background: white;
-    border-radius: 12px;
-    padding: 1.5rem;
-    box-shadow: 0 1px 3px rgba(12, 59, 46, 0.1);
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    transition: transform 0.2s, box-shadow 0.2s;
-  }
-
-  .stat-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(12, 59, 46, 0.15);
-  }
-
-  .stat-icon {
-    font-size: 2rem;
-    width: 60px;
-    height: 60px;
-    background: #F0F9F4;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .stat-content h3 {
-    font-size: 2rem;
-    font-weight: 700;
-    color: #0C3B2E;
-    margin: 0 0 0.25rem 0;
-  }
-
-  .stat-content p {
-    font-size: 0.875rem;
-    color: #6D9773;
-    margin: 0;
-  }
-
-  .quick-actions {
-    margin-top: 3rem;
-  }
-
-  .quick-actions h2 {
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: #0C3B2E;
-    margin: 0 0 1.5rem 0;
-  }
-
-  .actions-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 1.5rem;
-  }
-
-  .action-card {
-    background: white;
-    border-radius: 12px;
-    padding: 2rem;
-    box-shadow: 0 1px 3px rgba(12, 59, 46, 0.1);
-    text-decoration: none;
-    color: inherit;
-    transition: transform 0.2s, box-shadow 0.2s;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-  }
-
-  .action-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(12, 59, 46, 0.15);
-  }
-
-  .action-icon {
-    font-size: 3rem;
-    margin-bottom: 1rem;
-  }
-
-  .action-card h3 {
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: #0C3B2E;
-    margin: 0 0 0.5rem 0;
-  }
-
-  .action-card p {
-    font-size: 0.875rem;
-    color: #6D9773;
-    margin: 0;
-  }
-
-  @media (max-width: 768px) {
-    .stats-grid {
-      grid-template-columns: 1fr;
-    }
-
-    .actions-grid {
-      grid-template-columns: 1fr;
-    }
-
-    .page-header h1 {
-      font-size: 2rem;
-    }
-  }
-</style> 
+    <!-- System Status -->
+    <div class="bg-white rounded-xl shadow-sm border border-secondary-200 p-6">
+      <h3 class="text-lg font-semibold text-secondary-900 mb-4">Estado del Sistema</h3>
+      <div class="space-y-3">
+        <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+          <div class="flex items-center space-x-2">
+            <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+            <span class="text-sm font-medium text-secondary-900">Base de Datos</span>
+          </div>
+          <span class="text-xs text-green-600 font-medium">Operativa</span>
+        </div>
+        
+        <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+          <div class="flex items-center space-x-2">
+            <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+            <span class="text-sm font-medium text-secondary-900">API</span>
+          </div>
+          <span class="text-xs text-green-600 font-medium">Operativa</span>
+        </div>
+        
+        <div class="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
+          <div class="flex items-center space-x-2">
+            <div class="w-2 h-2 bg-yellow-500 rounded-full"></div>
+            <span class="text-sm font-medium text-secondary-900">Email Service</span>
+          </div>
+          <span class="text-xs text-yellow-600 font-medium">Limitado</span>
+        </div>
+      </div>
+    </div>
+  </div>
+{/if} 

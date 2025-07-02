@@ -1,8 +1,8 @@
 -- =====================================================
--- DOMIFY DATABASE SETUP - VERSIÓN SIMPLIFICADA
+-- DOMIFY DATABASE SETUP - ESQUEMA COMPLETO NUEVO
 -- =====================================================
--- Solo lo esencial: tablas, enums, índices básicos y datos iniciales
--- Sin RLS complicado, sin triggers complejos, sin funciones innecesarias
+-- Este esquema incluye la migración de roles a auth.users
+-- ÚSALO SOLO si quieres empezar desde cero
 -- =====================================================
 
 -- ===========================
@@ -22,14 +22,14 @@ CREATE TYPE provider_type AS ENUM ('individual', 'company');
 -- ===========================
 -- MIGRACIÓN PARA AGREGAR ROLE A AUTH.USERS
 -- ===========================
--- NOTA: Esta migración debe ejecutarse después de crear el enum user_role
--- ALTER TABLE auth.users ADD COLUMN role user_role NOT NULL DEFAULT 'customer';
+ALTER TABLE auth.users ADD COLUMN IF NOT EXISTS role user_role NOT NULL DEFAULT 'customer';
+CREATE INDEX IF NOT EXISTS idx_auth_users_role ON auth.users(role);
 
 -- ===========================
 -- TABLAS PRINCIPALES
 -- ===========================
 
--- Perfiles de clientes
+-- Perfiles de clientes (SIN columna role)
 CREATE TABLE customers (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID UNIQUE NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -72,22 +72,6 @@ CREATE TABLE provider_profiles (
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     deleted_at TIMESTAMPTZ
 );
-
--- ===========================
--- RELACIONES ADICIONALES PARA ADMIN PANEL
--- ===========================
-
--- Asegurar que las relaciones estén correctamente definidas para el panel de admin
--- (Estas relaciones ya están definidas en las tablas, pero las explicitamos aquí para claridad)
-
--- Relación customers -> auth.users (ya definida en la tabla customers)
--- CONSTRAINT fk_customers_user_id FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
-
--- Relación provider_profiles -> auth.users (ya definida en la tabla provider_profiles)  
--- CONSTRAINT fk_provider_profiles_user_id FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
-
--- Relación provider_applications -> auth.users (ya definida en la tabla provider_applications)
--- CONSTRAINT fk_provider_applications_user_id FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE SET NULL
 
 -- ===========================
 -- RELACIÓN PROVEEDORES-CATEGORÍAS
@@ -266,22 +250,6 @@ CREATE TRIGGER update_bookings_updated_at
     EXECUTE FUNCTION update_updated_at_column();
 
 -- ===========================
--- RLS BÁSICO (OPCIONAL - PUEDES COMENTAR ESTA SECCIÓN)
--- ===========================
-
--- Solo habilitar RLS donde es absolutamente necesario
--- ALTER TABLE customers ENABLE ROW LEVEL SECURITY;
--- ALTER TABLE provider_profiles ENABLE ROW LEVEL SECURITY;
--- ALTER TABLE bookings ENABLE ROW LEVEL SECURITY;
--- ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
-
--- Políticas súper simples
--- CREATE POLICY "Users manage own data" ON customers FOR ALL USING (auth.uid() = user_id);
--- CREATE POLICY "Users manage own data" ON provider_profiles FOR ALL USING (auth.uid() = user_id);
--- CREATE POLICY "Users manage own data" ON bookings FOR ALL USING (auth.uid() = client_user_id OR auth.uid() IN (SELECT user_id FROM provider_profiles WHERE id = provider_profile_id));
--- CREATE POLICY "Users manage own data" ON notifications FOR ALL USING (auth.uid() = user_id);
-
--- ===========================
 -- DATOS INICIALES
 -- ===========================
 
@@ -294,31 +262,6 @@ INSERT INTO categories (name, slug, description, icon) VALUES
 ON CONFLICT (slug) DO NOTHING;
 
 -- ===========================
--- COMENTARIOS SOBRE LO QUE SE ELIMINÓ
+-- VERIFICACIÓN FINAL
 -- ===========================
-
-/*
-ELIMINADO PARA SIMPLIFICAR:
-- Extensiones pg_net y http (solo las usas si necesitas hacer requests HTTP desde la DB)
-- Campos como deleted_at (soft deletes son complejos)
-- Tablas complejas como conversations, messages, favorites, reports
-- Funciones complejas de roles y verificaciones
-- RLS complicado (lo dejé comentado para que decidas)
-- Triggers complejos de rating automático
-- Configuración de plataforma (puedes manejarlo desde tu app)
-- Datos de prueba con UUIDs fake
-
-MANTENIDO:
-- Todas las tablas principales de tu negocio
-- ENUMs necesarios
-- Índices para rendimiento
-- Función básica de updated_at
-- Datos iniciales de categorías
-- Estructura básica funcional
-- Relaciones explícitas para el panel de admin
-
-CAMBIO IMPORTANTE:
-- Removida la columna 'role' de la tabla customers
-- Los roles ahora se manejan desde auth.users (ver migración comentada arriba)
-- Esto es mejor práctica ya que el rol es una propiedad del usuario, no del perfil
-*/ 
+SELECT 'Esquema completo creado exitosamente' as status; 
