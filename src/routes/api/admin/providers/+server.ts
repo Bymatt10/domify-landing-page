@@ -1,30 +1,5 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { PUBLIC_SUPABASE_URL } from '$env/static/public';
-import { PRIVATE_SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
-
-// Función helper para hacer queries directas con fetch
-async function directSupabaseQuery(endpoint: string, options: any = {}) {
-  const url = `${PUBLIC_SUPABASE_URL}/rest/v1/${endpoint}`;
-  const response = await fetch(url, {
-    headers: {
-      'Authorization': `Bearer ${PRIVATE_SUPABASE_SERVICE_ROLE_KEY}`,
-      'apikey': PRIVATE_SUPABASE_SERVICE_ROLE_KEY,
-      'Content-Type': 'application/json',
-      'Prefer': 'return=representation',
-      ...options.headers
-    },
-    ...options
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('Supabase query failed:', response.status, response.statusText, errorText);
-    throw new Error(`Supabase query failed: ${response.status} ${response.statusText}`);
-  }
-
-  return response.json();
-}
 
 export const GET: RequestHandler = async ({ url, locals }) => {
     try {
@@ -40,44 +15,71 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 
         console.log('Fetching providers...');
 
-        // Obtener provider_profiles con query directa
-        let queryParams = [`limit=${limit}`, `offset=${offset}`, `order=created_at.desc`];
+        // Usar el cliente de Supabase admin desde locals
+        const { supabaseAdmin } = locals;
+
+        // Construir la query base incluyendo categorías
+        let query = supabaseAdmin
+            .from('provider_profiles')
+            .select(`
+                *,
+                provider_categories!provider_categories_provider_profile_id_fkey (
+                    category_id,
+                    categories (
+                        id,
+                        name,
+                        slug,
+                        description,
+                        icon
+                    )
+                )
+            `, { count: 'exact' })
+            .order('created_at', { ascending: false })
+            .range(offset, offset + limit - 1);
         
+        // Agregar filtro de búsqueda si existe
         if (search) {
-            queryParams.push(`or=(business_name.ilike.%${search}%,phone.ilike.%${search}%)`);
+            query = query.or(`business_name.ilike.%${search}%,phone.ilike.%${search}%`);
         }
 
-        const queryString = queryParams.join('&');
-        const providers = await directSupabaseQuery(`provider_profiles?${queryString}`);
+        const { data: providers, error, count } = await query;
 
-        console.log('Providers fetched successfully:', providers.length);
+        if (error) {
+            console.error('Error fetching providers:', error);
+            throw new Error(error.message);
+        }
 
-        // Para cada proveedor, obtener el email desde auth.users
-        const providersWithEmail = await Promise.all(providers.map(async (provider: any) => {
+        console.log('Providers fetched successfully:', providers?.length || 0);
+
+        // Para cada proveedor, obtener el email desde auth.users y formatear las categorías
+        const providersWithEmail = await Promise.all((providers || []).map(async (provider: any) => {
             let email = 'Email no disponible';
             
             try {
-                // Obtener el usuario desde auth.users usando el user_id
-                const authResponse = await fetch(`${PUBLIC_SUPABASE_URL}/auth/v1/admin/users/${provider.user_id}`, {
-                    headers: {
-                        'Authorization': `Bearer ${PRIVATE_SUPABASE_SERVICE_ROLE_KEY}`,
-                        'apikey': PRIVATE_SUPABASE_SERVICE_ROLE_KEY,
-                        'Content-Type': 'application/json'
-                    }
-                });
+                // Usar el admin client para obtener el usuario
+                const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserById(provider.user_id);
 
-                if (authResponse.ok) {
-                    const authUser = await authResponse.json();
-                    email = authUser.email || 'Email no disponible';
+                if (!authError && authUser?.user) {
+                    email = authUser.user.email || 'Email no disponible';
                 } else {
-                    console.warn('Error fetching auth user for provider:', provider.id, authResponse.status);
+                    console.warn('Error fetching auth user for provider:', provider.id, authError?.message);
                 }
             } catch (error) {
                 console.warn('Error fetching auth user email for provider:', provider.id, error);
             }
 
+            // Formatear las categorías
+            const categories = (provider.provider_categories || []).map((pc: any) => ({
+                id: pc.categories?.id || pc.category_id,
+                name: pc.categories?.name || `Categoría ${pc.category_id}`,
+                slug: pc.categories?.slug || '',
+                description: pc.categories?.description || '',
+                icon: pc.categories?.icon || ''
+            }));
+
             return {
                 ...provider,
+                categories,
                 user: {
                     email,
                     raw_user_meta_data: {}
@@ -85,7 +87,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
             };
         }));
 
-        const total = providers.length;
+        const total = count || 0;
         const totalPages = Math.ceil(total / limit);
 
         return json({

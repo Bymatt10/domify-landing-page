@@ -311,7 +311,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
             await locals.supabase
                 .from('provider_categories')
                 .insert({
-                    provider_id: provider.id,
+                    provider_profile_id: provider.id,
                     category_id: providerData.category_ids[0]
                 });
 

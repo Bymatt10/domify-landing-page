@@ -31,11 +31,11 @@
 		last_name: '',
 		email: '',
 		phone: '',
-		
-		// Dirección
-		department: '',
-		city: '',
 		address: '',
+		provider_type: '', // 'individual' o 'company'
+		
+		// Ubicación
+		department: '',
 		
 		// Información del servicio
 		headline: '',
@@ -59,6 +59,29 @@
 	let submitError = '';
 	let currentStep = 1;
 	const totalSteps = 4;
+
+	// Validación de email en tiempo real
+	let emailError = '';
+	let emailValid = false;
+
+	function validateEmail() {
+		const email = formData.email?.trim() || '';
+		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+		
+		if (!email) {
+			emailError = '';
+			emailValid = false;
+			return;
+		}
+		
+		if (!emailRegex.test(email)) {
+			emailError = 'Por favor, ingresa un email válido';
+			emailValid = false;
+		} else {
+			emailError = '';
+			emailValid = true;
+		}
+	}
 
 	onMount(async () => {
 		await loadCategories();
@@ -84,7 +107,7 @@
 		try {
 			// Validar campos requeridos
 			if (!formData.first_name || !formData.last_name || !formData.email || !formData.phone ||
-				!formData.department || !formData.city || !formData.address ||
+				!formData.department || !formData.address || !formData.provider_type ||
 				!formData.headline || !formData.bio || !formData.hourly_rate || 
 				formData.categories.length === 0) {
 				submitError = 'Por favor, completa todos los campos requeridos.';
@@ -107,8 +130,8 @@
 				email: formData.email,
 				phone: formData.phone,
 				department: formData.department,
-				city: formData.city,
 				address: formData.address,
+				provider_type: formData.provider_type,
 				headline: formData.headline,
 				bio: formData.bio,
 				hourly_rate: parseFloat(formData.hourly_rate),
@@ -135,8 +158,8 @@
 					email: '',
 					phone: '',
 					department: '',
-					city: '',
 					address: '',
+					provider_type: '',
 					headline: '',
 					bio: '',
 					hourly_rate: '',
@@ -236,14 +259,17 @@
 					   formData.bio?.trim().length > 0 && 
 					   formData.hourly_rate?.toString().trim().length > 0;
 			case 2:
+				// Validar email con regex
+				const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 				return formData.first_name?.trim().length > 0 && 
 					   formData.last_name?.trim().length > 0 && 
 					   formData.email?.trim().length > 0 && 
-					   formData.phone?.trim().length > 0;
+					   emailRegex.test(formData.email?.trim() || '') &&
+					   formData.phone?.trim().length > 0 &&
+					   formData.address?.trim().length > 0 &&
+					   formData.provider_type?.trim().length > 0;
 			case 3:
-				return formData.department?.trim().length > 0 && 
-					   formData.city?.trim().length > 0 && 
-					   formData.address?.trim().length > 0;
+				return formData.department?.trim().length > 0;
 			case 4:
 				return formData.categories.length > 0;
 			default:
@@ -257,7 +283,16 @@
 	// Force reactivity on form data changes
 	$: formData, (() => {
 		canProceed = validateStep(currentStep);
+		// Validar email cuando cambie el formData
+		if (currentStep === 2) {
+			validateEmail();
+		}
 	})();
+
+	// Validar email cuando cambie el paso actual
+	$: if (currentStep === 2) {
+		validateEmail();
+	}
 </script>
 
 <svelte:head>
@@ -412,6 +447,80 @@
 								</div>
 
 								<div class="space-y-6">
+									<!-- Tipo de Proveedor -->
+									<div>
+										<label class="block text-sm font-semibold text-secondary-900 mb-3">
+											Tipo de Proveedor *
+										</label>
+										<div class="grid md:grid-cols-2 gap-4">
+											<label class="relative">
+												<input
+													type="radio"
+													bind:group={formData.provider_type}
+													value="individual"
+													class="sr-only"
+												/>
+												<div 
+													class="p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 hover:shadow-md"
+													class:border-primary-500={formData.provider_type === 'individual'}
+													class:bg-primary-50={formData.provider_type === 'individual'}
+													class:border-secondary-300={formData.provider_type !== 'individual'}
+													class:bg-white={formData.provider_type !== 'individual'}
+												>
+													<div class="flex items-center space-x-3">
+														<div 
+															class="w-5 h-5 rounded-full border-2 flex items-center justify-center"
+															class:border-primary-500={formData.provider_type === 'individual'}
+															class:bg-primary-500={formData.provider_type === 'individual'}
+															class:border-secondary-300={formData.provider_type !== 'individual'}
+														>
+															{#if formData.provider_type === 'individual'}
+																<div class="w-2 h-2 bg-white rounded-full"></div>
+															{/if}
+														</div>
+														<div>
+															<div class="font-semibold text-secondary-900">👤 Persona Individual</div>
+															<div class="text-sm text-secondary-600">Trabajo por cuenta propia</div>
+														</div>
+													</div>
+												</div>
+											</label>
+
+											<label class="relative">
+												<input
+													type="radio"
+													bind:group={formData.provider_type}
+													value="company"
+													class="sr-only"
+												/>
+												<div 
+													class="p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 hover:shadow-md"
+													class:border-primary-500={formData.provider_type === 'company'}
+													class:bg-primary-50={formData.provider_type === 'company'}
+													class:border-secondary-300={formData.provider_type !== 'company'}
+													class:bg-white={formData.provider_type !== 'company'}
+												>
+													<div class="flex items-center space-x-3">
+														<div 
+															class="w-5 h-5 rounded-full border-2 flex items-center justify-center"
+															class:border-primary-500={formData.provider_type === 'company'}
+															class:bg-primary-500={formData.provider_type === 'company'}
+															class:border-secondary-300={formData.provider_type !== 'company'}
+														>
+															{#if formData.provider_type === 'company'}
+																<div class="w-2 h-2 bg-white rounded-full"></div>
+															{/if}
+														</div>
+														<div>
+															<div class="font-semibold text-secondary-900">🏢 Empresa</div>
+															<div class="text-sm text-secondary-600">Tengo una empresa registrada</div>
+														</div>
+													</div>
+												</div>
+											</label>
+										</div>
+									</div>
+
 									<div class="grid md:grid-cols-2 gap-6">
 										<div>
 											<label for="first_name" class="block text-sm font-semibold text-secondary-900 mb-2">
@@ -447,14 +556,44 @@
 											<label for="email" class="block text-sm font-semibold text-secondary-900 mb-2">
 												Email *
 											</label>
+											<div class="relative">
 											<input
 												type="email"
 												id="email"
 												bind:value={formData.email}
+													on:input={validateEmail}
+													on:blur={validateEmail}
 												required
 												placeholder="tu@email.com"
-												class="w-full px-4 py-3 border border-secondary-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors duration-200"
-											/>
+													class="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-primary-500 transition-colors duration-200 pr-10"
+													class:border-red-300={emailError}
+													class:border-green-300={emailValid && !emailError}
+													class:border-secondary-300={!emailError && !emailValid}
+													class:focus:border-red-500={emailError}
+													class:focus:border-green-500={emailValid && !emailError}
+													class:focus:border-primary-500={!emailError && !emailValid}
+												/>
+												<!-- Icono de validación -->
+												{#if formData.email && formData.email.length > 0}
+													<div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+														{#if emailValid && !emailError}
+															<svg class="h-5 w-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+																<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+															</svg>
+														{:else if emailError}
+															<svg class="h-5 w-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+																<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+															</svg>
+														{/if}
+													</div>
+												{/if}
+											</div>
+											<!-- Mensaje de error -->
+											{#if emailError}
+												<p class="mt-1 text-sm text-red-600">{emailError}</p>
+											{:else if emailValid}
+												<p class="mt-1 text-sm text-green-600">✓ Email válido</p>
+											{/if}
 										</div>
 
 										<div>
@@ -467,55 +606,6 @@
 												bind:value={formData.phone}
 												required
 												placeholder="+505 8888 8888"
-												class="w-full px-4 py-3 border border-secondary-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors duration-200"
-											/>
-										</div>
-									</div>
-								</div>
-							</div>
-						{/if}
-
-						<!-- Step 3: Location -->
-						{#if currentStep === 3}
-							<div class="space-y-8">
-								<div class="text-center">
-									<h2 class="text-3xl font-bold text-secondary-900 mb-4">
-										Ubicación
-									</h2>
-									<p class="text-secondary-600">
-										¿Dónde ofreces tus servicios?
-									</p>
-								</div>
-
-								<div class="space-y-6">
-									<div class="grid md:grid-cols-2 gap-6">
-										<div>
-											<label for="department" class="block text-sm font-semibold text-secondary-900 mb-2">
-												Departamento *
-											</label>
-											<select
-												id="department"
-												bind:value={formData.department}
-												required
-												class="w-full px-4 py-3 border border-secondary-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors duration-200"
-											>
-												<option value="">Selecciona tu departamento</option>
-												{#each nicaraguaDepartments as department}
-													<option value={department}>{department}</option>
-												{/each}
-											</select>
-										</div>
-
-										<div>
-											<label for="city" class="block text-sm font-semibold text-secondary-900 mb-2">
-												Ciudad *
-											</label>
-											<input
-												type="text"
-												id="city"
-												bind:value={formData.city}
-												required
-												placeholder="Tu ciudad"
 												class="w-full px-4 py-3 border border-secondary-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors duration-200"
 											/>
 										</div>
@@ -533,6 +623,39 @@
 											placeholder="Dirección exacta: barrio, calle, número de casa, puntos de referencia..."
 											class="w-full px-4 py-3 border border-secondary-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors duration-200 resize-none"
 										></textarea>
+									</div>
+								</div>
+							</div>
+						{/if}
+
+						<!-- Step 3: Location -->
+						{#if currentStep === 3}
+							<div class="space-y-8">
+								<div class="text-center">
+									<h2 class="text-3xl font-bold text-secondary-900 mb-4">
+										Ubicación del Servicio
+									</h2>
+									<p class="text-secondary-600">
+										¿En qué departamento ofreces tus servicios?
+									</p>
+								</div>
+
+								<div class="space-y-6">
+										<div>
+											<label for="department" class="block text-sm font-semibold text-secondary-900 mb-2">
+												Departamento *
+											</label>
+											<select
+												id="department"
+												bind:value={formData.department}
+												required
+												class="w-full px-4 py-3 border border-secondary-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors duration-200"
+											>
+												<option value="">Selecciona tu departamento</option>
+												{#each nicaraguaDepartments as department}
+													<option value={department}>{department}</option>
+												{/each}
+											</select>
 									</div>
 								</div>
 							</div>

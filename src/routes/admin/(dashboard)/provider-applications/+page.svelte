@@ -15,8 +15,20 @@
     phone: string;
     experience_years: number;
     certifications: string[];
-    categories: number[] | Array<{category_id: number}>;
+    categories: number[] | Array<{category_id?: number; id?: number; name?: string}>;
     availability: any;
+    application_data?: {
+      first_name?: string;
+      last_name?: string;
+      address?: string;
+      department?: string;
+      city?: string;
+      provider_type?: string;
+      experience_years?: number;
+      availability?: any;
+      certifications?: string[];
+      [key: string]: any;
+    };
     rejection_reason?: string;
     reviewed_at?: string;
     reviewed_by_admin_id?: string;
@@ -41,7 +53,7 @@
   let limit = 10;
 
   // Filtros
-  let statusFilter = 'all';
+  let statusFilter = 'submitted'; // Por defecto mostrar aplicaciones pendientes
   let searchFilter = '';
   let categoryFilter = 'all';
   let dateFilter = 'all';
@@ -51,6 +63,27 @@
 
   // Categorías para mapear IDs a nombres
   let categories: Array<{id: number, name: string}> = [];
+
+  // Datos geográficos de Nicaragua
+  const departments = [
+    { name: 'Managua', cities: ['Managua', 'Ciudad Sandino', 'El Crucero', 'San Francisco Libre', 'Tipitapa', 'Villa Carlos Fonseca'] },
+    { name: 'León', cities: ['León', 'La Paz Centro', 'Nagarote', 'Quezalguaque', 'Santa Rosa del Peñón', 'Telica'] },
+    { name: 'Granada', cities: ['Granada', 'Diriá', 'Diriomo', 'Nandaime'] },
+    { name: 'Masaya', cities: ['Masaya', 'Catarina', 'La Concepción', 'Masatepe', 'Nandasmo', 'Nindirí', 'Niquinohomo', 'San Juan de Oriente', 'Tisma'] },
+    { name: 'Carazo', cities: ['Jinotepe', 'Diriamba', 'Dolores', 'El Rosario', 'La Conquista', 'La Paz de Carazo', 'San Marcos', 'Santa Teresa'] },
+    { name: 'Chinandega', cities: ['Chinandega', 'Chichigalpa', 'Corinto', 'El Realejo', 'El Viejo', 'Posoltega', 'Puerto Morazán', 'San Francisco del Norte', 'San Pedro del Norte', 'Santo Tomás del Norte', 'Somotillo', 'Villanueva'] },
+    { name: 'Rivas', cities: ['Rivas', 'Altagracia', 'Belén', 'Buenos Aires', 'Cárdenas', 'Moyogalpa', 'Potosí', 'San Jorge', 'San Juan del Sur', 'Tola'] },
+    { name: 'Boaco', cities: ['Boaco', 'Camoapa', 'San José de los Remates', 'San Lorenzo', 'Santa Lucía', 'Teustepe'] },
+    { name: 'Chontales', cities: ['Juigalpa', 'Acoyapa', 'Comalapa', 'El Coral', 'La Libertad', 'San Francisco de Cuapa', 'San Pedro de Lóvago', 'Santo Domingo', 'Santo Tomás', 'Villa Sandino'] },
+    { name: 'Jinotega', cities: ['Jinotega', 'El Cuá', 'La Concordia', 'San José de Bocay', 'San Rafael del Norte', 'San Sebastián de Yalí', 'Santa María de Pantasma', 'Wiwilí de Jinotega'] },
+    { name: 'Matagalpa', cities: ['Matagalpa', 'Ciudad Darío', 'El Tuma - La Dalia', 'Esquipulas', 'Matiguás', 'Muy Muy', 'Rancho Grande', 'Río Blanco', 'San Dionisio', 'San Isidro', 'San Ramón', 'Sébaco', 'Terrabona'] },
+    { name: 'Nueva Segovia', cities: ['Ocotal', 'Ciudad Antigua', 'Dipilto', 'El Jícaro', 'Jalapa', 'Macuelizo', 'Mozonte', 'Murra', 'Quilalí', 'San Fernando', 'Santa María', 'Wiwilí de Nueva Segovia'] },
+    { name: 'Estelí', cities: ['Estelí', 'Condega', 'La Trinidad', 'Pueblo Nuevo', 'San Juan de Limay', 'San Nicolás'] },
+    { name: 'Madriz', cities: ['Somoto', 'Las Sabanas', 'Palacagüina', 'San José de Cusmapa', 'San Lucas', 'Telpaneca', 'Totogalpa', 'Yalagüina'] },
+    { name: 'Río San Juan', cities: ['San Carlos', 'El Almendro', 'El Castillo', 'Morrito', 'San Miguelito'] },
+    { name: 'RACCS', cities: ['Bluefields', 'Corn Island', 'Desembocadura de la Cruz de Río Grande', 'El Ayote', 'El Rama', 'El Tortuguero', 'Kukra Hill', 'La Cruz de Río Grande', 'Laguna de Perlas', 'Muelle de los Bueyes', 'Nueva Guinea', 'Paiwas'] },
+    { name: 'RACCN', cities: ['Bilwi', 'Bonanza', 'Mulukukú', 'Prinzapolka', 'Rosita', 'Siuna', 'Waslala', 'Waspam'] }
+  ];
 
   // Modal de edición
   let showEditModal = false;
@@ -62,9 +95,28 @@
     location: '',
     phone: '',
     experience_years: 0,
-    categories: [] as number[]
+    categories: [] as number[],
+    email: '',
+    first_name: '',
+    last_name: '',
+    address: '',
+    department: '',
+    city: '',
+    provider_type: '',
+    availability: {
+      monday: { morning: false, afternoon: false, evening: false },
+      tuesday: { morning: false, afternoon: false, evening: false },
+      wednesday: { morning: false, afternoon: false, evening: false },
+      thursday: { morning: false, afternoon: false, evening: false },
+      friday: { morning: false, afternoon: false, evening: false },
+      saturday: { morning: false, afternoon: false, evening: false },
+      sunday: { morning: false, afternoon: false, evening: false }
+    }
   };
   let savingEdit = false;
+
+  // Ciudades disponibles basadas en el departamento seleccionado
+  $: availableCities = editForm.department ? departments.find(d => d.name === editForm.department)?.cities || [] : [];
 
   onMount(async () => {
     await Promise.all([
@@ -278,7 +330,7 @@
 
     try {
       const response = await fetch(`/api/provider-applications/${applicationId}`, {
-        method: 'PATCH',
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
         },
@@ -350,10 +402,29 @@
       hourly_rate: application.hourly_rate,
       location: application.location,
       phone: application.phone,
-      experience_years: application.experience_years,
+      experience_years: application.experience_years || application.application_data?.experience_years || 0,
       categories: Array.isArray(application.categories) 
-        ? application.categories.map(c => typeof c === 'number' ? c : c.category_id)
-        : []
+        ? application.categories.map(c => {
+            if (typeof c === 'number') return c;
+            return (c as any).category_id || (c as any).id || 0;
+          }).filter(id => id > 0)
+        : [],
+      email: application.email || application.user?.email || '',
+      first_name: application.application_data?.first_name || application.user?.raw_user_meta_data?.first_name || '',
+      last_name: application.application_data?.last_name || application.user?.raw_user_meta_data?.last_name || '',
+      address: application.application_data?.address || '',
+      department: application.application_data?.department || '',
+      city: application.application_data?.city || '',
+      provider_type: application.application_data?.provider_type || '',
+      availability: application.application_data?.availability || application.availability || {
+        monday: { morning: false, afternoon: false, evening: false },
+        tuesday: { morning: false, afternoon: false, evening: false },
+        wednesday: { morning: false, afternoon: false, evening: false },
+        thursday: { morning: false, afternoon: false, evening: false },
+        friday: { morning: false, afternoon: false, evening: false },
+        saturday: { morning: false, afternoon: false, evening: false },
+        sunday: { morning: false, afternoon: false, evening: false }
+      }
     };
     showEditModal = true;
   }
@@ -370,11 +441,30 @@
     savingEdit = true;
     try {
       const response = await fetch(`/api/provider-applications/${editingApplication.id}`, {
-        method: 'PATCH',
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(editForm)
+        body: JSON.stringify({
+          headline: editForm.headline,
+          bio: editForm.bio,
+          hourly_rate: editForm.hourly_rate,
+          location: editForm.location,
+          phone: editForm.phone,
+          experience_years: editForm.experience_years,
+          categories: editForm.categories,
+          email: editForm.email,
+          application_data: {
+            first_name: editForm.first_name,
+            last_name: editForm.last_name,
+            address: editForm.address,
+            department: editForm.department,
+            city: editForm.city,
+            provider_type: editForm.provider_type,
+            availability: editForm.availability,
+            experience_years: editForm.experience_years
+          }
+        })
       });
 
       if (response.ok) {
@@ -392,12 +482,24 @@
     }
   }
 
-  // Reactive statements para filtros
+  // Debounce para el campo de búsqueda
+  let searchTimeout: NodeJS.Timeout;
+  
+  // Reactive statements para filtros (excepto búsqueda)
   $: {
-    if (statusFilter || searchFilter || categoryFilter || dateFilter) {
+    if (statusFilter || categoryFilter || dateFilter) {
       currentPage = 1;
       loadApplications();
     }
+  }
+
+  // Debounce para búsqueda
+  $: if (searchFilter !== undefined) {
+    if (searchTimeout) clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+      currentPage = 1;
+      loadApplications();
+    }, 500); // Esperar 500ms después de que el usuario deje de escribir
   }
 </script>
 
@@ -454,7 +556,7 @@
             id="search"
             type="text"
             bind:value={searchFilter}
-            placeholder="Nombre, email, headline..."
+            placeholder="Buscar por nombre, email, título, ubicación..."
             class="w-full pl-10 pr-4 py-2 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors duration-200"
           />
           <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -580,13 +682,26 @@
                 </div>
               </div>
 
+              {#if application.application_data?.provider_type}
+                <div class="mt-3">
+                  <span class="text-secondary-500 text-sm">Tipo:</span>
+                  <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ml-1"
+                        class:bg-blue-100={application.application_data.provider_type === 'individual'}
+                        class:text-blue-800={application.application_data.provider_type === 'individual'}
+                        class:bg-purple-100={application.application_data.provider_type === 'company'}
+                        class:text-purple-800={application.application_data.provider_type === 'company'}>
+                    {application.application_data.provider_type === 'individual' ? '👤 Persona Individual' : '🏢 Empresa'}
+                  </span>
+                </div>
+              {/if}
+
               {#if Array.isArray(application.categories) && application.categories.length > 0}
                 <div class="mt-3">
                   <span class="text-secondary-500 text-sm">Categorías:</span>
                   <div class="flex flex-wrap gap-2 mt-1">
                     {#each application.categories as categoryId}
                       <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-primary-100 text-primary-800">
-                        {getCategoryName(typeof categoryId === 'number' ? categoryId : categoryId.category_id)}
+                        {getCategoryName(typeof categoryId === 'number' ? categoryId : ((categoryId as any).category_id || (categoryId as any).id || 0))}
                       </span>
                     {/each}
                   </div>
@@ -712,7 +827,137 @@
         </h3>
       </div>
       
-      <div class="p-6 space-y-4">
+      <div class="p-6 space-y-6">
+        <!-- Información Personal -->
+        <div class="border-b border-secondary-200 pb-4">
+          <h4 class="text-md font-semibold text-secondary-900 mb-3">Información Personal</h4>
+          
+          <!-- Tipo de Proveedor -->
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-secondary-700 mb-2">
+              Tipo de Proveedor
+            </label>
+            <div class="flex space-x-4">
+              <label class="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="radio"
+                  bind:group={editForm.provider_type}
+                  value="individual"
+                  class="w-4 h-4 text-primary-600 border-secondary-300 focus:ring-primary-500"
+                />
+                <span class="text-sm text-secondary-700">👤 Persona Individual</span>
+              </label>
+              <label class="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="radio"
+                  bind:group={editForm.provider_type}
+                  value="company"
+                  class="w-4 h-4 text-primary-600 border-secondary-300 focus:ring-primary-500"
+                />
+                <span class="text-sm text-secondary-700">🏢 Empresa</span>
+              </label>
+            </div>
+          </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-secondary-700 mb-2">
+                Correo Electrónico
+              </label>
+              <input
+                type="email"
+                bind:value={editForm.email}
+                class="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                readonly
+              />
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-secondary-700 mb-2">
+                Teléfono
+              </label>
+              <input
+                type="tel"
+                bind:value={editForm.phone}
+                class="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              />
+            </div>
+          </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            <div>
+              <label class="block text-sm font-medium text-secondary-700 mb-2">
+                Nombre
+              </label>
+              <input
+                type="text"
+                bind:value={editForm.first_name}
+                class="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              />
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-secondary-700 mb-2">
+                Apellido
+              </label>
+              <input
+                type="text"
+                bind:value={editForm.last_name}
+                class="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              />
+            </div>
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-secondary-700 mb-2">
+              Dirección
+            </label>
+            <input
+              type="text"
+              bind:value={editForm.address}
+              class="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            />
+          </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            <div>
+              <label class="block text-sm font-medium text-secondary-700 mb-2">
+                Departamento
+              </label>
+              <select
+                bind:value={editForm.department}
+                on:change={() => editForm.city = ''}
+                class="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white"
+              >
+                <option value="">Selecciona un departamento</option>
+                {#each departments as department}
+                  <option value={department.name}>{department.name}</option>
+                {/each}
+              </select>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-secondary-700 mb-2">
+                Ciudad
+              </label>
+              <select
+                bind:value={editForm.city}
+                disabled={!editForm.department}
+                class="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white disabled:bg-secondary-50 disabled:text-secondary-500"
+              >
+                <option value="">Selecciona una ciudad</option>
+                {#each availableCities as city}
+                  <option value={city}>{city}</option>
+                {/each}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Información del Servicio -->
+        <div class="border-b border-secondary-200 pb-4">
+          <h4 class="text-md font-semibold text-secondary-900 mb-3">Información del Servicio</h4>
+          
         <div>
           <label class="block text-sm font-medium text-secondary-700 mb-2">
             Título del Servicio
@@ -724,7 +969,7 @@
           />
         </div>
         
-        <div>
+          <div class="mt-4">
           <label class="block text-sm font-medium text-secondary-700 mb-2">
             Descripción
           </label>
@@ -735,7 +980,7 @@
           ></textarea>
         </div>
         
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
           <div>
             <label class="block text-sm font-medium text-secondary-700 mb-2">
               Tarifa por Hora (C$)
@@ -759,7 +1004,6 @@
               min="0"
               class="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             />
-          </div>
         </div>
         
         <div>
@@ -771,17 +1015,73 @@
             bind:value={editForm.location}
             class="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
           />
+            </div>
+          </div>
         </div>
         
+        <!-- Categorías -->
+        <div class="border-b border-secondary-200 pb-4">
+          <h4 class="text-md font-semibold text-secondary-900 mb-3">Categorías</h4>
+          
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {#each categories as category}
+              <label class="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  bind:group={editForm.categories}
+                  value={category.id}
+                  class="w-4 h-4 text-primary-600 border-secondary-300 rounded focus:ring-primary-500"
+                />
+                <span class="text-sm text-secondary-700">{category.name}</span>
+              </label>
+            {/each}
+          </div>
+        </div>
+
+        <!-- Horarios de Disponibilidad -->
         <div>
-          <label class="block text-sm font-medium text-secondary-700 mb-2">
-            Teléfono
+          <h4 class="text-md font-semibold text-secondary-900 mb-3">Horarios de Disponibilidad</h4>
+          
+          <div class="space-y-3">
+            {#each Object.entries(editForm.availability) as [day, schedule]}
+              <div class="flex items-center space-x-4">
+                <div class="w-20 text-sm font-medium text-secondary-700 capitalize">
+                  {day === 'monday' ? 'Lunes' : 
+                   day === 'tuesday' ? 'Martes' :
+                   day === 'wednesday' ? 'Miércoles' :
+                   day === 'thursday' ? 'Jueves' :
+                   day === 'friday' ? 'Viernes' :
+                   day === 'saturday' ? 'Sábado' : 'Domingo'}
+                </div>
+                <div class="flex space-x-4">
+                  <label class="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      bind:checked={schedule.morning}
+                      class="w-4 h-4 text-primary-600 border-secondary-300 rounded focus:ring-primary-500"
+                    />
+                    <span class="text-sm text-secondary-700">Mañana</span>
           </label>
+                  <label class="flex items-center space-x-2">
           <input
-            type="tel"
-            bind:value={editForm.phone}
-            class="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      type="checkbox"
+                      bind:checked={schedule.afternoon}
+                      class="w-4 h-4 text-primary-600 border-secondary-300 rounded focus:ring-primary-500"
+                    />
+                    <span class="text-sm text-secondary-700">Tarde</span>
+                  </label>
+                  <label class="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      bind:checked={schedule.evening}
+                      class="w-4 h-4 text-primary-600 border-secondary-300 rounded focus:ring-primary-500"
           />
+                    <span class="text-sm text-secondary-700">Noche</span>
+                  </label>
+                </div>
+              </div>
+            {/each}
+          </div>
         </div>
       </div>
       

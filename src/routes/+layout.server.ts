@@ -6,34 +6,49 @@ export const load: LayoutServerLoad = async ({ locals: { safeGetSession }, fetch
 
 	let isProvider = false;
 	let isAdmin = false;
+	let providerProfile = null;
 
 	if (user) {
-		// Usar el cliente admin directamente
-
-		// Verificar si es proveedor
-		const { data: providerProfile } = await supabaseAdmin
+		// Verificar si es proveedor - ahora con verificación más robusta
+		const { data: provider, error: providerError } = await supabaseAdmin
 			.from('provider_profiles')
-			.select('id')
+			.select('*')
 			.eq('user_id', user.id)
+			.eq('is_active', true)
 			.single();
 
-		// Verificar si es admin - ahora el rol viene de auth.users
-		isAdmin = user.user_metadata?.role === 'admin';
-		isProvider = !!providerProfile || user.user_metadata?.role === 'provider';
+		if (providerError) {
+		} else if (provider) {
+			providerProfile = provider;
+		}
 
-		console.log('User:', {
-			id: user.id,
-			email: user.email,
-			isProvider,
-			isAdmin,
-			user_metadata: user.user_metadata
-		});
+		// Verificar si es admin
+		const userRole = user.user_metadata?.role;
+		isAdmin = userRole === 'admin';
+		
+		// Un usuario es proveedor si tiene un perfil activo O si tiene el rol en metadata
+		isProvider = (providerProfile !== null) || userRole === 'provider';
+
+		// Debug: Log the exact boolean value
+	} else {
 	}
 
-	return {
-		session,
-		user,
+	// Crear un objeto de datos limpio para serialización
+	const data = {
+		session: session ? {
+			...session,
+			user: undefined // Removemos el usuario del objeto session para evitar duplicación
+		} : null,
+		user: user ? {
+			id: user.id,
+			email: user.email,
+			user_metadata: user.user_metadata,
+			email_confirmed_at: user.email_confirmed_at
+		} : null,
 		isProvider,
-		isAdmin
+		isAdmin,
+		providerProfile // Incluimos el perfil completo del proveedor
 	};
+
+	return data;
 }; 

@@ -1026,7 +1026,7 @@ export const GET: RequestHandler = async () => {
                         },
                         {
                             in: 'query',
-                            name: 'provider_id',
+                            name: 'provider_profile_id',
                             schema: {
                                 type: 'string',
                                 format: 'uuid'
@@ -2324,10 +2324,10 @@ export const GET: RequestHandler = async () => {
                             type: 'integer',
                             description: 'Category ID'
                         },
-                        provider_id: {
+                        provider_profile_id: {
                             type: 'string',
                             format: 'uuid',
-                            description: 'Provider ID'
+                            description: 'Provider Profile ID'
                         },
                         location: {
                             type: 'string',
@@ -2344,7 +2344,7 @@ export const GET: RequestHandler = async () => {
                             description: 'Service last update timestamp'
                         }
                     },
-                    required: ['id', 'title', 'description', 'price', 'category_id', 'provider_id', 'created_at']
+                    required: ['id', 'title', 'description', 'price', 'category_id', 'provider_profile_id', 'created_at']
                 },
                 Category: {
                     type: 'object',

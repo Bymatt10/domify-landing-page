@@ -15,6 +15,10 @@
   let showModal = false;
   let selectedProvider: any = null;
   
+  // Categories
+  let categories: any[] = [];
+  let selectedCategories: number[] = [];
+  
   // Estado de edición
   let isEditing = false;
   let saving = false;
@@ -25,7 +29,8 @@
     hourly_rate: 0,
     location: '',
     phone: '',
-    email: ''
+    email: '',
+    categories: [] as number[]
   };
   
   // Estado de activación/desactivación
@@ -44,7 +49,8 @@
       hourly_rate: provider.hourly_rate || 0,
       location: provider.location || '',
       phone: provider.phone || '',
-      email: provider.user?.email || ''
+      email: provider.user?.email || '',
+      categories: provider.categories ? provider.categories.map((cat: any) => cat.id) : []
     };
   }
 
@@ -62,7 +68,8 @@
       hourly_rate: selectedProvider.hourly_rate || 0,
       location: selectedProvider.location || '',
       phone: selectedProvider.phone || '',
-      email: selectedProvider.user?.email || ''
+      email: selectedProvider.user?.email || '',
+      categories: selectedProvider.categories ? selectedProvider.categories.map((cat: any) => cat.id) : []
     };
   }
 
@@ -76,31 +83,37 @@
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(editForm)
+        body: JSON.stringify({
+          ...editForm,
+          category_ids: editForm.categories
+        })
       });
 
       if (res.ok) {
         const updatedProvider = await res.json();
         
-        // Actualizar el proveedor en la lista
-        const providerIndex = providers.findIndex(p => p.user_id === selectedProvider.user_id);
-        if (providerIndex !== -1) {
-          providers[providerIndex] = { 
-            ...providers[providerIndex], 
-            ...updatedProvider,
-            // Asegurar que el email actualizado se refleje
-            user: updatedProvider.user || providers[providerIndex].user
-          };
-          providers = providers; // Trigger reactivity
-        }
+        // Recargar la lista completa para obtener las categorías actualizadas
+        await loadProviders();
         
-        // Actualizar el proveedor seleccionado
-        selectedProvider = { 
-          ...selectedProvider, 
-          ...updatedProvider,
-          // Asegurar que el email actualizado se refleje
-          user: updatedProvider.user || selectedProvider.user
-        };
+        // Buscar el proveedor actualizado en la nueva lista
+        const updatedProviderWithCategories = providers.find(p => p.user_id === selectedProvider.user_id);
+        
+        if (updatedProviderWithCategories) {
+          // Actualizar el proveedor seleccionado con los datos completos
+          selectedProvider = updatedProviderWithCategories;
+          
+          // Actualizar el formulario de edición con las nuevas categorías
+          editForm = {
+            business_name: selectedProvider.business_name || '',
+            headline: selectedProvider.headline || '',
+            bio: selectedProvider.bio || '',
+            hourly_rate: selectedProvider.hourly_rate || 0,
+            location: selectedProvider.location || '',
+            phone: selectedProvider.phone || '',
+            email: selectedProvider.user?.email || '',
+            categories: selectedProvider.categories ? selectedProvider.categories.map((cat: any) => cat.id) : []
+          };
+        }
         
         isEditing = false;
         
@@ -210,8 +223,31 @@
     }
   }
 
+  async function loadCategories() {
+    try {
+      const response = await fetch('/api/categories');
+      if (response.ok) {
+        const data = await response.json();
+        if (data && data.data && Array.isArray(data.data.categories)) {
+          categories = data.data.categories;
+        } else {
+          console.warn('Category data is not in the expected format:', data);
+          categories = [];
+        }
+      } else {
+        console.error('Failed to load categories, response not OK');
+        categories = [];
+      }
+    } catch (error) {
+      console.error('Error loading categories:', error);
+    }
+  }
+
   onMount(() => {
-    loadProviders();
+    Promise.all([
+      loadProviders(),
+      loadCategories()
+    ]);
     document.addEventListener('keydown', handleKeydown);
     
     return () => {
@@ -293,6 +329,7 @@
                     <tr>
                         <th class="provider-col">Proveedor</th>
                         <th class="contact-col">Contacto</th>
+                        <th class="categories-col">Categorías</th>
                         <th class="location-col">Ubicación</th>
                         <th class="status-col">Estado</th>
                         <th class="date-col">Registro</th>
@@ -312,6 +349,21 @@
                                 <div class="contact-info">
                                     <div class="email">{provider.user?.email || 'Sin email'}</div>
                                     <div class="phone">{provider.phone || 'Sin teléfono'}</div>
+                                </div>
+                            </td>
+                            <td class="categories-col">
+                                <div class="categories-info">
+                                    {#if provider.categories && provider.categories.length > 0}
+                                        <div class="category-tags">
+                                            {#each provider.categories as category}
+                                                <span class="category-tag">
+                                                    {category.icon || '🛠️'} {category.name}
+                                                </span>
+                                            {/each}
+                                        </div>
+                                    {:else}
+                                        <span class="no-categories">Sin categorías</span>
+                                    {/if}
                                 </div>
                             </td>
                             <td class="location-col">
@@ -458,6 +510,32 @@
                   rows="4"
                 ></textarea>
               </div>
+
+              <!-- Categorías -->
+              <div class="form-item full-width">
+                <label>Categorías de Servicios:</label>
+                <div class="categories-selection">
+                  {#if categories.length > 0}
+                    <div class="categories-grid">
+                      {#each categories as category}
+                        <label class="category-checkbox">
+                          <input
+                            type="checkbox"
+                            value={category.id}
+                            bind:group={editForm.categories}
+                          />
+                          <span class="checkbox-label">
+                            <span class="category-icon">{category.icon || '🛠️'}</span>
+                            <span class="category-name">{category.name}</span>
+                          </span>
+                        </label>
+                      {/each}
+                    </div>
+                  {:else}
+                    <p class="no-categories-available">Cargando categorías...</p>
+                  {/if}
+                </div>
+              </div>
               
               <div class="readonly-info">
                 <div class="info-item">
@@ -504,6 +582,22 @@
                 <p>{selectedProvider.bio}</p>
               </div>
             {/if}
+
+            <!-- Categorías del proveedor -->
+            <div class="categories-section">
+              <h4>Categorías de Servicios</h4>
+              {#if selectedProvider.categories && selectedProvider.categories.length > 0}
+                <div class="provider-categories-display">
+                  {#each selectedProvider.categories as category}
+                    <span class="category-display-tag">
+                      {category.icon || '🛠️'} {category.name}
+                    </span>
+                  {/each}
+                </div>
+              {:else}
+                <p class="no-categories-text">Este proveedor no tiene categorías asignadas.</p>
+              {/if}
+            </div>
           {/if}
           
           <div class="profile-section">
@@ -799,6 +893,152 @@
     font-size: 0.8rem;
     color: #6b7280;
   }
+
+  /* Categorías */
+  .categories-col {
+    width: 20%;
+    min-width: 150px;
+  }
+
+  .categories-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .category-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+  }
+
+  .category-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+    color: #1e40af;
+    border: 1px solid #3b82f6;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .no-categories {
+    font-size: 0.75rem;
+    color: #9ca3af;
+    font-style: italic;
+  }
+
+  /* Estilos para la selección de categorías en el modal */
+  .categories-selection {
+    margin-top: 0.5rem;
+  }
+
+  .categories-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+  }
+
+  .category-checkbox {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    padding: 0.75rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    background: white;
+  }
+
+  .category-checkbox:hover {
+    border-color: #3b82f6;
+    background: #f8fafc;
+  }
+
+  .category-checkbox input[type="checkbox"] {
+    margin-right: 0.75rem;
+    width: 16px;
+    height: 16px;
+    accent-color: #3b82f6;
+  }
+
+  .category-checkbox input[type="checkbox"]:checked + .checkbox-label {
+    color: #1e40af;
+    font-weight: 600;
+  }
+
+  .category-checkbox:has(input[type="checkbox"]:checked) {
+    border-color: #3b82f6;
+    background: linear-gradient(135deg, #dbeafe 0%, #f0f9ff 100%);
+  }
+
+  .checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+  }
+
+  .category-icon {
+    font-size: 1.25rem;
+  }
+
+  .category-name {
+    font-weight: 500;
+  }
+
+  .no-categories-available {
+    color: #6b7280;
+    font-style: italic;
+    text-align: center;
+    padding: 1rem;
+  }
+
+  /* Estilos para mostrar categorías en modo lectura */
+  .categories-section {
+    margin-top: 1.5rem;
+  }
+
+  .categories-section h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #374151;
+    margin: 0 0 0.75rem 0;
+  }
+
+  .provider-categories-display {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .category-display-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.5rem 0.75rem;
+    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+    color: #1e40af;
+    border: 1px solid #3b82f6;
+    border-radius: 16px;
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+
+  .no-categories-text {
+    color: #6b7280;
+    font-style: italic;
+    margin: 0;
+    padding: 1rem;
+    background: #f9fafb;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+  }
   
   /* Paginación */
   .pagination { 
@@ -878,10 +1118,11 @@
       padding: 1rem;
     }
     
-    .provider-col { width: 30%; }
-    .contact-col { width: 30%; }
-    .location-col { width: 25%; }
-    .status-col { width: 15%; }
+    .provider-col { width: 25%; }
+    .contact-col { width: 25%; }
+    .categories-col { width: 20%; }
+    .location-col { width: 20%; }
+    .status-col { width: 10%; }
     .date-col { display: none; }
   }
   
@@ -900,6 +1141,10 @@
     
     .email {
       font-size: 0.8rem;
+    }
+
+    .categories-col {
+      display: none;
     }
   }
 

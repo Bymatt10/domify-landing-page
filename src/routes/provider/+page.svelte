@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { supabase } from '$lib/supabase';
+	import { page } from '$app/stores';
 
 	export let data: any;
 	let { session, user } = data;
@@ -122,105 +123,185 @@
 	<title>Dashboard - Panel Proveedor | Domify</title>
 </svelte:head>
 
-{#if loading}
-	<div class="loading-container">
-		<div class="loading-spinner"></div>
-		<p>Cargando dashboard...</p>
+{#if !user}
+	<div class="flex items-center justify-center min-h-[60vh]">
+		<div class="text-center">
+			<h2 class="text-2xl font-bold text-gray-900">Acceso no autorizado</h2>
+			<p class="mt-2 text-gray-600">Por favor inicia sesión para acceder a tu panel de proveedor.</p>
+			<a href="/auth/login" class="mt-4 inline-block px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+				Iniciar Sesión
+			</a>
+		</div>
 	</div>
 {:else}
-	<div class="dashboard">
-		<header class="dashboard-header">
-			<h1>Dashboard</h1>
-			<p>Bienvenido de vuelta, {providerProfile?.business_name}</p>
-		</header>
-
-		<!-- Estadísticas -->
-		<section class="stats-section">
-			<h2>Resumen General</h2>
-			<div class="stats-grid">
-				<div class="stat-card">
-					<div class="stat-icon">📅</div>
-					<div class="stat-content">
-						<h3>{stats.totalBookings}</h3>
-						<p>Total Reservas</p>
+	<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+		<!-- Encabezado con mensaje de bienvenida y perfil -->
+		<div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+			<div class="flex items-center gap-6">
+				<div class="w-20 h-20 bg-primary-600 rounded-full flex items-center justify-center text-3xl text-white font-bold">
+					{#if user?.user_metadata?.first_name}
+						{user.user_metadata.first_name[0].toUpperCase()}
+					{:else}
+						P
+					{/if}
+					</div>
+				<div>
+					<h1 class="text-2xl font-bold text-gray-900">
+						¡Bienvenido de vuelta, {user?.user_metadata?.first_name || 'Proveedor'}!
+					</h1>
+					<p class="text-gray-600 mt-1">Gestiona tus servicios y reservas desde aquí</p>
+				</div>
 					</div>
 				</div>
 
-				<div class="stat-card">
-					<div class="stat-icon">⏳</div>
-					<div class="stat-content">
-						<h3>{stats.pendingBookings}</h3>
-						<p>Pendientes</p>
+		<!-- Tarjetas de estadísticas principales -->
+		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+			<!-- Total Reservas -->
+			<div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+				<div class="flex items-center justify-between">
+					<div>
+						<p class="text-sm font-medium text-gray-600">Total Reservas</p>
+						<h3 class="text-2xl font-bold text-gray-900 mt-1">{stats.totalBookings}</h3>
+					</div>
+					<div class="w-12 h-12 bg-primary-50 rounded-full flex items-center justify-center">
+						<svg class="w-6 h-6 text-primary-600" viewBox="0 0 24 24" fill="none">
+							<path d="M8 7V3m8 4V3M3 21h18M3 10h18M4 3h16a1 1 0 011 1v16a1 1 0 01-1 1H4a1 1 0 01-1-1V4a1 1 0 011-1z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+						</svg>
+					</div>
+				</div>
+				<div class="mt-4">
+					<a href="/provider/bookings" class="text-sm text-primary-600 hover:text-primary-700 font-medium">
+						Ver todas las reservas →
+					</a>
 					</div>
 				</div>
 
-				<div class="stat-card">
-					<div class="stat-icon">✅</div>
-					<div class="stat-content">
-						<h3>{stats.completedBookings}</h3>
-						<p>Completadas</p>
+			<!-- Pendientes -->
+			<div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+				<div class="flex items-center justify-between">
+					<div>
+						<p class="text-sm font-medium text-gray-600">Pendientes</p>
+						<h3 class="text-2xl font-bold text-gray-900 mt-1">{stats.pendingBookings}</h3>
+					</div>
+					<div class="w-12 h-12 bg-yellow-50 rounded-full flex items-center justify-center">
+						<svg class="w-6 h-6 text-yellow-600" viewBox="0 0 24 24" fill="none">
+							<path d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+						</svg>
+					</div>
+				</div>
+				<div class="mt-4">
+					<a href="/provider/bookings?status=pending" class="text-sm text-primary-600 hover:text-primary-700 font-medium">
+						Ver reservas pendientes →
+					</a>
 					</div>
 				</div>
 
-				<div class="stat-card">
-					<div class="stat-icon">💰</div>
-					<div class="stat-content">
-						<h3>{formatCurrency(stats.totalEarnings)}</h3>
-						<p>Ganancias Totales</p>
+			<!-- Completadas -->
+			<div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+				<div class="flex items-center justify-between">
+					<div>
+						<p class="text-sm font-medium text-gray-600">Completadas</p>
+						<h3 class="text-2xl font-bold text-gray-900 mt-1">{stats.completedBookings}</h3>
+					</div>
+					<div class="w-12 h-12 bg-green-50 rounded-full flex items-center justify-center">
+						<svg class="w-6 h-6 text-green-600" viewBox="0 0 24 24" fill="none">
+							<path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+						</svg>
+					</div>
+				</div>
+				<div class="mt-4">
+					<a href="/provider/bookings?status=completed" class="text-sm text-primary-600 hover:text-primary-700 font-medium">
+						Ver completadas →
+					</a>
 					</div>
 				</div>
 
-				<div class="stat-card">
-					<div class="stat-icon">⭐</div>
-					<div class="stat-content">
-						<h3>{stats.averageRating.toFixed(1)}</h3>
-						<p>Calificación Promedio</p>
+			<!-- Calificación -->
+			<div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+				<div class="flex items-center justify-between">
+					<div>
+						<p class="text-sm font-medium text-gray-600">Calificación</p>
+						<h3 class="text-2xl font-bold text-gray-900 mt-1">{stats.averageRating.toFixed(1)}</h3>
+					</div>
+					<div class="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center">
+						<svg class="w-6 h-6 text-blue-600" viewBox="0 0 24 24" fill="none">
+							<path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" stroke="currentColor" stroke-width="2"/>
+							<path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke="currentColor" stroke-width="2"/>
+						</svg>
 					</div>
 				</div>
-
-				<div class="stat-card">
-					<div class="stat-icon">📝</div>
-					<div class="stat-content">
-						<h3>{stats.totalReviews}</h3>
-						<p>Reseñas</p>
-					</div>
+				<div class="mt-4">
+					<a href="/provider/reviews" class="text-sm text-primary-600 hover:text-primary-700 font-medium">
+						Ver reseñas →
+					</a>
 				</div>
 			</div>
-		</section>
+		</div>
 
-		<!-- Información del Perfil -->
-		<section class="profile-section">
-			<h2>Información del Perfil</h2>
-			<div class="profile-info">
-				<div class="profile-card">
-					<div class="profile-header">
-						<div class="profile-avatar">
-							{#if user?.user_metadata?.avatar_url}
-								<img src={user.user_metadata.avatar_url} alt="Avatar" />
-							{:else}
-								<div class="avatar-placeholder">
-									{user?.user_metadata?.first_name?.charAt(0) || user?.email?.charAt(0) || 'P'}
+		<!-- Acciones Rápidas -->
+		<h2 class="text-xl font-bold text-gray-900 mb-4">Acciones Rápidas</h2>
+		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+			<!-- Gestionar Servicios -->
+			<a href="/provider/services" class="group">
+				<div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all hover:scale-105 h-full">
+					<div class="w-12 h-12 bg-primary-50 rounded-full flex items-center justify-center mb-4 group-hover:bg-primary-100 transition-colors">
+						<svg class="w-6 h-6 text-primary-600" viewBox="0 0 24 24" fill="none">
+							<path d="M12 6v6m0 0v6m0-6h6m-6 0H6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+						</svg>
+					</div>
+					<h3 class="text-lg font-semibold text-gray-900 mb-2">Gestionar Servicios</h3>
+					<p class="text-gray-600 text-sm">Agrega o edita los servicios que ofreces</p>
 								</div>
-							{/if}
+			</a>
+
+			<!-- Subir Portafolio -->
+			<a href="/provider/portfolio" class="group">
+				<div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all hover:scale-105 h-full">
+					<div class="w-12 h-12 bg-primary-50 rounded-full flex items-center justify-center mb-4 group-hover:bg-primary-100 transition-colors">
+						<svg class="w-6 h-6 text-primary-600" viewBox="0 0 24 24" fill="none">
+							<path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+						</svg>
 						</div>
-						<div class="profile-details">
-							<h3>{providerProfile?.business_name}</h3>
-							<p class="headline">{providerProfile?.headline}</p>
-							<p class="location">📍 {providerProfile?.location || 'Ubicación no especificada'}</p>
+					<h3 class="text-lg font-semibold text-gray-900 mb-2">Subir Portafolio</h3>
+					<p class="text-gray-600 text-sm">Muestra tu trabajo y experiencia</p>
 						</div>
+			</a>
+
+			<!-- Documentos -->
+			<a href="/provider/documents" class="group">
+				<div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all hover:scale-105 h-full">
+					<div class="w-12 h-12 bg-primary-50 rounded-full flex items-center justify-center mb-4 group-hover:bg-primary-100 transition-colors">
+						<svg class="w-6 h-6 text-primary-600" viewBox="0 0 24 24" fill="none">
+							<path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+						</svg>
 					</div>
-					<div class="profile-actions">
-						<a href="/provider/profile" class="btn btn-primary">Editar Perfil</a>
-					</div>
+					<h3 class="text-lg font-semibold text-gray-900 mb-2">Documentos</h3>
+					<p class="text-gray-600 text-sm">Gestiona tus certificaciones</p>
 				</div>
+			</a>
+
+			<!-- Configuración -->
+			<a href="/provider/settings" class="group">
+				<div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all hover:scale-105 h-full">
+					<div class="w-12 h-12 bg-primary-50 rounded-full flex items-center justify-center mb-4 group-hover:bg-primary-100 transition-colors">
+						<svg class="w-6 h-6 text-primary-600" viewBox="0 0 24 24" fill="none">
+							<path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" stroke="currentColor" stroke-width="2"/>
+							<path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke="currentColor" stroke-width="2"/>
+						</svg>
+					</div>
+					<h3 class="text-lg font-semibold text-gray-900 mb-2">Configuración</h3>
+					<p class="text-gray-600 text-sm">Ajusta tus preferencias</p>
+				</div>
+			</a>
 			</div>
-		</section>
 
 		<!-- Reservas Recientes -->
-		<section class="recent-bookings-section">
-			<div class="section-header">
-				<h2>Reservas Recientes</h2>
-				<a href="/provider/bookings" class="btn btn-secondary">Ver Todas</a>
+		<div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+			<div class="flex items-center justify-between mb-6">
+				<h2 class="text-xl font-bold text-gray-900">Reservas Recientes</h2>
+				<a href="/provider/bookings" class="text-sm text-primary-600 hover:text-primary-700 font-medium">
+					Ver Todas →
+				</a>
 			</div>
 			
 			{#if recentBookings.length > 0}
@@ -250,43 +331,52 @@
 					{/each}
 				</div>
 			{:else}
-				<div class="empty-state">
-					<div class="empty-icon">📅</div>
-					<h3>No hay reservas recientes</h3>
-					<p>Cuando recibas reservas, aparecerán aquí.</p>
+				<div class="text-center py-12">
+					<div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+						<svg class="w-8 h-8 text-gray-400" viewBox="0 0 24 24" fill="none">
+							<path d="M8 7V3m8 4V3M3 21h18M3 10h18M4 3h16a1 1 0 011 1v16a1 1 0 01-1 1H4a1 1 0 01-1-1V4a1 1 0 011-1z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+						</svg>
+					</div>
+					<h3 class="text-lg font-medium text-gray-900 mb-2">No hay reservas recientes</h3>
+					<p class="text-gray-600">Cuando recibas reservas, aparecerán aquí.</p>
 				</div>
 			{/if}
-		</section>
+		</div>
 
-		<!-- Acciones Rápidas -->
-		<section class="quick-actions-section">
-			<h2>Acciones Rápidas</h2>
-			<div class="actions-grid">
-				<a href="/provider/services" class="action-card">
-					<div class="action-icon">🛠️</div>
-					<h3>Gestionar Servicios</h3>
-					<p>Agregar o editar tus servicios</p>
-				</a>
-
-				<a href="/provider/portfolio" class="action-card">
-					<div class="action-icon">🖼️</div>
-					<h3>Subir Portafolio</h3>
-					<p>Mostrar tu trabajo</p>
-				</a>
-
-				<a href="/provider/documents" class="action-card">
-					<div class="action-icon">📋</div>
-					<h3>Documentos</h3>
-					<p>Gestionar certificaciones</p>
-				</a>
-
-				<a href="/provider/settings" class="action-card">
-					<div class="action-icon">⚙️</div>
-					<h3>Configuración</h3>
-					<p>Ajustar preferencias</p>
-				</a>
+		<!-- Guía Rápida -->
+		<div class="bg-gradient-to-br from-primary-600 to-primary-700 rounded-xl shadow-lg p-6 text-white">
+			<h2 class="text-xl font-bold mb-4">¿Nuevo en Domify?</h2>
+			<p class="mb-6">Te ayudamos a empezar con estos pasos simples:</p>
+			<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+				<div class="flex items-start gap-4">
+					<div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0">
+						<span class="font-bold">1</span>
+					</div>
+					<div>
+						<h3 class="font-semibold mb-2">Completa tu Perfil</h3>
+						<p class="text-white/80 text-sm">Añade una foto y descripción profesional para destacar.</p>
+					</div>
+				</div>
+				<div class="flex items-start gap-4">
+					<div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0">
+						<span class="font-bold">2</span>
+					</div>
+					<div>
+						<h3 class="font-semibold mb-2">Agrega tus Servicios</h3>
+						<p class="text-white/80 text-sm">Define qué servicios ofreces y sus precios.</p>
+					</div>
+				</div>
+				<div class="flex items-start gap-4">
+					<div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0">
+						<span class="font-bold">3</span>
+					</div>
+					<div>
+						<h3 class="font-semibold mb-2">Sube tu Portafolio</h3>
+						<p class="text-white/80 text-sm">Muestra ejemplos de tu trabajo para atraer clientes.</p>
+					</div>
+				</div>
 			</div>
-		</section>
+		</div>
 	</div>
 {/if}
 

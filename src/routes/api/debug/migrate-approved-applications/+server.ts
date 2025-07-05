@@ -81,7 +81,7 @@ export const POST: RequestHandler = async ({ locals }) => {
           const { data: existingRel } = await locals.supabase
             .from('provider_categories')
             .select('id')
-            .eq('provider_id', providerProfileId)
+            .eq('provider_profile_id', providerProfileId)
             .eq('category_id', categoryId)
             .maybeSingle();
           
@@ -89,7 +89,7 @@ export const POST: RequestHandler = async ({ locals }) => {
             await locals.supabase
               .from('provider_categories')
               .insert({
-                provider_id: providerProfileId,
+                provider_profile_id: providerProfileId,
                 category_id: categoryId
               });
           }

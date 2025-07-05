@@ -12,8 +12,8 @@ export const POST: RequestHandler = async ({ request, locals: { supabase, supaba
 		validateRequired(applicationData.email, 'Email');
 		validateRequired(applicationData.phone, 'Teléfono');
 		validateRequired(applicationData.department, 'Departamento');
-		validateRequired(applicationData.city, 'Ciudad');
 		validateRequired(applicationData.address, 'Dirección');
+		validateRequired(applicationData.provider_type, 'Tipo de proveedor');
 		validateRequired(applicationData.headline, 'Título');
 		validateRequired(applicationData.bio, 'Descripción');
 		validateRequired(applicationData.hourly_rate, 'Precio por hora');
@@ -28,8 +28,8 @@ export const POST: RequestHandler = async ({ request, locals: { supabase, supaba
 			first_name: applicationData.first_name,
 			last_name: applicationData.last_name,
 			department: applicationData.department,
-			city: applicationData.city,
 			address: applicationData.address,
+			provider_type: applicationData.provider_type,
 			experience_years: applicationData.experience_years || 0,
 			availability: applicationData.availability || {}
 		};
@@ -47,7 +47,7 @@ export const POST: RequestHandler = async ({ request, locals: { supabase, supaba
 				headline: applicationData.headline,
 				bio: applicationData.bio,
 				hourly_rate: parseFloat(applicationData.hourly_rate),
-				location: `${applicationData.city}, ${applicationData.department}`, // Mantener compatibilidad
+				location: `${applicationData.department}`, // Mantener compatibilidad
 				phone: applicationData.phone,
 				email: applicationData.email,
 				application_data: additionalData,
@@ -66,7 +66,7 @@ export const POST: RequestHandler = async ({ request, locals: { supabase, supaba
 					headline: applicationData.headline,
 					bio: applicationData.bio,
 					hourly_rate: parseFloat(applicationData.hourly_rate),
-					location: `${applicationData.city}, ${applicationData.department}`, // Mantener compatibilidad
+					location: `${applicationData.department}`, // Mantener compatibilidad
 					phone: applicationData.phone,
 					email: applicationData.email,
 					application_data: additionalData,

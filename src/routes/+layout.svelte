@@ -4,12 +4,42 @@
 	import { supabase } from '$lib/supabase';
 	import Navbar from '$lib/components/Navbar.svelte';
 	import { injectSpeedInsights } from '@vercel/speed-insights/sveltekit';
+	import { browser } from '$app/environment';
 	import '../app.css';
 
 	export let data: any;
 
-	let { session, user, isProvider, isAdmin } = data;
-	$: ({ session, user, isProvider, isAdmin } = data);
+	// Ensure boolean values are properly handled
+	$: session = data?.session;
+	$: user = data?.user;
+	$: isProvider = data?.isProvider || user?.user_metadata?.role === 'provider';
+	$: isAdmin = data?.isAdmin || user?.user_metadata?.role === 'admin';
+	$: providerProfile = data?.providerProfile;
+
+	// Debug: Log when isProvider changes
+	$: if (browser) {
+		console.log('🔄 [Layout] Estado del proveedor:', {
+			isProvider,
+			type: typeof isProvider,
+			data_isProvider: data?.isProvider,
+			data_type: typeof data?.isProvider,
+			has_provider_profile: !!providerProfile,
+			provider_profile: providerProfile,
+			session_exists: !!session,
+			user_exists: !!user,
+			user_role: user?.user_metadata?.role,
+			final_value: isProvider === true
+		});
+	}
+
+	// Guardar el valor anterior de isAdmin
+	let prevIsAdmin = isAdmin;
+
+	// Reaccionar a cambios en isAdmin y forzar recarga si cambia
+	$: if (browser && isAdmin !== prevIsAdmin) {
+		prevIsAdmin = isAdmin;
+		invalidateAll();
+	}
 
 	onMount(() => {
 		// Inyectar Speed Insights

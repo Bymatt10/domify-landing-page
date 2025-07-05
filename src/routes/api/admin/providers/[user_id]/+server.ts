@@ -112,8 +112,72 @@ export const PUT: RequestHandler = async ({ request, params }) => {
       return json({ error: 'Proveedor no encontrado' }, { status: 404 });
     }
 
+    const updatedProvider = updatedProviders[0];
+
+    // Manejar actualización de categorías si se proporcionaron
+    if (updateData.category_ids && Array.isArray(updateData.category_ids)) {
+      console.log('🔄 Updating categories for provider:', updatedProvider.id);
+      console.log('📋 New category IDs:', updateData.category_ids);
+      
+      try {
+        // Primero, eliminar todas las categorías existentes del proveedor
+        console.log('🗑️ Deleting existing categories...');
+        const deleteResponse = await fetch(`${SUPABASE_URL}/rest/v1/provider_categories?provider_profile_id=eq.${updatedProvider.id}`, {
+          method: 'DELETE',
+          headers: {
+            'apikey': SUPABASE_SERVICE_ROLE_KEY,
+            'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!deleteResponse.ok) {
+          const deleteError = await deleteResponse.text();
+          console.error('❌ Error deleting existing categories:', deleteError);
+        } else {
+          console.log('✅ Successfully deleted existing categories');
+        }
+
+        // Luego, insertar las nuevas categorías
+        if (updateData.category_ids.length > 0) {
+          console.log('➕ Inserting new categories...');
+          const categoryInserts = updateData.category_ids.map((categoryId: number) => ({
+            provider_profile_id: updatedProvider.id,
+            category_id: categoryId
+          }));
+
+          console.log('📝 Category inserts:', categoryInserts);
+
+          const insertResponse = await fetch(`${SUPABASE_URL}/rest/v1/provider_categories`, {
+            method: 'POST',
+            headers: {
+              'apikey': SUPABASE_SERVICE_ROLE_KEY,
+              'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+              'Content-Type': 'application/json',
+              'Prefer': 'return=representation'
+            },
+            body: JSON.stringify(categoryInserts)
+          });
+
+          if (!insertResponse.ok) {
+            const error = await insertResponse.text();
+            console.error('❌ Error inserting new categories:', error);
+          } else {
+            console.log('✅ Successfully inserted new categories');
+          }
+        } else {
+          console.log('ℹ️ No categories to insert (empty array)');
+        }
+      } catch (categoryError) {
+        console.error('❌ Error updating categories:', categoryError);
+        // No fallar la actualización principal por errores de categorías
+      }
+    } else {
+      console.log('ℹ️ No category_ids provided or not an array');
+    }
+
     // Si se actualizó el email, incluirlo en la respuesta
-    const result = updatedProviders[0];
+    const result = updatedProvider;
     if (updateData.email) {
       result.user = { email: updateData.email.trim() };
     }

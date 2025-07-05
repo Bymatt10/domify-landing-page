@@ -12,8 +12,13 @@
 	export let isProvider: boolean = false;
 	export let isAdmin: boolean = false;
 
-	console.log('USER OBJETO:', user);
-	console.log('isProvider:', isProvider, 'isAdmin:', isAdmin);
+	// Ensure boolean values
+	$: isProvider = isProvider || user?.user_metadata?.role === 'provider';
+	$: isAdmin = isAdmin || user?.user_metadata?.role === 'admin';
+
+	// Fallback: calcular isAdmin directamente desde user metadata
+	$: computedIsAdmin = user?.user_metadata?.role === 'admin';
+	$: finalIsAdmin = isAdmin || computedIsAdmin;
 
 	// Función para generar un hash simple del avatar_url para cache busting
 	function getAvatarHash(avatarUrl: string): string {
@@ -65,7 +70,7 @@
 					<a href="/services" class="text-gray-900 text-base font-medium hover:text-primary-600 transition-colors duration-200 whitespace-nowrap">Servicios</a>
 					<a href="/about" class="text-gray-900 text-base font-medium hover:text-primary-600 transition-colors duration-200 whitespace-nowrap">Quiénes somos</a>
 					{#if session}
-						{#if isAdmin}
+						{#if finalIsAdmin}
 							<a href="/admin" class="text-gray-900 text-base font-medium hover:text-primary-600 transition-colors duration-200 whitespace-nowrap">Panel Admin</a>
 						{/if}
 						<div class="flex items-center gap-4" role="group" aria-label="Menú de usuario">
@@ -85,7 +90,7 @@
 									<div class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
 										<a href="/" class="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M3 12l9-9 9 9v8a2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-8z" stroke="currentColor" stroke-width="2" fill="none"/></svg> Inicio</a>
 										<a href="/profile" class="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200"><svg width="16" height="16" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2" fill="none"/><path d="M4 20c0-4 4-7 8-7s8 3 8 7" stroke="currentColor" stroke-width="2" fill="none"/></svg> Mi perfil</a>
-										{#if isAdmin}
+										{#if finalIsAdmin}
 											<a href="/admin" class="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200"><svg width="16" height="16" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2" fill="none"/><path d="M7 7h10v10H7z" stroke="currentColor" stroke-width="2" fill="none"/></svg> Panel Admin</a>
 										{/if}
 										{#if isProvider}
@@ -130,7 +135,7 @@
 			<a href="/services" class="block px-4 py-2 text-gray-900 hover:text-primary-600 hover:bg-gray-50 transition-colors duration-200">Servicios</a>
 			<a href="/about" class="block px-4 py-2 text-gray-900 hover:text-primary-600 hover:bg-gray-50 transition-colors duration-200">Quiénes somos</a>
 			{#if session}
-				{#if isAdmin}
+				{#if finalIsAdmin}
 					<a href="/admin" class="block px-4 py-2 text-gray-900 hover:text-primary-600 hover:bg-gray-50 transition-colors duration-200">Panel Admin</a>
 				{/if}
 				<div class="px-4 py-2" role="group" aria-label="Menú de usuario">
@@ -150,7 +155,7 @@
 							<div class="mt-2 bg-white rounded-lg shadow-lg border border-gray-200 py-1">
 								<a href="/" class="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M3 12l9-9 9 9v8a2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-8z" stroke="currentColor" stroke-width="2" fill="none"/></svg> Inicio</a>
 								<a href="/profile" class="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200"><svg width="16" height="16" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2" fill="none"/><path d="M4 20c0-4 4-7 8-7s8 3 8 7" stroke="currentColor" stroke-width="2" fill="none"/></svg> Mi perfil</a>
-								{#if isAdmin}
+								{#if finalIsAdmin}
 									<a href="/admin" class="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200"><svg width="16" height="16" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2" fill="none"/><path d="M7 7h10v10H7z" stroke="currentColor" stroke-width="2" fill="none"/></svg> Panel Admin</a>
 								{/if}
 								{#if isProvider}

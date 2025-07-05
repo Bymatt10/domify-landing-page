@@ -73,7 +73,7 @@
 	<div class="relative">
 		<!-- Background Circle Animation -->
 		<div 
-			class="absolute inset-0 bg-gradient-to-br from-primary-100 to-primary-200 rounded-full opacity-0 scale-0 transition-all duration-700 ease-out group-hover:opacity-100 group-hover:scale-110"
+			class="absolute inset-0 bg-gradient-to-br from-primary-100 to-primary-200 rounded-full opacity-0 scale-0 transition-all duration-700 ease-out"
 			class:opacity-20={isVisible}
 			class:scale-100={isVisible}
 		></div>

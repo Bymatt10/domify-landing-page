@@ -250,11 +250,11 @@ export const PUT: RequestHandler = async ({ params, request, locals }) => {
             await locals.supabase
                 .from('provider_categories')
                 .delete()
-                .eq('provider_id', params.id);
+                .eq('provider_profile_id', params.id);
 
             // Create new category relationships
             const categoryRelations = updateData.category_ids.map((categoryId: number) => ({
-                provider_id: params.id,
+                provider_profile_id: params.id,
                 category_id: categoryId
             }));
 
@@ -381,7 +381,7 @@ export const DELETE: RequestHandler = async ({ params, request, locals }) => {
         const { data: services } = await locals.supabase
             .from('services')
             .select('id')
-            .eq('provider_id', params.id)
+            .eq('provider_profile_id', params.id)
             .is('deleted_at', null);
 
         if (services && services.length > 0) {

@@ -174,15 +174,114 @@ export const GET: RequestHandler = async ({ url, locals }) => {
     const limit = parseInt(url.searchParams.get('limit') || '10');
     const offset = (page - 1) * limit;
 
-    // Usar la misma query simple que funciona en el debug
-    console.log('Fetching provider applications...');
+    // Construir query con filtros
+    console.log('Fetching provider applications with filters:', { status, search, category, date });
     
-    const applications = await directSupabaseQuery(`provider_applications?limit=${limit}&offset=${offset}&order=created_at.desc`);
+    let queryParams = [`limit=${limit}`, `offset=${offset}`, 'order=created_at.desc'];
     
-    console.log('Applications fetched successfully:', applications.length);
+    // Aplicar filtro de estado
+    if (status && status !== 'all') {
+      queryParams.push(`status=eq.${status}`);
+    }
+    
+    // Aplicar filtro de búsqueda en múltiples campos
+    if (search && search.trim()) {
+      const searchTerm = search.trim();
+      // Buscar en headline, bio, email, phone, location usando OR
+      queryParams.push(`or=(headline.ilike.*${searchTerm}*,bio.ilike.*${searchTerm}*,email.ilike.*${searchTerm}*,phone.ilike.*${searchTerm}*,location.ilike.*${searchTerm}*)`);
+    }
+    
+    // Aplicar filtro de fecha
+    if (date && date !== 'all') {
+      const now = new Date();
+      let dateFilter = '';
+      
+      switch (date) {
+        case 'today':
+          const today = now.toISOString().split('T')[0];
+          dateFilter = `created_at=gte.${today}T00:00:00.000Z&created_at=lt.${today}T23:59:59.999Z`;
+          break;
+        case 'week':
+          const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          dateFilter = `created_at=gte.${weekAgo.toISOString()}`;
+          break;
+        case 'month':
+          const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+          dateFilter = `created_at=gte.${monthAgo.toISOString()}`;
+          break;
+      }
+      
+      if (dateFilter) {
+        queryParams.push(dateFilter);
+      }
+    }
+    
+    const queryString = queryParams.join('&');
+    let applications = await directSupabaseQuery(`provider_applications?${queryString}`);
+    
+    // Aplicar filtro de categoría después de obtener las aplicaciones (requiere join)
+    if (category && category !== 'all') {
+      const categoryId = parseInt(category);
+      if (!isNaN(categoryId)) {
+        // Obtener IDs de aplicaciones que tienen esta categoría
+        const appIdsWithCategory = await directSupabaseQuery(
+          `provider_application_categories?category_id=eq.${categoryId}&select=application_id`
+        );
+        const validAppIds = appIdsWithCategory.map((item: any) => item.application_id);
+        
+        // Filtrar aplicaciones por IDs válidos
+        applications = applications.filter((app: any) => validAppIds.includes(app.id));
+      }
+    }
 
-    // Formatear los datos para mantener compatibilidad con el frontend
-    const formattedApplications = (applications || []).map((app: any) => {
+    // Aplicar filtro de búsqueda adicional en application_data si no se encontraron resultados suficientes
+    if (search && search.trim()) {
+      const searchTerm = search.trim().toLowerCase();
+      applications = applications.filter((app: any) => {
+        // Buscar en campos básicos (ya cubierto por la query)
+        const basicMatch = 
+          app.headline?.toLowerCase().includes(searchTerm) ||
+          app.bio?.toLowerCase().includes(searchTerm) ||
+          app.email?.toLowerCase().includes(searchTerm) ||
+          app.phone?.toLowerCase().includes(searchTerm) ||
+          app.location?.toLowerCase().includes(searchTerm);
+
+        // Buscar en application_data
+        const dataMatch = app.application_data && (
+          app.application_data.first_name?.toLowerCase().includes(searchTerm) ||
+          app.application_data.last_name?.toLowerCase().includes(searchTerm) ||
+          app.application_data.email?.toLowerCase().includes(searchTerm) ||
+          app.application_data.address?.toLowerCase().includes(searchTerm) ||
+          app.application_data.department?.toLowerCase().includes(searchTerm) ||
+          app.application_data.city?.toLowerCase().includes(searchTerm)
+        );
+        
+        return basicMatch || dataMatch;
+      });
+    }
+    
+    console.log('Applications fetched successfully:', applications.length, 'with filters:', { status, search, category, date });
+
+    // Obtener categorías para cada aplicación
+    const formattedApplications = await Promise.all((applications || []).map(async (app: any) => {
+      let categories = [];
+      
+      try {
+        // Obtener categorías de la aplicación
+        const categoriesData = await directSupabaseQuery(
+          `provider_application_categories?application_id=eq.${app.id}&select=category_id,categories(id,name)`
+        );
+        
+        categories = categoriesData.map((cat: any) => ({
+          category_id: cat.category_id,
+          id: cat.categories?.id || cat.category_id,
+          name: cat.categories?.name || `Categoría ${cat.category_id}`
+        }));
+      } catch (error) {
+        console.error(`Error fetching categories for application ${app.id}:`, error);
+        categories = [];
+      }
+
       return {
         ...app,
         user: {
@@ -190,11 +289,54 @@ export const GET: RequestHandler = async ({ url, locals }) => {
           email: app.email || 'Email no disponible',
           raw_user_meta_data: {}
         },
-        categories: []
+        categories: categories
       };
-    });
+    }));
 
-    const total = applications.length;
+    // Para el total, necesitamos hacer una query separada sin limit/offset
+    let totalQueryParams = queryParams.filter(param => !param.startsWith('limit=') && !param.startsWith('offset='));
+    const totalQueryString = totalQueryParams.join('&');
+    let totalApplications = await directSupabaseQuery(`provider_applications?${totalQueryString}&select=id,application_data,headline,bio,email,phone,location`);
+    
+    // Aplicar filtro de categoría también para el total
+    if (category && category !== 'all') {
+      const categoryId = parseInt(category);
+      if (!isNaN(categoryId)) {
+        const appIdsWithCategory = await directSupabaseQuery(
+          `provider_application_categories?category_id=eq.${categoryId}&select=application_id`
+        );
+        const validAppIds = appIdsWithCategory.map((item: any) => item.application_id);
+        totalApplications = totalApplications.filter((app: any) => validAppIds.includes(app.id));
+      }
+    }
+
+    // Aplicar filtro de búsqueda adicional para el total
+    if (search && search.trim()) {
+      const searchTerm = search.trim().toLowerCase();
+      totalApplications = totalApplications.filter((app: any) => {
+        // Buscar en campos básicos
+        const basicMatch = 
+          app.headline?.toLowerCase().includes(searchTerm) ||
+          app.bio?.toLowerCase().includes(searchTerm) ||
+          app.email?.toLowerCase().includes(searchTerm) ||
+          app.phone?.toLowerCase().includes(searchTerm) ||
+          app.location?.toLowerCase().includes(searchTerm);
+        
+        // Buscar en application_data
+        const dataMatch = app.application_data && (
+          app.application_data.first_name?.toLowerCase().includes(searchTerm) ||
+          app.application_data.last_name?.toLowerCase().includes(searchTerm) ||
+          app.application_data.email?.toLowerCase().includes(searchTerm) ||
+          app.application_data.address?.toLowerCase().includes(searchTerm) ||
+          app.application_data.department?.toLowerCase().includes(searchTerm) ||
+          app.application_data.city?.toLowerCase().includes(searchTerm)
+        );
+        
+        return basicMatch || dataMatch;
+      });
+    }
+    
+    const total = totalApplications.length;
     const totalPages = Math.ceil(total / limit);
 
     return json({ 

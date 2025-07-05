@@ -59,7 +59,7 @@ export const GET: RequestHandler = async () => {
             providers.map(async (provider: any) => {
                 try {
                     const providerCats = await directSupabaseQuery(
-                        `provider_categories?provider_id=eq.${provider.id}&select=*,categories(*)`
+                        `provider_categories?provider_profile_id=eq.${provider.id}&select=*,categories(*)`
                     );
                     return {
                         ...provider,

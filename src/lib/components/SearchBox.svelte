@@ -16,6 +16,10 @@
 	let people: Array<{id: string, name: string, email: string, photo_url?: string}> = [];
 	let peopleLoading = false;
 
+	// Servicios sugeridos
+	let serviceSuggestions: Array<{id: string, title: string, description: string, provider_profile_id: string, provider_name: string, category_slug: string}> = [];
+	let servicesLoading = false;
+
 	$: filteredCategories = categories.filter(category =>
 		category.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
 		category.description.toLowerCase().includes(searchQuery.toLowerCase())
@@ -39,6 +43,26 @@
 		people = [];
 	}
 
+	// Buscar servicios al escribir
+	$: if (searchQuery.length > 1) {
+		servicesLoading = true;
+		fetch(`/api/services?search=${encodeURIComponent(searchQuery)}&limit=5`)
+			.then(r => r.json())
+			.then(data => {
+				serviceSuggestions = (data.data?.services || []).map((s: any) => ({
+					id: s.id,
+					title: s.title,
+					description: s.description,
+					provider_profile_id: s.provider_profile_id,
+					provider_name: s.provider_profiles?.business_name || 'Proveedor',
+					category_slug: s.categories?.slug || ''
+				}));
+			})
+			.finally(() => servicesLoading = false);
+	} else {
+		serviceSuggestions = [];
+	}
+
 	async function handleSearch() {
 		if (searchQuery.trim()) {
 			isSearching = true;
@@ -51,19 +75,21 @@
 
 	function handleKeyPress(event: KeyboardEvent) {
 		if (event.key === 'Enter') {
-			const totalSuggestions = filteredCategories.length + people.length;
+			const totalSuggestions = filteredCategories.length + people.length + serviceSuggestions.length;
 			if (selectedIndex >= 0) {
 				if (selectedIndex < filteredCategories.length) {
 					selectCategory(filteredCategories[selectedIndex]);
-				} else {
+				} else if (selectedIndex < filteredCategories.length + people.length) {
 					selectPerson(people[selectedIndex - filteredCategories.length]);
+				} else {
+					selectService(serviceSuggestions[selectedIndex - filteredCategories.length - people.length]);
 				}
 			} else {
 				handleSearch();
 			}
 		} else if (event.key === 'ArrowDown') {
 			event.preventDefault();
-			selectedIndex = Math.min(selectedIndex + 1, filteredCategories.length + people.length - 1);
+			selectedIndex = Math.min(selectedIndex + 1, filteredCategories.length + people.length + serviceSuggestions.length - 1);
 		} else if (event.key === 'ArrowUp') {
 			event.preventDefault();
 			selectedIndex = Math.max(selectedIndex - 1, -1);
@@ -85,6 +111,17 @@
 		showSuggestions = false;
 		selectedIndex = -1;
 		goto(`/profile/${person.id}`);
+	}
+
+	function selectService(service: any) {
+		searchQuery = service.title;
+		showSuggestions = false;
+		selectedIndex = -1;
+		if (service.category_slug) {
+			goto(`/services/${service.category_slug}`);
+		} else {
+			goto(`/services`);
+		}
 	}
 
 	function handleFocus() {
@@ -115,7 +152,7 @@
 					on:blur={handleBlur}
 					class="w-full pl-10 px-4 py-3 text-sm sm:text-base text-secondary-900 placeholder-secondary-400 border-0 focus:outline-none focus:ring-0 bg-transparent"
 					aria-label="Buscar servicio o profesional"
-					aria-expanded={showSuggestions && searchQuery && (filteredCategories.length > 0 || people.length > 0) ? true : false}
+					aria-expanded={showSuggestions && searchQuery && (filteredCategories.length > 0 || people.length > 0 || serviceSuggestions.length > 0) ? true : false}
 					aria-haspopup="listbox"
 					aria-controls="search-suggestions"
 					role="combobox"
@@ -148,7 +185,7 @@
 	</div>
 
 	<!-- Suggestions Dropdown -->
-	{#if showSuggestions && searchQuery && (filteredCategories.length > 0 || people.length > 0)}
+	{#if showSuggestions && searchQuery && (filteredCategories.length > 0 || people.length > 0 || serviceSuggestions.length > 0)}
 		<div 
 			id="search-suggestions"
 			class="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-secondary-200 overflow-hidden z-50 animate-in slide-in-from-top-2 duration-200"
@@ -176,15 +213,37 @@
 					</button>
 				{/each}
 			{/if}
+			{#if serviceSuggestions.length > 0}
+				<div class="px-4 pt-3 pb-1 text-xs text-secondary-500 font-semibold">Servicios</div>
+				{#each serviceSuggestions as service, i}
+					<button 
+						class="w-full p-4 flex items-center space-x-4 hover:bg-blue-50 transition-colors duration-150 text-left border-b border-secondary-100 last:border-b-0"
+						class:bg-blue-50={selectedIndex === (filteredCategories.length + i)}
+						class:text-blue-700={selectedIndex === (filteredCategories.length + i)}
+						role="option"
+						aria-selected={selectedIndex === (filteredCategories.length + i)}
+						on:click={() => selectService(service)}
+					>
+						<div class="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-blue-200 to-blue-400 rounded-lg flex items-center justify-center">
+							<svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2a4 4 0 018 0v2M5 21v-2a4 4 0 018 0v2M9 7V5a4 4 0 018 0v2"/></svg>
+						</div>
+						<div class="flex-1 min-w-0">
+							<div class="font-semibold text-secondary-900 text-sm">{service.title}</div>
+							<div class="text-secondary-600 text-xs truncate">{service.description}</div>
+							<div class="text-xs text-secondary-500 mt-1">Proveedor: {service.provider_name}</div>
+						</div>
+					</button>
+				{/each}
+			{/if}
 			{#if people.length > 0}
 				<div class="px-4 pt-3 pb-1 text-xs text-secondary-500 font-semibold">Profesionales</div>
 				{#each people as person, i}
 					<button 
 						class="w-full p-4 flex items-center space-x-4 hover:bg-primary-50 transition-colors duration-150 text-left border-b border-secondary-100 last:border-b-0"
-						class:bg-primary-50={selectedIndex === (filteredCategories.length + i)}
-						class:text-primary-700={selectedIndex === (filteredCategories.length + i)}
+						class:bg-primary-50={selectedIndex === (filteredCategories.length + serviceSuggestions.length + i)}
+						class:text-primary-700={selectedIndex === (filteredCategories.length + serviceSuggestions.length + i)}
 						role="option"
-						aria-selected={selectedIndex === (filteredCategories.length + i)}
+						aria-selected={selectedIndex === (filteredCategories.length + serviceSuggestions.length + i)}
 						on:click={() => selectPerson(person)}
 					>
 						<div class="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-primary-400 to-primary-600 rounded-lg flex items-center justify-center overflow-hidden">
@@ -203,14 +262,14 @@
 					</button>
 				{/each}
 			{/if}
-			{#if peopleLoading}
-				<div class="p-4 text-center text-secondary-400 text-sm">Buscando profesionales...</div>
+			{#if peopleLoading || servicesLoading}
+				<div class="p-4 text-center text-secondary-400 text-sm">Buscando...</div>
 			{/if}
 		</div>
 	{/if}
 
 	<!-- No Results -->
-	{#if showSuggestions && searchQuery && filteredCategories.length === 0 && people.length === 0 && !peopleLoading}
+	{#if showSuggestions && searchQuery && filteredCategories.length === 0 && people.length === 0 && serviceSuggestions.length === 0 && !peopleLoading && !servicesLoading}
 		<div class="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-secondary-200 p-6 z-50 text-center">
 			<svg class="w-12 h-12 text-secondary-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>

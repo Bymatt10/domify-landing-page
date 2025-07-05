@@ -108,9 +108,38 @@ export const GET: RequestHandler = async ({ url }) => {
         const limit = parseInt(url.searchParams.get('limit') || '20');
         const offset = parseInt(url.searchParams.get('offset') || '0');
         const categoryId = url.searchParams.get('category_id');
+        const categorySlug = url.searchParams.get('category'); // Para compatibilidad con la página de servicios
         const providerType = url.searchParams.get('provider_type');
         
-        console.log('🔍 Fetching providers with filters:', { limit, offset, categoryId, providerType });
+        console.log('🔍 Fetching providers with filters:', { limit, offset, categoryId, categorySlug, providerType });
+        
+        // Si se proporciona un slug de categoría, obtener el ID correspondiente
+        let finalCategoryId = categoryId;
+        if (categorySlug && !categoryId) {
+            try {
+                const categoryResponse = await directSupabaseQuery(`categories?slug=eq.${categorySlug}&select=id`);
+                if (categoryResponse && categoryResponse.length > 0) {
+                    finalCategoryId = categoryResponse[0].id.toString();
+                    console.log(`🔄 Mapped category slug '${categorySlug}' to ID: ${finalCategoryId}`);
+                } else {
+                    console.log(`❌ Category slug '${categorySlug}' not found`);
+                    return json({ 
+                        data: { providers: [], total: 0 }, 
+                        message: 'Category not found', 
+                        statusCode: 404, 
+                        timestamp: new Date().toISOString() 
+                    });
+                }
+            } catch (error) {
+                console.error('Error mapping category slug to ID:', error);
+                return json({ 
+                    data: { providers: [], total: 0 }, 
+                    message: 'Error processing category filter', 
+                    statusCode: 500, 
+                    timestamp: new Date().toISOString() 
+                });
+            }
+        }
         
         // Construir query para provider_profiles
         let queryParams = [
@@ -131,22 +160,22 @@ export const GET: RequestHandler = async ({ url }) => {
         
         // Si hay filtro por categoría, filtrar por categoría
         let filteredProviders = allProviders;
-        if (categoryId) {
-            console.log(`🎯 Filtering by category ID: ${categoryId}`);
+        if (finalCategoryId) {
+            console.log(`🎯 Filtering by category ID: ${finalCategoryId}`);
             
             // Obtener los provider_profile_ids que pertenecen a esta categoría
-            const categoryProviders = await directSupabaseQuery(`provider_categories?category_id=eq.${categoryId}&select=provider_profile_id`);
-            console.log(`🔗 Found ${categoryProviders.length} providers in category ${categoryId}:`, categoryProviders);
+            const categoryProviders = await directSupabaseQuery(`provider_categories?category_id=eq.${finalCategoryId}&select=provider_profile_id`);
+            console.log(`🔗 Found ${categoryProviders.length} providers in category ${finalCategoryId}:`, categoryProviders);
             
             if (categoryProviders && categoryProviders.length > 0) {
                 const providerIds = categoryProviders.map((cp: any) => cp.provider_profile_id);
                 filteredProviders = allProviders.filter((provider: any) => 
                     providerIds.includes(provider.id)
                 );
-                console.log(`✅ Filtered to ${filteredProviders.length} providers for category ${categoryId}`);
+                console.log(`✅ Filtered to ${filteredProviders.length} providers for category ${finalCategoryId}`);
             } else {
                 filteredProviders = [];
-                console.log(`❌ No providers found for category ${categoryId}`);
+                console.log(`❌ No providers found for category ${finalCategoryId}`);
             }
         }
         

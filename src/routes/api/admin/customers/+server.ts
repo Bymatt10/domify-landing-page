@@ -1,53 +1,5 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { PUBLIC_SUPABASE_URL } from '$env/static/public';
-import { PRIVATE_SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
-
-// Función helper para hacer queries directas con fetch
-async function directSupabaseQuery(endpoint: string, options: any = {}) {
-  const url = `${PUBLIC_SUPABASE_URL}/rest/v1/${endpoint}`;
-  const response = await fetch(url, {
-    headers: {
-      'Authorization': `Bearer ${PRIVATE_SUPABASE_SERVICE_ROLE_KEY}`,
-      'apikey': PRIVATE_SUPABASE_SERVICE_ROLE_KEY,
-      'Content-Type': 'application/json',
-      'Prefer': 'return=representation',
-      ...options.headers
-    },
-    ...options
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('Supabase query failed:', response.status, response.statusText, errorText);
-    throw new Error(`Supabase query failed: ${response.status} ${response.statusText}`);
-  }
-
-  return response.json();
-}
-
-// Función helper para obtener usuarios de auth con emails
-async function getAuthUsers(userIds: string[]) {
-  const url = `${PUBLIC_SUPABASE_URL}/auth/v1/admin/users`;
-  const response = await fetch(url, {
-    headers: {
-      'Authorization': `Bearer ${PRIVATE_SUPABASE_SERVICE_ROLE_KEY}`,
-      'apikey': PRIVATE_SUPABASE_SERVICE_ROLE_KEY,
-      'Content-Type': 'application/json'
-    }
-  });
-
-  if (!response.ok) {
-    console.error('Failed to fetch auth users');
-    return [];
-  }
-
-  const data = await response.json();
-  const users = data.users || [];
-  
-  // Filtrar solo los usuarios que necesitamos
-  return users.filter((user: any) => userIds.includes(user.id));
-}
 
 export const GET: RequestHandler = async ({ url, locals }) => {
     try {
@@ -63,43 +15,62 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 
         console.log('Fetching customers...');
 
-        // Usar query directa simple
-        let queryParams = [`limit=${limit}`, `offset=${offset}`, `order=created_at.desc`];
+        // Usar el cliente de Supabase admin desde locals
+        const { supabaseAdmin } = locals;
+
+        // Construir la query base
+        let query = supabaseAdmin
+            .from('customers')
+            .select('*', { count: 'exact' })
+            .order('created_at', { ascending: false })
+            .range(offset, offset + limit - 1);
         
+        // Agregar filtro de búsqueda si existe
         if (search) {
-            queryParams.push(`or=(first_name.ilike.%${search}%,last_name.ilike.%${search}%,phone_number.ilike.%${search}%)`);
+            query = query.or(`first_name.ilike.%${search}%,last_name.ilike.%${search}%,phone_number.ilike.%${search}%`);
         }
 
-        const queryString = queryParams.join('&');
-        const customers = await directSupabaseQuery(`customers?${queryString}`);
+        const { data: customers, error, count } = await query;
 
-        console.log('Customers fetched successfully:', customers.length);
+        if (error) {
+            console.error('Error fetching customers:', error);
+            throw new Error(error.message);
+        }
 
-        // Obtener los emails reales de auth.users
-        const userIds = customers.map((customer: any) => customer.user_id);
-        const authUsers = await getAuthUsers(userIds);
+        console.log('Customers fetched successfully:', customers?.length || 0);
 
-        // Crear un mapa de user_id -> email
-        const emailMap = new Map();
-        authUsers.forEach((authUser: any) => {
-            emailMap.set(authUser.id, authUser.email);
-        });
+        // Para cada cliente, obtener el email desde auth.users usando el admin client
+        const customersWithEmail = await Promise.all((customers || []).map(async (customer: any) => {
+            let email = 'Email no disponible';
+            
+            try {
+                // Usar el admin client para obtener el usuario
+                const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserById(customer.user_id);
+                
+                if (!authError && authUser?.user) {
+                    email = authUser.user.email || 'Email no disponible';
+                } else {
+                    console.warn('Error fetching auth user for customer:', customer.id, authError?.message);
+                }
+            } catch (error) {
+                console.warn('Error fetching auth user email for customer:', customer.id, error);
+            }
 
-        // Formatear los datos con emails reales
-        const formattedCustomers = (customers || []).map((customer: any) => ({
+            return {
             ...customer,
             user: {
                 id: customer.user_id,
-                email: emailMap.get(customer.user_id) || 'Email no disponible',
+                    email,
                 raw_user_meta_data: {}
             }
+            };
         }));
 
-        const total = customers.length;
+        const total = count || 0;
         const totalPages = Math.ceil(total / limit);
 
         return json({
-            customers: formattedCustomers,
+            customers: customersWithEmail,
             total,
             page,
             limit,

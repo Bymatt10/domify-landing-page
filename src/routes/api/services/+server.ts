@@ -22,11 +22,16 @@ import {
  *           type: integer
  *         description: Filter by category ID
  *       - in: query
- *         name: provider_id
+ *         name: provider_profile_id
  *         schema:
  *           type: string
  *           format: uuid
- *         description: Filter by provider ID
+ *         description: Filter by provider profile ID
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Filter by service title or description
  *       - in: query
  *         name: limit
  *         schema:
@@ -72,7 +77,8 @@ import {
 export const GET: RequestHandler = async ({ url, locals }) => {
     try {
         const categoryId = url.searchParams.get('category_id');
-        const providerId = url.searchParams.get('provider_id');
+        const providerId = url.searchParams.get('provider_profile_id');
+        const search = url.searchParams.get('search');
         const limit = parseInt(url.searchParams.get('limit') || '20');
         const offset = parseInt(url.searchParams.get('offset') || '0');
 
@@ -90,7 +96,11 @@ export const GET: RequestHandler = async ({ url, locals }) => {
         }
 
         if (providerId) {
-            query = query.eq('provider_id', providerId);
+            query = query.eq('provider_profile_id', providerId);
+        }
+
+        if (search) {
+            query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%`);
         }
 
         const { data: services, error, count } = await query
@@ -215,7 +225,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
             .from('services')
             .insert({
                 ...serviceData,
-                provider_id: 'temp-provider-id', // In real app, get from auth
+                provider_profile_id: 'temp-provider-id', // In real app, get from auth
                 created_at: new Date().toISOString()
             })
             .select()

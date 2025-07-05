@@ -2,6 +2,7 @@
 	import { page } from '$app/stores';
 	import { onMount, onDestroy } from 'svelte';
 	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
+	import { getTemplatesByCategoryName, type ServiceTemplate } from '$lib/service-templates';
 
 	type Provider = {
 		id: string;
@@ -45,6 +46,7 @@
 	let showFiltersModal = false;
 	let showProfileModal = false;
 	let selectedProvider: Provider | null = null;
+	let categoryServices: ServiceTemplate[] = [];
 
 	// Filtros
 	let selectedDate = '';
@@ -329,6 +331,13 @@
 		return slug.charAt(0).toUpperCase() + slug.slice(1).replace(/-/g, ' ');
 	}
 
+	function formatCurrency(amount: number): string {
+		return new Intl.NumberFormat('es-NI', {
+			style: 'currency',
+			currency: 'NIO'
+		}).format(amount);
+	}
+
 	function getStarRating(rating: number) {
 		const fullStars = Math.floor(rating);
 		const hasHalfStar = rating % 1 >= 0.5;
@@ -352,9 +361,44 @@
 	// Sistema de portafolio
 	let showAllPortfolio = false;
 
+	// 1. Remove the general category services section (from the markup)
+	// 2. Add a reactive variable to store provider services
+	let providerServicesMap: Record<string, any[]> = {};
+
+	// 3. Fetch services for each provider after fetching providers
+	async function fetchProviderServices(providerId: string) {
+		try {
+			const url = `/api/services?provider_profile_id=${providerId}`;
+			const response = await fetch(url);
+			const result = await response.json();
+			if (response.ok && result.data && result.data.services) {
+				providerServicesMap[providerId] = result.data.services;
+			} else {
+				providerServicesMap[providerId] = [];
+			}
+		} catch (e) {
+			providerServicesMap[providerId] = [];
+		}
+	}
+
+	// 4. After fetching providers, fetch their services
+	$: if (!loading && providers.length > 0) {
+		providers.forEach((provider) => {
+			if (!providerServicesMap[provider.id]) {
+				fetchProviderServices(provider.id);
+			}
+		});
+	}
+
 	onMount(() => {
 		fetchProviders();
+		loadCategoryServices();
 	});
+
+	function loadCategoryServices() {
+		// Cargar servicios específicos de la categoría
+		categoryServices = getTemplatesByCategoryName(formatCategoryName(category));
+	}
 
 	// Limpiar body scroll al desmontar el componente
 	onDestroy(() => {
@@ -575,7 +619,7 @@
 			{/if}
 
 			<!-- Contenido Principal -->
-			<main class="flex-1 min-w-0">
+			<main class="flex-1 min-w-0" id="providers">
 				<!-- Información de resultados -->
 				{#if !loading && !error}
 					<div class="mb-6">
@@ -756,6 +800,27 @@
 										<p class="text-secondary-700 mb-4 line-clamp-2">
 											{provider.description}
 										</p>
+
+										<!-- Servicios específicos del proveedor -->
+										<div class="mb-4">
+											<h4 class="text-md font-semibold text-primary-700 mb-2">Servicios que ofrece:</h4>
+											{#if providerServicesMap[provider.id] && providerServicesMap[provider.id].length > 0}
+												<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+													{#each providerServicesMap[provider.id] as service}
+														<div class="flex items-center gap-2 border border-gray-100 rounded-lg px-3 py-2 bg-gray-50">
+															<span class="text-xl">{service.icon || '🛠️'}</span>
+															<div>
+																<div class="font-medium text-gray-900">{service.title}</div>
+																<div class="text-xs text-gray-600">{service.description}</div>
+																<div class="text-sm font-bold text-blue-600 mt-1">{formatCurrency(service.price)}</div>
+															</div>
+														</div>
+													{/each}
+												</div>
+											{:else}
+												<div class="text-sm text-gray-500 italic">Este proveedor aún no ha agregado servicios específicos.</div>
+											{/if}
+										</div>
 
 										<!-- Reseñas -->
 										{#if provider.total_reviews && provider.total_reviews > 0}

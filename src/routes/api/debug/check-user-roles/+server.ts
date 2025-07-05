@@ -5,15 +5,13 @@ import { supabaseAdmin } from '$lib/supabase-admin';
 /**
  * Endpoint para verificar el estado actual de los roles de usuario
  */
-export const GET: RequestHandler = async ({ locals: { supabase } }) => {
+export const GET: RequestHandler = async ({ locals: { safeGetSession } }) => {
     try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { session, user } = await safeGetSession();
         
-        if (!session) {
+        if (!session || !user) {
             return json({ error: 'No hay sesión activa' }, { status: 401 });
         }
-
-        const user = session.user;
         
         // Obtener información del usuario
         const userInfo = {
@@ -24,15 +22,15 @@ export const GET: RequestHandler = async ({ locals: { supabase } }) => {
             email_confirmed: !!user.email_confirmed_at
         };
 
-        // Verificar si tiene perfil de customer
-        const { data: customerProfile, error: customerError } = await supabase
+        // Verificar si tiene perfil de customer usando supabaseAdmin
+        const { data: customerProfile, error: customerError } = await supabaseAdmin
             .from('customers')
             .select('*')
             .eq('user_id', user.id)
             .single();
 
-        // Verificar si tiene perfil de provider
-        const { data: providerProfile, error: providerError } = await supabase
+        // Verificar si tiene perfil de provider usando supabaseAdmin
+        const { data: providerProfile, error: providerError } = await supabaseAdmin
             .from('provider_profiles')
             .select('*')
             .eq('user_id', user.id)
@@ -62,6 +60,15 @@ export const GET: RequestHandler = async ({ locals: { supabase } }) => {
         const canAccessAdmin = isAdmin;
         const canAccessProvider = isProvider;
 
+        // Debug: Comparación exacta
+        const debugComparison = {
+            metadata_role: user.user_metadata?.role,
+            metadata_role_type: typeof user.user_metadata?.role,
+            is_admin_comparison: user.user_metadata?.role === 'admin',
+            strict_equality: user.user_metadata?.role === 'admin',
+            loose_equality: user.user_metadata?.role == 'admin'
+        };
+
         return json({
             user: userInfo,
             profiles: {
@@ -80,6 +87,7 @@ export const GET: RequestHandler = async ({ locals: { supabase } }) => {
                 can_access_admin: canAccessAdmin,
                 can_access_provider: canAccessProvider
             },
+            debug: debugComparison,
             errors: {
                 customer_error: customerError?.message,
                 provider_error: providerError?.message
