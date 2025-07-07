@@ -92,8 +92,23 @@
 		}
 	];
 
+	const popularSlugs = [
+		{ name: 'Limpieza', slug: 'limpieza' },
+		{ name: 'Mudanza', slug: 'mudanzas' },
+		{ name: 'Jardinería', slug: 'jardineria' }
+	];
+
+	const slugMap: Record<string, string> = {
+		cleaning: 'limpieza',
+		moving: 'mudanzas',
+		gardening: 'jardineria',
+		assembly: 'ensamblaje',
+		mounting: 'montaje'
+	};
+
 	function handleCategoryClick(categoryId: string) {
-		goto(`/services/${categoryId}`);
+		const slug = slugMap[categoryId] || categoryId;
+		goto(`/services/${slug}`);
 	}
 </script>
 
@@ -105,7 +120,7 @@
 <!-- Hero Section -->
 <section class="relative bg-gradient-to-br from-blue-50 via-white to-blue-50 min-h-screen flex items-center">
 	<!-- Background Pattern -->
-	<div class="absolute inset-0 bg-grid-pattern opacity-5"></div>
+	<div class="absolute inset-0 bg-grid-pattern opacity-5 pointer-events-none"></div>
 	
 	<div class="container mx-auto px-4 sm:px-6 lg:px-8 py-20">
 		<div class="max-w-4xl mx-auto text-center">
@@ -129,12 +144,13 @@
 				<!-- Popular Searches -->
 				<div class="mt-6 flex flex-wrap justify-center gap-3">
 					<span class="text-secondary-500 font-medium">Búsquedas populares:</span>
-					{#each categories.slice(0, 3) as category}
-						<button 
+					{#each popularSlugs as item}
+						<button
 							class="px-4 py-2 bg-primary-50 text-primary-700 rounded-full text-sm font-medium hover:bg-primary-100 transition-colors duration-200"
-							on:click={() => handleCategoryClick(category.id)}
+							on:click={() => goto(`/services/${item.slug}`)}
+							type="button"
 						>
-							{category.name}
+							{item.name}
 						</button>
 					{/each}
 				</div>

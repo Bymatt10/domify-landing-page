@@ -21,7 +21,6 @@
 			role: string;
 		};
 		provider_categories?: any[];
-		// Nuevos campos para el modal expandido
 		bio?: string; // Biografía personal
 		portfolio?: Array<{
 			id: string;
@@ -35,7 +34,7 @@
 			comment: string;
 			reviewer_name: string;
 			created_at: string;
-			can_review: boolean; // Si el usuario actual puede hacer review
+			can_review: boolean;
 		}>;
 	};
 
@@ -55,6 +54,12 @@
 	let selectedDepartment = '';
 	let selectedCity = '';
 	let priceRange = [50, 1000];
+	
+	// Mini buscador
+	let searchQuery = '';
+	let searchResults: Array<{type: 'service' | 'provider', data: any}> = [];
+	let showSearchResults = true;
+	let isSearching = false;
 
 	// Datos geográficos de Nicaragua
 	const departments = [
@@ -255,7 +260,9 @@
 		selectedProvider = enhancedProvider;
 		showProfileModal = true;
 		// Prevenir scroll del body cuando el modal está abierto
-		document.body.style.overflow = 'hidden';
+		if (typeof window !== 'undefined') {
+			document.body.style.overflow = 'hidden';
+		}
 	}
 
 	function closeProfileModal() {
@@ -265,7 +272,9 @@
 		showAllPortfolio = false;
 		newReview = { rating: 5, comment: '' };
 		// Restaurar scroll del body
-		document.body.style.overflow = 'auto';
+		if (typeof window !== 'undefined') {
+			document.body.style.overflow = 'auto';
+		}
 	}
 
 	function toggleReviewForm() {
@@ -402,13 +411,27 @@
 
 	// Limpiar body scroll al desmontar el componente
 	onDestroy(() => {
-		document.body.style.overflow = 'auto';
+		if (typeof window !== 'undefined') {
+			document.body.style.overflow = 'auto';
+		}
 	});
 
 	// Manejar tecla Escape para cerrar modal
 	function handleKeydown(event: KeyboardEvent) {
 		if (event.key === 'Escape' && showProfileModal) {
 			closeProfileModal();
+		}
+	}
+
+	// Función para manejar teclas en el buscador
+	function handleSearchKeydown(event: KeyboardEvent) {
+		if (event.key === 'Enter' && searchQuery.trim()) {
+			// Si hay resultados, seleccionar el primero
+			if (searchResults.length > 0) {
+				selectSearchResult(searchResults[0]);
+			}
+		} else if (event.key === 'Escape') {
+			clearSearch();
 		}
 	}
 
@@ -434,6 +457,105 @@
 
 	function togglePortfolio() {
 		showAllPortfolio = !showAllPortfolio;
+	}
+
+	// Función para buscar servicios y proveedores
+	async function performSearch() {
+		if (!searchQuery.trim()) {
+			searchResults = [];
+			showSearchResults = false;
+			return;
+		}
+
+		isSearching = true;
+		try {
+			// Buscar servicios
+			const servicesResponse = await fetch(`/api/services?search=${encodeURIComponent(searchQuery)}&limit=5`);
+			const servicesData = await servicesResponse.json();
+			
+			// Buscar proveedores
+			const providersResponse = await fetch(`/api/admin/providers?search=${encodeURIComponent(searchQuery)}&limit=5`);
+			const providersData = await providersResponse.json();
+
+			const results: Array<{type: 'service' | 'provider', data: any}> = [];
+
+			// Agregar servicios encontrados
+			if (servicesData.data?.services) {
+				servicesData.data.services.forEach((service: any) => {
+					results.push({
+						type: 'service',
+						data: {
+							id: service.id,
+							title: service.title,
+							description: service.description,
+							provider_name: service.provider_profiles?.business_name || 'Proveedor',
+							category_slug: service.categories?.slug || '',
+							price: service.price
+						}
+					});
+				});
+			}
+
+			// Agregar proveedores encontrados
+			if (providersData.providers) {
+				providersData.providers.forEach((provider: any) => {
+					results.push({
+						type: 'provider',
+						data: {
+							id: provider.id,
+							name: provider.business_name,
+							description: provider.description,
+							rating: provider.rating,
+							hourly_rate: provider.hourly_rate,
+							location: provider.location,
+							photo_url: provider.photo_url
+						}
+					});
+				});
+			}
+
+			searchResults = results;
+			showSearchResults = results.length > 0;
+		} catch (error) {
+			console.error('Error searching:', error);
+			searchResults = [];
+			showSearchResults = false;
+		} finally {
+			isSearching = false;
+		}
+	}
+
+	// Función para manejar la selección de un resultado
+	function selectSearchResult(result: {type: 'service' | 'provider', data: any}) {
+		if (result.type === 'service') {
+			// Navegar a la categoría del servicio si es diferente a la actual
+			if (result.data.category_slug && result.data.category_slug !== category) {
+				window.location.href = `/services/${result.data.category_slug}`;
+			}
+		} else if (result.type === 'provider') {
+			// Navegar al perfil del proveedor
+			window.location.href = `/provider/${result.data.id}`;
+		}
+		
+		// Limpiar búsqueda
+		searchQuery = '';
+		searchResults = [];
+		showSearchResults = false;
+	}
+
+	// Función para limpiar búsqueda
+	function clearSearch() {
+		searchQuery = '';
+		searchResults = [];
+		showSearchResults = false;
+	}
+
+	// Reactive statement para buscar automáticamente
+	$: if (searchQuery.length > 2) {
+		performSearch();
+	} else if (searchQuery.length === 0) {
+		searchResults = [];
+		showSearchResults = false;
 	}
 </script>
 
@@ -484,10 +606,110 @@
 			<!-- Sidebar Filtros Desktop -->
 			{#if !loading && providers.length > 0}
 				<aside class="hidden lg:block w-80 flex-shrink-0">
-				<div class="bg-white rounded-2xl shadow-soft border border-secondary-200 p-6 sticky top-8">
+				<div class="bg-white rounded-2xl shadow-soft border border-secondary-200 p-6"
+					 style="position:sticky; top:2rem; max-height:calc(100vh - 2rem); overflow-y:auto;">
 					<h2 class="text-xl font-bold text-secondary-900 mb-6 pb-3 border-b border-secondary-200">
 						Filtros
 					</h2>
+
+					<!-- Mini Buscador -->
+					<div class="mb-6 relative">
+						<h3 class="text-sm font-semibold text-secondary-700 mb-3">Buscar otros servicios</h3>
+						<div class="relative">
+							<input
+								type="text"
+								placeholder="Buscar servicios o proveedores..."
+								bind:value={searchQuery}
+								class="w-full px-3 py-2 pl-10 pr-8 border border-secondary-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+								on:focus={() => showSearchResults = searchResults.length > 0}
+								on:blur={() => setTimeout(() => showSearchResults = false, 200)}
+								on:keydown={handleSearchKeydown}
+							/>
+							<!-- Search Icon -->
+							<div class="absolute left-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+								<svg class="w-4 h-4 text-secondary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+								</svg>
+							</div>
+							<!-- Clear Button -->
+							{#if searchQuery}
+								<button
+									on:click={clearSearch}
+									class="absolute right-2 top-1/2 transform -translate-y-1/2 text-secondary-400 hover:text-secondary-600"
+									aria-label="Limpiar búsqueda"
+								>
+									<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+									</svg>
+								</button>
+							{/if}
+							<!-- Loading Spinner -->
+							{#if isSearching}
+								<div class="absolute right-2 top-1/2 transform -translate-y-1/2">
+									<svg class="animate-spin w-4 h-4 text-primary-600" fill="none" viewBox="0 0 24 24">
+										<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+										<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+									</svg>
+								</div>
+							{/if}
+						</div>
+
+						<!-- Search Results Dropdown -->
+						{#if showSearchResults && searchResults.length > 0}
+							<div class="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg shadow-lg border border-secondary-200 z-50 max-h-64 overflow-y-auto">
+								{#each searchResults as result, index}
+									<button
+										on:click={() => selectSearchResult(result)}
+										class="w-full p-3 flex items-start gap-3 hover:bg-primary-50 transition-colors duration-150 text-left border-b border-secondary-100 last:border-b-0"
+									>
+										<!-- Icon based on type -->
+										<div class="flex-shrink-0 mt-1">
+											{#if result.type === 'service'}
+												<div class="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
+													<svg class="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+													</svg>
+												</div>
+											{:else}
+												<div class="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
+													<svg class="w-3 h-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+													</svg>
+												</div>
+											{/if}
+										</div>
+										
+										<!-- Content -->
+										<div class="flex-1 min-w-0">
+											{#if result.type === 'service'}
+												<div class="font-medium text-sm text-secondary-900 truncate">
+													{result.data.title}
+												</div>
+												<div class="text-xs text-secondary-600 truncate">
+													{result.data.provider_name}
+												</div>
+												{#if result.data.price}
+													<div class="text-xs text-primary-600 font-medium">
+														C${result.data.price}
+													</div>
+												{/if}
+											{:else}
+												<div class="font-medium text-sm text-secondary-900 truncate">
+													{result.data.name}
+												</div>
+												<div class="text-xs text-secondary-600 truncate">
+													{result.data.location || 'Sin ubicación'}
+												</div>
+												<div class="text-xs text-primary-600 font-medium">
+													C${result.data.hourly_rate}/hr
+												</div>
+											{/if}
+										</div>
+									</button>
+								{/each}
+							</div>
+						{/if}
+					</div>
 
 					<!-- Tipo de Proveedor -->
 					<div class="mb-6">
@@ -919,6 +1141,105 @@
 				
 				<!-- Content -->
 				<div class="flex-1 overflow-y-auto p-6 space-y-6">
+					<!-- Mini Buscador Mobile -->
+					<div class="relative">
+						<h3 class="text-sm font-semibold text-secondary-700 mb-3">Buscar otros servicios</h3>
+						<div class="relative">
+							<input
+								type="text"
+								placeholder="Buscar servicios o proveedores..."
+								bind:value={searchQuery}
+								class="w-full px-3 py-2 pl-10 pr-8 border border-secondary-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+								on:focus={() => showSearchResults = searchResults.length > 0}
+								on:blur={() => setTimeout(() => showSearchResults = false, 200)}
+								on:keydown={handleSearchKeydown}
+							/>
+							<!-- Search Icon -->
+							<div class="absolute left-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+								<svg class="w-4 h-4 text-secondary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+								</svg>
+							</div>
+							<!-- Clear Button -->
+							{#if searchQuery}
+								<button
+									on:click={clearSearch}
+									class="absolute right-2 top-1/2 transform -translate-y-1/2 text-secondary-400 hover:text-secondary-600"
+									aria-label="Limpiar búsqueda"
+								>
+									<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+									</svg>
+								</button>
+							{/if}
+							<!-- Loading Spinner -->
+							{#if isSearching}
+								<div class="absolute right-2 top-1/2 transform -translate-y-1/2">
+									<svg class="animate-spin w-4 h-4 text-primary-600" fill="none" viewBox="0 0 24 24">
+										<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+										<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+									</svg>
+								</div>
+							{/if}
+						</div>
+
+						<!-- Search Results Dropdown Mobile -->
+						{#if showSearchResults && searchResults.length > 0}
+							<div class="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg shadow-lg border border-secondary-200 z-50 max-h-48 overflow-y-auto">
+								{#each searchResults as result, index}
+									<button
+										on:click={() => selectSearchResult(result)}
+										class="w-full p-3 flex items-start gap-3 hover:bg-primary-50 transition-colors duration-150 text-left border-b border-secondary-100 last:border-b-0"
+									>
+										<!-- Icon based on type -->
+										<div class="flex-shrink-0 mt-1">
+											{#if result.type === 'service'}
+												<div class="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
+													<svg class="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+													</svg>
+												</div>
+											{:else}
+												<div class="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
+													<svg class="w-3 h-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+													</svg>
+												</div>
+											{/if}
+										</div>
+										
+										<!-- Content -->
+										<div class="flex-1 min-w-0">
+											{#if result.type === 'service'}
+												<div class="font-medium text-sm text-secondary-900 truncate">
+													{result.data.title}
+												</div>
+												<div class="text-xs text-secondary-600 truncate">
+													{result.data.provider_name}
+												</div>
+												{#if result.data.price}
+													<div class="text-xs text-primary-600 font-medium">
+														C${result.data.price}
+													</div>
+												{/if}
+											{:else}
+												<div class="font-medium text-sm text-secondary-900 truncate">
+													{result.data.name}
+												</div>
+												<div class="text-xs text-secondary-600 truncate">
+													{result.data.location || 'Sin ubicación'}
+												</div>
+												<div class="text-xs text-primary-600 font-medium">
+													C${result.data.hourly_rate}/hr
+												</div>
+											{/if}
+										</div>
+									</button>
+								{/each}
+							</div>
+						{/if}
+					</div>
+
 					<!-- Tipo de Proveedor -->
 					<div>
 						<h3 class="text-sm font-semibold text-secondary-700 mb-3">Tipo de Proveedor</h3>
