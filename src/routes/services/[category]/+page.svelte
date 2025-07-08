@@ -606,8 +606,8 @@
 			<!-- Sidebar Filtros Desktop -->
 			{#if !loading && providers.length > 0}
 				<aside class="hidden lg:block w-80 flex-shrink-0">
-				<div class="bg-white rounded-2xl shadow-soft border border-secondary-200 p-6"
-					 style="position:sticky; top:2rem; max-height:calc(100vh - 2rem); overflow-y:auto;">
+				<div class="bg-white rounded-2xl shadow-soft border border-secondary-200 p-6 z-30"
+					 style="position:sticky; top:0; max-height:100vh; overflow-y:auto;">
 					<h2 class="text-xl font-bold text-secondary-900 mb-6 pb-3 border-b border-secondary-200">
 						Filtros
 					</h2>
