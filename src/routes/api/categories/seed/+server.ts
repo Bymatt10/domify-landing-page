@@ -67,46 +67,47 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
         // Initial categories based on the main page
         const initialCategories = [
-            {
-                name: 'Ensamblaje',
-                path_imgage: '/img/assembly.png',
-                description: 'Servicios de ensamblaje de muebles, equipos electrónicos y estructuras'
-            },
-            {
-                name: 'Montaje',
-                path_imgage: '/img/mounting.png',
-                description: 'Servicios de montaje e instalación de equipos, muebles y sistemas'
-            },
-            {
-                name: 'Mudanzas',
-                path_imgage: '/img/moving.png',
-                description: 'Servicios de mudanza y traslado de muebles y pertenencias'
-            },
-            {
-                name: 'Limpieza',
-                path_imgage: '/img/cleaning.png',
-                description: 'Servicios de limpieza residencial, comercial e industrial'
-            },
-            {
-                name: 'Jardinería',
-                path_imgage: '/img/gardening.png',
-                description: 'Servicios de jardinería, paisajismo y mantenimiento de áreas verdes'
-            }
+            // 🔧 Servicios de mantenimiento y reparación
+            { name: 'Electricistas', slug: 'electricistas', icon: '💡', description: 'Instalaciones y reparaciones eléctricas residenciales y comerciales' },
+            { name: 'Fontaneros / Plomeros', slug: 'fontaneros', icon: '🚰', description: 'Reparación e instalación de sistemas de fontanería y tuberías' },
+            { name: 'Mantenimiento de aires acondicionados', slug: 'aires-acondicionados', icon: '❄️', description: 'Limpieza, recarga e instalación de equipos de aire acondicionado' },
+            { name: 'Refrigeración', slug: 'refrigeracion', icon: '🧊', description: 'Reparación de freezers, refrigeradoras y cuartos fríos' },
+            { name: 'Albañilería / Construcción / Remodelación', slug: 'albanileria', icon: '🏗️', description: 'Obras de construcción, remodelación y acabados en general' },
+            { name: 'Soldadura y Herrería', slug: 'soldadura-herreria', icon: '⚒️', description: 'Trabajos de soldadura, fabricación y reparación de estructuras metálicas' },
+
+            // 🌳 Servicios de exterior
+            { name: 'Jardinería y poda de árboles', slug: 'jardineria', icon: '🌳', description: 'Diseño, mantenimiento de jardines y poda de árboles' },
+            { name: 'Limpieza de terrenos y lotificación', slug: 'limpieza-terrenos', icon: '🧹', description: 'Desbroce y limpieza de terrenos para construcción o cultivo' },
+            { name: 'Instalación de cercas', slug: 'instalacion-cercas', icon: '🚧', description: 'Colocación de malla ciclón, cercas eléctricas y otros cercados' },
+
+            // 🏠 Servicios para el hogar
+            { name: 'Limpieza general y profunda de casas', slug: 'limpieza-casas', icon: '🏠', description: 'Limpieza residencial estándar y detallada' },
+            { name: 'Limpieza de muebles, alfombras y colchones', slug: 'limpieza-muebles', icon: '🛋️', description: 'Lavado y desinfección de tapicería y alfombras' },
+            { name: 'Fumigación y control de plagas', slug: 'fumigacion', icon: '🐜', description: 'Eliminación y prevención de plagas en interiores y exteriores' },
+            { name: 'Pintura residencial y comercial', slug: 'pintura', icon: '🖌️', description: 'Aplicación de pintura, acabados y recubrimientos' },
+            { name: 'Carpintería y reparación de muebles', slug: 'carpinteria', icon: '🪚', description: 'Fabricación y reparación de muebles de madera' },
+
+            // 💻 Servicios técnicos
+            { name: 'Reparación de computadoras y laptops', slug: 'reparacion-computadoras', icon: '💻', description: 'Mantenimiento y reparación de equipos de cómputo' },
+            { name: 'Redes e instalación de cámaras de seguridad', slug: 'redes-camaras', icon: '📷', description: 'Configuración de redes y sistemas de videovigilancia' },
+            { name: 'Diseño gráfico y marketing digital', slug: 'diseno-grafico', icon: '🎨', description: 'Servicios de branding, diseño y promoción digital' },
+
+            // 🚗 Servicios automotrices
+            { name: 'Mecánica automotriz', slug: 'mecanica-automotriz', icon: '🚗', description: 'Mantenimiento preventivo y correctivo de vehículos' },
+            { name: 'Lavado y detallado de autos', slug: 'lavado-autos', icon: '🚙', description: 'Limpieza exterior e interior, pulido y encerado de vehículos' },
+            { name: 'Hojalatería y pintura de autos', slug: 'hojalateria-pintura-autos', icon: '🚘', description: 'Reparación de carrocería y pintura automotriz' },
+            { name: 'Instalación de polarizado y accesorios', slug: 'polarizado-accesorios', icon: '🪟', description: 'Colocación de polarizado, audio y accesorios automotrices' },
+
+            // 👷‍♂️ Otros servicios demandados
+            { name: 'Cerrajería', slug: 'cerrajeria', icon: '🔑', description: 'Apertura, cambio y reparación de cerraduras' },
+            { name: 'Instalación de gypsum y cielo raso', slug: 'gypsum-cielo-raso', icon: '🏚️', description: 'Construcción y acabados en paneles de yeso' },
+            { name: 'Vidriería y aluminio', slug: 'vidrieria-aluminio', icon: '🔲', description: 'Fabricación e instalación de ventanas y puertas de vidrio y aluminio' }
         ];
 
-        // Check if categories already exist
-        const { data: existingCategories } = await locals.supabase
-            .from('categories')
-            .select('name');
-
-        if (existingCategories && existingCategories.length > 0) {
-            throw new ValidationException('Categories already exist in the database');
-        }
-
-        // Insert categories
+        // Upsert categories (insert if not exists, update otherwise)
         const { data: categories, error } = await locals.supabase
             .from('categories')
-            .insert(initialCategories)
+            .upsert(initialCategories, { onConflict: 'slug', ignoreDuplicates: true })
             .select();
 
         if (error) {

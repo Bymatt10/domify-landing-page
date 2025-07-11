@@ -286,11 +286,30 @@ CREATE TRIGGER update_bookings_updated_at
 -- ===========================
 
 INSERT INTO categories (name, slug, description, icon) VALUES
-    ('Ensamblaje', 'ensamblaje', 'Servicios de ensamblaje de muebles y equipos', '🔧'),
-    ('Montaje', 'montaje', 'Servicios de montaje e instalación', '📦'),
-    ('Mudanzas', 'mudanzas', 'Servicios de mudanza y traslado', '🚚'),
-    ('Limpieza', 'limpieza', 'Servicios de limpieza residencial y comercial', '🧹'),
-    ('Jardinería', 'jardineria', 'Servicios de jardinería y paisajismo', '🌱')
+    ('Electricistas', 'electricistas', 'Instalaciones y reparaciones eléctricas residenciales y comerciales', '💡'),
+    ('Fontaneros / Plomeros', 'fontaneros', 'Reparación e instalación de sistemas de fontanería y tuberías', '🚰'),
+    ('Mantenimiento de aires acondicionados', 'aires-acondicionados', 'Limpieza, recarga e instalación de equipos de aire acondicionado', '❄️'),
+    ('Refrigeración', 'refrigeracion', 'Reparación de freezers, refrigeradoras y cuartos fríos', '🧊'),
+    ('Albañilería / Construcción / Remodelación', 'albanileria', 'Obras de construcción, remodelación y acabados en general', '🏗️'),
+    ('Soldadura y Herrería', 'soldadura-herreria', 'Trabajos de soldadura, fabricación y reparación de estructuras metálicas', '⚒️'),
+    ('Jardinería y poda de árboles', 'jardineria', 'Diseño, mantenimiento de jardines y poda de árboles', '🌳'),
+    ('Limpieza de terrenos y lotificación', 'limpieza-terrenos', 'Desbroce y limpieza de terrenos para construcción o cultivo', '🧹'),
+    ('Instalación de cercas', 'instalacion-cercas', 'Colocación de malla ciclón, cercas eléctricas y otros cercados', '🚧'),
+    ('Limpieza general y profunda de casas', 'limpieza-casas', 'Limpieza residencial estándar y detallada', '🏠'),
+    ('Limpieza de muebles, alfombras y colchones', 'limpieza-muebles', 'Lavado y desinfección de tapicería y alfombras', '🛋️'),
+    ('Fumigación y control de plagas', 'fumigacion', 'Eliminación y prevención de plagas en interiores y exteriores', '🐜'),
+    ('Pintura residencial y comercial', 'pintura', 'Aplicación de pintura, acabados y recubrimientos', '🖌️'),
+    ('Carpintería y reparación de muebles', 'carpinteria', 'Fabricación y reparación de muebles de madera', '🪚'),
+    ('Reparación de computadoras y laptops', 'reparacion-computadoras', 'Mantenimiento y reparación de equipos de cómputo', '💻'),
+    ('Redes e instalación de cámaras de seguridad', 'redes-camaras', 'Configuración de redes y sistemas de videovigilancia', '📷'),
+    ('Diseño gráfico y marketing digital', 'diseno-grafico', 'Servicios de branding, diseño y promoción digital', '🎨'),
+    ('Mecánica automotriz', 'mecanica-automotriz', 'Mantenimiento preventivo y correctivo de vehículos', '🚗'),
+    ('Lavado y detallado de autos', 'lavado-autos', 'Limpieza exterior e interior, pulido y encerado de vehículos', '🚙'),
+    ('Hojalatería y pintura de autos', 'hojalateria-pintura-autos', 'Reparación de carrocería y pintura automotriz', '🚘'),
+    ('Instalación de polarizado y accesorios', 'polarizado-accesorios', 'Colocación de polarizado, audio y accesorios automotrices', '🪟'),
+    ('Cerrajería', 'cerrajeria', 'Apertura, cambio y reparación de cerraduras', '🔑'),
+    ('Instalación de gypsum y cielo raso', 'gypsum-cielo-raso', 'Construcción y acabados en paneles de yeso', '🏚️'),
+    ('Vidriería y aluminio', 'vidrieria-aluminio', 'Fabricación e instalación de ventanas y puertas de vidrio y aluminio', '🔲')
 ON CONFLICT (slug) DO NOTHING;
 
 -- ===========================

@@ -204,7 +204,11 @@
 						on:click={() => selectCategory(category)}
 					>
 						<div class="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg flex items-center justify-center">
-							<img src={category.icon} alt="" class="w-5 h-5 object-contain filter brightness-0 invert" />
+							{#if category.icon && (category.icon.startsWith('/') || category.icon.startsWith('http'))}
+								<img src={category.icon} alt="" class="w-5 h-5 object-contain filter brightness-0 invert" />
+							{:else}
+								<span class="text-xl select-none">{category.icon}</span>
+							{/if}
 						</div>
 						<div class="flex-1 min-w-0">
 							<div class="font-semibold text-secondary-900 text-sm">{category.name}</div>

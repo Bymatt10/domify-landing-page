@@ -10,41 +10,10 @@
 	$: ({ session } = data);
 
 	const categories = [
-		{
-			id: 'cleaning',
-			name: 'Limpieza',
-			description: 'Servicios profesionales de limpieza para tu hogar u oficina',
-			icon: '/img/cleaning.png',
-			gradient: 'from-blue-500 to-blue-600'
-		},
-		{
-			id: 'moving',
-			name: 'Mudanza',
-			description: 'Ayuda profesional para tu mudanza, empaque y transporte',
-			icon: '/img/moving.png',
-			gradient: 'from-blue-600 to-blue-700'
-		},
-		{
-			id: 'gardening',
-			name: 'Jardinería',
-			description: 'Mantenimiento y diseño de jardines por expertos',
-			icon: '/img/gardening.png',
-			gradient: 'from-blue-500 to-blue-600'
-		},
-		{
-			id: 'assembly',
-			name: 'Ensamblaje',
-			description: 'Montaje de muebles y equipos por profesionales',
-			icon: '/img/assembly.png',
-			gradient: 'from-blue-600 to-blue-700'
-		},
-		{
-			id: 'mounting',
-			name: 'Montaje',
-			description: 'Instalación profesional de TV, cuadros y más',
-			icon: '/img/mounting.png',
-			gradient: 'from-blue-500 to-blue-600'
-		}
+		{ id: 'electricistas', name: 'Electricistas', description: 'Instalaciones y reparaciones eléctricas', icon: '💡', gradient: 'from-blue-500 to-blue-600' },
+		{ id: 'fontaneros', name: 'Fontaneros / Plomeros', description: 'Reparación e instalación de sistemas de agua', icon: '🚰', gradient: 'from-blue-600 to-blue-700' },
+		{ id: 'jardineria', name: 'Jardinería', description: 'Cuidado y diseño de áreas verdes', icon: '🌳', gradient: 'from-blue-500 to-blue-600' },
+		{ id: 'limpieza-casas', name: 'Limpieza de Casas', description: 'Limpieza general y profunda del hogar', icon: '🏠', gradient: 'from-blue-600 to-blue-700' }
 	];
 
 	const propertyTypes = [
@@ -93,22 +62,55 @@
 	];
 
 	const popularSlugs = [
-		{ name: 'Limpieza', slug: 'limpieza' },
-		{ name: 'Mudanza', slug: 'mudanzas' },
-		{ name: 'Jardinería', slug: 'jardineria' }
+		{ name: 'Electricistas', slug: 'electricistas' },
+		{ name: 'Fontaneros', slug: 'fontaneros' },
+		{ name: 'Jardinería', slug: 'jardineria' },
+		{ name: 'Limpieza', slug: 'limpieza-casas' }
 	];
 
 	const slugMap: Record<string, string> = {
-		cleaning: 'limpieza',
-		moving: 'mudanzas',
-		gardening: 'jardineria',
-		assembly: 'ensamblaje',
-		mounting: 'montaje'
+		'electricistas': 'electricistas',
+		'fontaneros': 'fontaneros',
+		'jardineria': 'jardineria',
+		'limpieza-casas': 'limpieza-casas'
 	};
 
 	function handleCategoryClick(categoryId: string) {
 		const slug = slugMap[categoryId] || categoryId;
 		goto(`/services/${slug}`);
+	}
+
+	// Professional SVG icons mapping (Heroicons outline paths)
+	const categoryIcons: Record<string, { icon: string; color: string; bgColor: string }> = {
+		'electricistas': {
+			icon: 'M13 10V3L4 14h7v7l9-11h-7z',
+			color: 'text-yellow-600',
+			bgColor: 'bg-yellow-50'
+		},
+		'fontaneros': {
+			icon: 'M15 8a3 3 0 11-6 0 3 3 0 016 0z M19 13a4 4 0 10-8 0v3H5v6h14v-6h-4v-3z',
+			color: 'text-cyan-600',
+			bgColor: 'bg-cyan-50'
+		},
+		'jardineria': {
+			icon: 'M12 2l3.09 6.26L22 9l-5 4.87L18.18 22 12 18.27 5.82 22 7 13.87 2 9l6.91-.74L12 2z',
+			color: 'text-green-600',
+			bgColor: 'bg-green-50'
+		},
+		'limpieza-casas': {
+			icon: 'M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z',
+			color: 'text-blue-600',
+			bgColor: 'bg-blue-50'
+		},
+		'default': {
+			icon: 'M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0H8m8 0v6l-8-6',
+			color: 'text-gray-600',
+			bgColor: 'bg-gray-50'
+		}
+	};
+
+	function getCatIcon(slug: string) {
+		return categoryIcons[slug] || categoryIcons['default'];
 	}
 </script>
 
@@ -233,21 +235,30 @@
 			</p>
 		</div>
 
-		<div class="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 max-w-7xl mx-auto">
+		<div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto justify-center">
 			{#each categories as category}
 				<button 
 					class="group bg-white rounded-2xl p-6 shadow-soft border border-secondary-100 transition-all duration-300 text-left"
 					on:click={() => handleCategoryClick(category.id)}
 				>
 					<div class="flex flex-col items-center text-center">
-						<div class="w-16 h-16 bg-gradient-to-br {category.gradient} rounded-2xl flex items-center justify-center mb-4 transition-transform duration-300">
-							<img src={category.icon} alt={category.name} class="w-8 h-8 object-contain filter brightness-0 invert" />
+						<div class="w-16 h-16 {getCatIcon(category.id).bgColor} rounded-2xl flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-110">
+							<svg class="w-8 h-8 {getCatIcon(category.id).color}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d={getCatIcon(category.id).icon}></path>
+							</svg>
 						</div>
 						<h3 class="text-lg font-bold text-secondary-900 mb-2">{category.name}</h3>
 						<p class="text-sm text-secondary-600 leading-relaxed">{category.description}</p>
 					</div>
 				</button>
 			{/each}
+		</div>
+
+		<!-- View More Button -->
+		<div class="flex justify-center mt-8">
+			<a href="/services" class="px-8 py-4 bg-primary-600 text-white rounded-xl font-semibold hover:bg-primary-700 transition-colors duration-200">
+				Ver todos los servicios
+			</a>
 		</div>
 	</div>
 </section>

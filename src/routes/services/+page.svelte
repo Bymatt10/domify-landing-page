@@ -164,9 +164,17 @@
 					>
 						<!-- Icon -->
 						<div class="flex items-center justify-center w-16 h-16 {iconData.bgColor} rounded-2xl mb-6 group-hover:scale-110 transition-transform duration-300">
-							<svg class="w-8 h-8 {iconData.color}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d={iconData.icon}></path>
-							</svg>
+							{#if category.icon}
+								{#if category.icon.startsWith('/') || category.icon.startsWith('http')}
+									<img src={category.icon} alt={category.name} class="w-8 h-8 object-contain" />
+								{:else}
+									<span class="text-3xl select-none">{category.icon}</span>
+								{/if}
+							{:else}
+								<svg class="w-8 h-8 {iconData.color}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d={iconData.icon}></path>
+								</svg>
+							{/if}
 						</div>
 
 						<!-- Content -->
