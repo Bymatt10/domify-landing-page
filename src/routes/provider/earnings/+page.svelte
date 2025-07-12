@@ -111,6 +111,32 @@
 		const targetMonth = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
 		return months[targetMonth.getMonth()];
 	}
+
+	// Calcular ganancias mensuales para el gráfico
+	function getMonthlyEarnings(monthsBack = 6) {
+		const now = new Date();
+		const months: { label: string, value: number }[] = [];
+		for (let i = monthsBack - 1; i >= 0; i--) {
+			const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+			const label = date.toLocaleString('default', { month: 'short' });
+			const year = date.getFullYear();
+			const month = date.getMonth();
+			const value = bookings.reduce((sum, b) => {
+				const d = new Date(b.start_time);
+				if (
+					d.getFullYear() === year &&
+					d.getMonth() === month &&
+					(b.status === 'completed' || b.status === 'payment_succeeded')
+				) {
+					return sum + (b.total_price || 0);
+				}
+				return sum;
+			}, 0);
+			months.push({ label, value });
+		}
+		return months;
+	}
+	$: monthlyEarnings = getMonthlyEarnings(6);
 </script>
 
 <svelte:head>
@@ -131,42 +157,37 @@
 
 		<div class="earnings-content">
 			<!-- Resumen de Ganancias -->
-			<section class="earnings-summary">
-				<h2>Resumen de Ganancias</h2>
-				<div class="earnings-grid">
-					<div class="earnings-card">
-						<div class="earnings-icon">💰</div>
-						<div class="earnings-info">
-							<h3>Ganancias Totales</h3>
-							<p class="earnings-amount">{formatCurrency(earnings.total)}</p>
-						</div>
+			<div class="earnings-summary-modern">
+				<div class="earnings-row">
+					<div class="earnings-card-modern">
+						<div class="earnings-title">Ganancias Totales</div>
+						<div class="earnings-value">{formatCurrency(earnings.total)}</div>
 					</div>
-
-					<div class="earnings-card">
-						<div class="earnings-icon">📅</div>
-						<div class="earnings-info">
-							<h3>Este Mes</h3>
-							<p class="earnings-amount">{formatCurrency(earnings.thisMonth)}</p>
-						</div>
+					<div class="earnings-card-modern">
+						<div class="earnings-title">Este Mes</div>
+						<div class="earnings-value">{formatCurrency(earnings.thisMonth)}</div>
 					</div>
-
-					<div class="earnings-card">
-						<div class="earnings-icon">📊</div>
-						<div class="earnings-info">
-							<h3>Mes Anterior</h3>
-							<p class="earnings-amount">{formatCurrency(earnings.lastMonth)}</p>
-						</div>
+					<div class="earnings-card-modern">
+						<div class="earnings-title">Mes Anterior</div>
+						<div class="earnings-value">{formatCurrency(earnings.lastMonth)}</div>
 					</div>
-
-					<div class="earnings-card">
-						<div class="earnings-icon">⏳</div>
-						<div class="earnings-info">
-							<h3>Pendiente</h3>
-							<p class="earnings-amount">{formatCurrency(earnings.pending)}</p>
-						</div>
+					<div class="earnings-card-modern">
+						<div class="earnings-title">Pendiente</div>
+						<div class="earnings-value">{formatCurrency(earnings.pending)}</div>
 					</div>
 				</div>
-			</section>
+				<div class="earnings-bar-chart">
+					<div class="chart-title">Ganancias últimos 6 meses</div>
+					<div class="bar-chart">
+						{#each monthlyEarnings as m, i}
+							<div class="bar-group">
+								<div class="bar" style="height: {Math.max(8, m.value / Math.max(...monthlyEarnings.map(x => x.value), 1) * 100)}px" title={formatCurrency(m.value)}></div>
+								<div class="bar-label">{m.label}</div>
+							</div>
+						{/each}
+					</div>
+				</div>
+			</div>
 
 			<!-- Estadísticas Adicionales -->
 			<section class="earnings-stats">
@@ -217,206 +238,303 @@
 {/if}
 
 <style>
+	body, .earnings-page {
+		background: #f6f8fa;
+	}
 	.loading-container {
 		display: flex;
 		flex-direction: column;
 		align-items: center;
 		justify-content: center;
 		min-height: 50vh;
-		gap: var(--spacing-md);
+		gap: 1.5rem;
 	}
-
 	.loading-spinner {
-		width: 40px;
-		height: 40px;
-		border: 4px solid var(--color-primary-light);
-		border-top: 4px solid var(--color-primary);
+		width: 48px;
+		height: 48px;
+		border: 4px solid #e2e8f0;
+		border-top: 4px solid #3b82f6;
 		border-radius: 50%;
 		animation: spin 1s linear infinite;
 	}
-
 	@keyframes spin {
 		0% { transform: rotate(0deg); }
 		100% { transform: rotate(360deg); }
 	}
-
 	.earnings-page {
-		max-width: 1200px;
-		margin: 0 auto;
+		max-width: 1100px;
+		margin: 2rem auto;
+		padding: 0 1rem;
+		background: #f6f8fa;
 	}
-
 	.page-header {
-		margin-bottom: var(--spacing-2xl);
+		margin-bottom: 2.5rem;
+		text-align: center;
+		position: relative;
+		padding-bottom: 1.5rem;
 	}
-
+	.page-header::after {
+		content: '';
+		position: absolute;
+		bottom: 0;
+		left: 50%;
+		transform: translateX(-50%);
+		width: 60px;
+		height: 4px;
+		background: #3b82f6;
+		border-radius: 2px;
+	}
 	.page-header h1 {
-		margin: 0 0 var(--spacing-sm) 0;
-		color: var(--color-text);
-		font-size: var(--font-size-3xl);
+		margin: 0 0 0.75rem 0;
+		color: #1e293b;
+		font-size: 2.5rem;
 		font-weight: 700;
+		letter-spacing: -0.025em;
 	}
-
 	.page-header p {
 		margin: 0;
-		color: var(--color-text-light);
-		font-size: var(--font-size-lg);
+		color: #64748b;
+		font-size: 1.125rem;
 	}
-
 	.earnings-content {
 		display: flex;
 		flex-direction: column;
-		gap: var(--spacing-3xl);
+		gap: 2.5rem;
 	}
-
-	.earnings-summary,
-	.earnings-stats,
-	.earnings-info {
-		background: var(--color-background-white);
-		border-radius: var(--border-radius-lg);
-		padding: var(--spacing-2xl);
-		box-shadow: var(--shadow-sm);
+	.earnings-summary {
+		background: #fff;
+		border-radius: 1.25rem;
+		padding: 2rem 1.5rem 1.5rem 1.5rem;
+		margin-bottom: 1.5rem;
+		box-shadow: 0 2px 12px 0 rgb(59 130 246 / 0.06);
+		border: 1px solid #e2e8f0;
 	}
-
-	.earnings-summary h2,
-	.earnings-stats h2 {
-		margin: 0 0 var(--spacing-lg) 0;
-		color: var(--color-text);
-		font-size: var(--font-size-xl);
-		font-weight: 600;
+	.earnings-summary h2 {
+		color: #1e293b;
+		font-size: 1.25rem;
+		font-weight: 700;
+		margin-bottom: 1.5rem;
 	}
-
 	.earnings-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-		gap: var(--spacing-lg);
+		display: flex;
+		flex-wrap: nowrap;
+		gap: 2.5rem;
+		justify-content: center;
+		align-items: stretch;
+		overflow-x: auto;
+		padding-left: 0.5rem;
+		padding-right: 0.5rem;
 	}
-
 	.earnings-card {
 		display: flex;
-		align-items: center;
-		gap: var(--spacing-md);
-		padding: var(--spacing-lg);
-		border: 1px solid var(--color-border-light, rgba(0, 0, 0, 0.1));
-		border-radius: var(--border-radius-md);
-		transition: all var(--transition-fast);
-	}
-
-	.earnings-card:hover {
-		transform: translateY(-2px);
-		box-shadow: var(--shadow-md);
-		border-color: var(--color-primary);
-	}
-
-	.earnings-icon {
-		font-size: var(--font-size-3xl);
-		width: 60px;
-		height: 60px;
-		display: flex;
+		flex-direction: column;
 		align-items: center;
 		justify-content: center;
-		background: var(--color-primary-light);
-		border-radius: var(--border-radius-lg);
-		flex-shrink: 0;
+		background: #f8fafc;
+		border-radius: 1rem;
+		box-shadow: 0 1px 4px 0 rgb(0 0 0 / 0.04);
+		padding: 2rem 1.5rem;
+		border: 1.5px solid #e2e8f0;
+		width: 240px;
+		flex: 0 0 240px;
+		height: 100%;
+		margin-bottom: 1.5rem;
 	}
-
-	.earnings-info h3 {
-		margin: 0 0 var(--spacing-xs) 0;
-		color: var(--color-text);
-		font-size: var(--font-size-base);
-		font-weight: 500;
+	/* Remove hover and blue border */
+	.earnings-card:hover {
+		box-shadow: 0 1px 4px 0 rgb(0 0 0 / 0.04);
+		border-color: #e2e8f0;
 	}
-
-	.earnings-amount {
-		margin: 0;
-		color: var(--color-primary);
-		font-size: var(--font-size-xl);
-		font-weight: 700;
-	}
-
-	.stats-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-		gap: var(--spacing-lg);
-	}
-
-	.stat-card {
+	.earnings-info {
 		text-align: center;
-		padding: var(--spacing-lg);
-		border: 1px solid var(--color-border-light, rgba(0, 0, 0, 0.1));
-		border-radius: var(--border-radius-md);
-		transition: all var(--transition-fast);
 	}
-
-	.stat-card:hover {
-		transform: translateY(-2px);
-		box-shadow: var(--shadow-md);
-		border-color: var(--color-primary);
-	}
-
-	.stat-card h3 {
-		margin: 0 0 var(--spacing-sm) 0;
-		color: var(--color-text);
-		font-size: var(--font-size-base);
-		font-weight: 500;
-	}
-
-	.stat-number {
-		margin: 0;
-		color: var(--color-primary);
-		font-size: var(--font-size-2xl);
-		font-weight: 700;
-	}
-
-	.info-card {
-		background: var(--color-background);
-		border: 1px solid var(--color-primary-light);
-		border-radius: var(--border-radius-md);
-		padding: var(--spacing-lg);
-	}
-
-	.info-card h3 {
-		margin: 0 0 var(--spacing-md) 0;
-		color: var(--color-text);
-		font-size: var(--font-size-lg);
+	.earnings-info h3 {
+		margin: 0 0 0.5rem 0;
+		font-size: 1.1rem;
+		color: #64748b;
 		font-weight: 600;
 	}
-
+	.earnings-amount {
+		font-size: 2.1rem;
+		font-weight: 800;
+		color: #10b981;
+		margin: 0;
+		letter-spacing: -1px;
+	}
+	.earnings-card:nth-child(1) .earnings-icon { background: #fef9c3; color: #eab308; }
+	.earnings-card:nth-child(2) .earnings-icon { background: #dbeafe; color: #2563eb; }
+	.earnings-card:nth-child(3) .earnings-icon { background: #f3e8ff; color: #a21caf; }
+	.earnings-card:nth-child(4) .earnings-icon { background: #fef2f2; color: #b91c1c; }
+	.earnings-stats {
+		background: #fff;
+		border-radius: 1.25rem;
+		padding: 2rem 1.5rem 1.5rem 1.5rem;
+		box-shadow: 0 2px 12px 0 rgb(59 130 246 / 0.06);
+		border: 1px solid #e2e8f0;
+	}
+	.earnings-stats h2 {
+		color: #1e293b;
+		font-size: 1.25rem;
+		font-weight: 700;
+		margin-bottom: 1.5rem;
+	}
+	.stats-grid {
+		display: flex;
+		gap: 1.5rem;
+		flex-wrap: wrap;
+		justify-content: space-between;
+	}
+	.stat-card {
+		background: #f8fafc;
+		border-radius: 1rem;
+		padding: 1.25rem 1.5rem;
+		box-shadow: 0 1px 4px 0 rgb(0 0 0 / 0.04);
+		border: 1.5px solid #e2e8f0;
+		min-width: 200px;
+		flex: 1 1 200px;
+		text-align: center;
+	}
+	.stat-card h3 {
+		margin: 0 0 0.5rem 0;
+		font-size: 1rem;
+		color: #64748b;
+		font-weight: 500;
+	}
+	.stat-number {
+		font-size: 1.5rem;
+		font-weight: 700;
+		color: #3b82f6;
+	}
+	.earnings-info {
+		margin-top: 2rem;
+		background: #f1f5f9;
+		border-radius: 0.75rem;
+		padding: 1.5rem 1rem;
+		box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.04);
+		border: 1px solid #e2e8f0;
+	}
+	.info-card h3 {
+		margin: 0 0 0.75rem 0;
+		font-size: 1.1rem;
+		color: #334155;
+		font-weight: 600;
+	}
 	.info-card ul {
 		margin: 0;
-		padding-left: var(--spacing-lg);
-		color: var(--color-text-light);
-		font-size: var(--font-size-base);
-		line-height: 1.6;
+		padding-left: 1.25rem;
+		color: #64748b;
+		font-size: 1rem;
+		line-height: 1.7;
 	}
-
-	.info-card li {
-		margin-bottom: var(--spacing-xs);
-	}
-
-	.info-card li:last-child {
-		margin-bottom: 0;
-	}
-
-	/* Responsive */
-	@media (max-width: 768px) {
-		.earnings-summary,
-		.earnings-stats,
-		.earnings-info {
-			padding: var(--spacing-lg);
-		}
-
+	@media (max-width: 1100px) {
 		.earnings-grid {
-			grid-template-columns: 1fr;
+			gap: 1.5rem;
 		}
-
-		.stats-grid {
-			grid-template-columns: repeat(2, 1fr);
-		}
-
 		.earnings-card {
-			flex-direction: column;
-			text-align: center;
-			gap: var(--spacing-md);
+			width: 220px;
+			flex: 0 0 220px;
+			margin-bottom: 0.5rem;
+		}
+	}
+	.earnings-summary-modern {
+		background: #fff;
+		border-radius: 1.5rem;
+		padding: 2.5rem 2rem 2rem 2rem;
+		box-shadow: 0 2px 12px 0 rgb(59 130 246 / 0.06);
+		border: 1px solid #e2e8f0;
+		margin-bottom: 2.5rem;
+		max-width: 1100px;
+		margin-left: auto;
+		margin-right: auto;
+	}
+	.earnings-row {
+		display: flex;
+		gap: 2.5rem;
+		justify-content: center;
+		align-items: stretch;
+		margin-bottom: 2.5rem;
+		flex-wrap: nowrap;
+		overflow-x: auto;
+	}
+	.earnings-card-modern {
+		background: #f8fafc;
+		border-radius: 1.1rem;
+		border: 1.5px solid #e2e8f0;
+		padding: 2rem 1.5rem;
+		width: 220px;
+		min-width: 180px;
+		max-width: 220px;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		box-shadow: 0 1px 4px 0 rgb(0 0 0 / 0.04);
+	}
+	.earnings-title {
+		font-size: 1.05rem;
+		color: #64748b;
+		font-weight: 600;
+		margin-bottom: 0.7rem;
+		text-align: center;
+	}
+	.earnings-value {
+		font-size: 2.1rem;
+		font-weight: 800;
+		color: #10b981;
+		letter-spacing: -1px;
+		text-align: center;
+	}
+	.earnings-bar-chart {
+		margin-top: 1.5rem;
+		padding: 1.5rem 0 0 0;
+		border-top: 1px solid #e5e7eb;
+	}
+	.chart-title {
+		font-size: 1.1rem;
+		font-weight: 600;
+		color: #334155;
+		margin-bottom: 1.2rem;
+		text-align: center;
+	}
+	.bar-chart {
+		display: flex;
+		align-items: flex-end;
+		gap: 2.2rem;
+		justify-content: center;
+		height: 120px;
+		margin-bottom: 0.5rem;
+	}
+	.bar-group {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		width: 32px;
+	}
+	.bar {
+		width: 100%;
+		background: linear-gradient(180deg, #3b82f6 0%, #60a5fa 100%);
+		border-radius: 0.5rem 0.5rem 0 0;
+		transition: height 0.3s;
+		margin-bottom: 0.4rem;
+	}
+	.bar-label {
+		font-size: 0.95rem;
+		color: #64748b;
+		margin-top: 0.2rem;
+		text-align: center;
+	}
+	@media (max-width: 900px) {
+		.earnings-row {
+			gap: 1.2rem;
+		}
+		.earnings-card-modern {
+			width: 160px;
+			min-width: 120px;
+			max-width: 180px;
+			padding: 1.2rem 0.5rem;
+		}
+		.bar-chart {
+			gap: 1.1rem;
 		}
 	}
 </style> 

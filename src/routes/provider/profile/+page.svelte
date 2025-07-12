@@ -208,7 +208,7 @@
 {#if loading}
 	<div class="loading-container">
 		<div class="loading-spinner"></div>
-		<p>Cargando perfil...</p>
+		<p class="text-gray-600">Cargando tu perfil...</p>
 	</div>
 {:else}
 	<div class="profile-page">
@@ -219,6 +219,13 @@
 
 		{#if message}
 			<div class="message {messageType}">
+				<span class="message-icon">
+					{#if messageType === 'success'}
+						✓
+					{:else}
+						⚠
+					{/if}
+				</span>
 				{message}
 			</div>
 		{/if}
@@ -226,10 +233,18 @@
 		<form on:submit|preventDefault={saveProfile} class="profile-form">
 			<!-- Información Personal -->
 			<section class="form-section">
-				<h2>Información Personal</h2>
+				<h2>
+					<span class="section-icon">👤</span>
+					Información Personal
+				</h2>
+				<p class="section-description">Completa tu información básica para que los clientes te conozcan mejor</p>
+				
 				<div class="form-grid">
 					<div class="form-group">
-						<label for="business_name">Nombre del Negocio/Persona *</label>
+						<label for="business_name">
+							Nombre del Negocio/Persona
+							<span class="required">*</span>
+						</label>
 						<input
 							id="business_name"
 							type="text"
@@ -240,7 +255,10 @@
 					</div>
 
 					<div class="form-group">
-						<label for="headline">Título Profesional *</label>
+						<label for="headline">
+							Título Profesional
+							<span class="required">*</span>
+						</label>
 						<input
 							id="headline"
 							type="text"
@@ -251,7 +269,10 @@
 					</div>
 
 					<div class="form-group full-width">
-						<label for="bio">Descripción *</label>
+						<label for="bio">
+							Descripción
+							<span class="required">*</span>
+						</label>
 						<textarea
 							id="bio"
 							bind:value={formData.bio}
@@ -259,10 +280,14 @@
 							rows="4"
 							placeholder="Describe tus servicios, experiencia y especialidades..."
 						></textarea>
+						<span class="input-help">Sé específico y destaca tus habilidades principales</span>
 					</div>
 
 					<div class="form-group">
-						<label for="phone">Teléfono *</label>
+						<label for="phone">
+							Teléfono
+							<span class="required">*</span>
+						</label>
 						<input
 							id="phone"
 							type="tel"
@@ -273,7 +298,10 @@
 					</div>
 
 					<div class="form-group">
-						<label for="location">Ubicación *</label>
+						<label for="location">
+							Ubicación
+							<span class="required">*</span>
+						</label>
 						<input
 							id="location"
 							type="text"
@@ -284,16 +312,22 @@
 					</div>
 
 					<div class="form-group">
-						<label for="hourly_rate">Tarifa por Hora (NIO) *</label>
-						<input
-							id="hourly_rate"
-							type="number"
-							bind:value={formData.hourly_rate}
-							required
-							min="0"
-							step="0.01"
-							placeholder="500"
-						/>
+						<label for="hourly_rate">
+							Tarifa por Hora (NIO)
+							<span class="required">*</span>
+						</label>
+						<div class="input-with-icon">
+							<span class="currency-symbol">C$</span>
+							<input
+								id="hourly_rate"
+								type="number"
+								bind:value={formData.hourly_rate}
+								required
+								min="0"
+								step="0.01"
+								placeholder="500"
+							/>
+						</div>
 					</div>
 
 					<div class="form-group">
@@ -308,7 +342,10 @@
 
 			<!-- Categorías de Servicios -->
 			<section class="form-section">
-				<h2>Categorías de Servicios</h2>
+				<h2>
+					<span class="section-icon">🔧</span>
+					Categorías de Servicios
+				</h2>
 				<p class="section-description">Selecciona las categorías en las que te especializas</p>
 				
 				<div class="categories-grid">
@@ -330,8 +367,11 @@
 
 			<!-- Horarios de Trabajo -->
 			<section class="form-section">
-				<h2>Horarios de Trabajo</h2>
-				<p class="section-description">Define tus horarios de disponibilidad</p>
+				<h2>
+					<span class="section-icon">🕒</span>
+					Horarios de Trabajo
+				</h2>
+				<p class="section-description">Define tus horarios de disponibilidad para cada día de la semana</p>
 				
 				<div class="working-hours">
 					{#each daysOfWeek as day}
@@ -352,7 +392,7 @@
 										type="time"
 										bind:value={formData.working_hours[day.key].start}
 									/>
-									<span>a</span>
+									<span class="time-separator">a</span>
 									<input
 										type="time"
 										bind:value={formData.working_hours[day.key].end}
@@ -366,7 +406,10 @@
 
 			<!-- Zonas de Cobertura -->
 			<section class="form-section">
-				<h2>Zonas de Cobertura</h2>
+				<h2>
+					<span class="section-icon">📍</span>
+					Zonas de Cobertura
+				</h2>
 				<p class="section-description">Agrega las áreas donde prestas servicios</p>
 				
 				<div class="service-areas">
@@ -381,21 +424,27 @@
 								type="button"
 								class="btn-remove"
 								on:click={() => removeServiceArea(index)}
+								title="Eliminar zona"
 							>
-								❌
+								<span class="sr-only">Eliminar zona</span>
+								✕
 							</button>
 						</div>
 					{/each}
 					
 					<button type="button" class="btn-add" on:click={addServiceArea}>
-						➕ Agregar Zona
+						<span>➕</span>
+						Agregar Zona
 					</button>
 				</div>
 			</section>
 
 			<!-- Documentación -->
 			<section class="form-section">
-				<h2>Documentación</h2>
+				<h2>
+					<span class="section-icon">📄</span>
+					Documentación
+				</h2>
 				<p class="section-description">Agrega certificaciones, licencias y documentos importantes</p>
 				
 				<div class="documents">
@@ -420,22 +469,28 @@
 								type="button"
 								class="btn-remove"
 								on:click={() => removeDocument(index)}
+								title="Eliminar documento"
 							>
-								❌
+								<span class="sr-only">Eliminar documento</span>
+								✕
 							</button>
 						</div>
 					{/each}
 					
 					<button type="button" class="btn-add" on:click={addDocument}>
-						➕ Agregar Documento
+						<span>➕</span>
+						Agregar Documento
 					</button>
 				</div>
 			</section>
 
 			<!-- Portafolio -->
 			<section class="form-section">
-				<h2>Portafolio</h2>
-				<p class="section-description">Muestra ejemplos de tu trabajo</p>
+				<h2>
+					<span class="section-icon">🖼️</span>
+					Portafolio
+				</h2>
+				<p class="section-description">Muestra ejemplos de tu trabajo para atraer más clientes</p>
 				
 				<div class="portfolio">
 					{#each formData.portfolio as item, index}
@@ -447,26 +502,29 @@
 							/>
 							<textarea
 								bind:value={formData.portfolio[index].description}
-								placeholder="Descripción del trabajo realizado"
+								placeholder="Describe el trabajo realizado, resultados y satisfacción del cliente"
 								rows="3"
 							></textarea>
 							<input
 								type="url"
 								bind:value={formData.portfolio[index].image_url}
-								placeholder="URL de la imagen"
+								placeholder="URL de la imagen del trabajo"
 							/>
 							<button
 								type="button"
 								class="btn-remove"
 								on:click={() => removePortfolioItem(index)}
+								title="Eliminar trabajo"
 							>
-								❌
+								<span class="sr-only">Eliminar trabajo</span>
+								✕
 							</button>
 						</div>
 					{/each}
 					
 					<button type="button" class="btn-add" on:click={addPortfolioItem}>
-						➕ Agregar Trabajo
+						<span>➕</span>
+						Agregar Trabajo
 					</button>
 				</div>
 			</section>
@@ -474,9 +532,17 @@
 			<!-- Botones de Acción -->
 			<section class="form-actions">
 				<button type="submit" class="btn btn-primary" disabled={saving}>
-					{saving ? 'Guardando...' : 'Guardar Cambios'}
+					{#if saving}
+						<span class="loading-dots">Guardando</span>
+					{:else}
+						<span>💾</span>
+						Guardar Cambios
+					{/if}
 				</button>
-				<a href="/provider" class="btn btn-secondary">Cancelar</a>
+				<a href="/provider" class="btn btn-secondary">
+					<span>↩</span>
+					Cancelar
+				</a>
 			</section>
 		</form>
 	</div>
@@ -488,15 +554,15 @@
 		flex-direction: column;
 		align-items: center;
 		justify-content: center;
-		min-height: 50vh;
+		min-height: 60vh;
 		gap: var(--spacing-md);
 	}
 
 	.loading-spinner {
-		width: 40px;
-		height: 40px;
-		border: 4px solid var(--color-primary-light);
-		border-top: 4px solid var(--color-primary);
+		width: 48px;
+		height: 48px;
+		border: 4px solid #e2e8f0;
+		border-top: 4px solid #3b82f6;
 		border-radius: 50%;
 		animation: spin 1s linear infinite;
 	}
@@ -507,79 +573,112 @@
 	}
 
 	.profile-page {
-		max-width: 800px;
-		margin: 0 auto;
+		max-width: 900px;
+		margin: 2rem auto;
+		padding: 0 1rem;
 	}
 
 	.page-header {
-		margin-bottom: var(--spacing-2xl);
+		margin-bottom: 2.5rem;
+		text-align: center;
+		position: relative;
+		padding-bottom: 1.5rem;
+	}
+
+	.page-header::after {
+		content: '';
+		position: absolute;
+		bottom: 0;
+		left: 50%;
+		transform: translateX(-50%);
+		width: 60px;
+		height: 4px;
+		background: var(--color-primary);
+		border-radius: 2px;
 	}
 
 	.page-header h1 {
-		margin: 0 0 var(--spacing-sm) 0;
+		margin: 0 0 0.75rem 0;
 		color: var(--color-text);
-		font-size: var(--font-size-3xl);
+		font-size: 2.5rem;
 		font-weight: 700;
+		letter-spacing: -0.025em;
 	}
 
 	.page-header p {
 		margin: 0;
-		color: var(--color-text-light);
-		font-size: var(--font-size-lg);
+		color: #64748b;
+		font-size: 1.125rem;
 	}
 
 	.message {
-		padding: var(--spacing-md);
-		border-radius: var(--border-radius-md);
-		margin-bottom: var(--spacing-lg);
+		padding: 1rem;
+		border-radius: 0.75rem;
+		margin-bottom: 1.5rem;
 		font-weight: 500;
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
 	}
 
 	.message.success {
-		background: #d1fae5;
-		color: #065f46;
-		border: 1px solid #10b981;
+		background: #f0fdf4;
+		color: #166534;
+		border: 1px solid #4ade80;
 	}
 
 	.message.error {
-		background: #fee2e2;
+		background: #fef2f2;
 		color: #991b1b;
-		border: 1px solid #ef4444;
+		border: 1px solid #f87171;
 	}
 
 	.profile-form {
-		background: var(--color-background-white);
-		border-radius: var(--border-radius-lg);
-		padding: var(--spacing-2xl);
-		box-shadow: var(--shadow-sm);
+		background: white;
+		border-radius: 1rem;
+		padding: 2rem;
+		box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
 	}
 
 	.form-section {
-		margin-bottom: var(--spacing-3xl);
+		margin-bottom: 3rem;
+		padding: 2rem;
+		background: #f8fafc;
+		border-radius: 0.75rem;
+		border: 1px solid #e2e8f0;
+	}
+
+	.form-section:last-child {
+		margin-bottom: 0;
 	}
 
 	.form-section h2 {
-		margin: 0 0 var(--spacing-md) 0;
-		color: var(--color-text);
-		font-size: var(--font-size-xl);
+		margin: 0 0 1rem 0;
+		color: #1e293b;
+		font-size: 1.5rem;
 		font-weight: 600;
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
 	}
 
 	.section-description {
-		margin: 0 0 var(--spacing-lg) 0;
-		color: var(--color-text-light);
-		font-size: var(--font-size-base);
+		margin: 0 0 1.5rem 0;
+		color: #64748b;
+		font-size: 1rem;
+		line-height: 1.5;
 	}
 
 	.form-grid {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-		gap: var(--spacing-lg);
+		grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+		gap: 1.5rem;
 	}
 
 	.form-group {
 		display: flex;
 		flex-direction: column;
+		gap: 0.5rem;
 	}
 
 	.form-group.full-width {
@@ -587,109 +686,146 @@
 	}
 
 	.form-group label {
-		margin-bottom: var(--spacing-xs);
-		color: var(--color-text);
+		color: #334155;
 		font-weight: 500;
-		font-size: var(--font-size-sm);
+		font-size: 0.875rem;
+		display: flex;
+		align-items: center;
+		gap: 0.25rem;
 	}
 
 	.form-group input,
 	.form-group select,
 	.form-group textarea {
-		padding: var(--spacing-sm);
-		border: 1px solid var(--color-border-light, rgba(0, 0, 0, 0.1));
-		border-radius: var(--border-radius-md);
-		font-size: var(--font-size-base);
-		transition: border-color var(--transition-fast);
+		padding: 0.75rem;
+		border: 1px solid #e2e8f0;
+		border-radius: 0.5rem;
+		font-size: 1rem;
+		transition: all 0.2s;
+		background: white;
+	}
+
+	.form-group input:hover,
+	.form-group select:hover,
+	.form-group textarea:hover {
+		border-color: #cbd5e1;
 	}
 
 	.form-group input:focus,
 	.form-group select:focus,
 	.form-group textarea:focus {
 		outline: none;
-		border-color: var(--color-primary);
-		box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+		border-color: #3b82f6;
+		box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 	}
 
 	.categories-grid {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-		gap: var(--spacing-md);
+		grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+		gap: 1rem;
 	}
 
 	.category-checkbox {
 		display: flex;
 		align-items: center;
-		padding: var(--spacing-md);
-		border: 1px solid var(--color-border-light, rgba(0, 0, 0, 0.1));
-		border-radius: var(--border-radius-md);
+		padding: 1rem;
+		background: white;
+		border: 1px solid #e2e8f0;
+		border-radius: 0.5rem;
 		cursor: pointer;
-		transition: all var(--transition-fast);
+		transition: all 0.2s;
 	}
 
 	.category-checkbox:hover {
-		border-color: var(--color-primary);
-		background: var(--color-background);
+		border-color: #3b82f6;
+		background: #f8fafc;
+		transform: translateY(-1px);
 	}
 
 	.category-checkbox input[type="checkbox"] {
-		margin-right: var(--spacing-sm);
+		margin-right: 0.75rem;
+		width: 1.25rem;
+		height: 1.25rem;
 	}
 
 	.checkbox-label {
 		display: flex;
 		align-items: center;
-		gap: var(--spacing-sm);
+		gap: 0.75rem;
 	}
 
 	.category-icon {
-		font-size: var(--font-size-lg);
+		font-size: 1.5rem;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 2.5rem;
+		height: 2.5rem;
+		background: #f1f5f9;
+		border-radius: 0.5rem;
 	}
 
 	.category-name {
 		font-weight: 500;
+		color: #334155;
 	}
 
 	.working-hours {
 		display: flex;
 		flex-direction: column;
-		gap: var(--spacing-md);
+		gap: 1rem;
 	}
 
 	.day-schedule {
 		display: flex;
 		align-items: center;
-		gap: var(--spacing-lg);
-		padding: var(--spacing-md);
-		border: 1px solid var(--color-border-light, rgba(0, 0, 0, 0.1));
-		border-radius: var(--border-radius-md);
+		gap: 1.5rem;
+		padding: 1rem;
+		background: white;
+		border: 1px solid #e2e8f0;
+		border-radius: 0.5rem;
+		transition: all 0.2s;
+	}
+
+	.day-schedule:hover {
+		border-color: #cbd5e1;
+		background: #f8fafc;
 	}
 
 	.day-header {
-		min-width: 120px;
+		min-width: 140px;
 	}
 
 	.day-checkbox {
 		display: flex;
 		align-items: center;
-		gap: var(--spacing-sm);
+		gap: 0.75rem;
 		cursor: pointer;
+	}
+
+	.day-checkbox input[type="checkbox"] {
+		width: 1.25rem;
+		height: 1.25rem;
 	}
 
 	.day-name {
 		font-weight: 500;
+		color: #334155;
 	}
 
 	.time-inputs {
 		display: flex;
 		align-items: center;
-		gap: var(--spacing-sm);
+		gap: 0.75rem;
+		flex: 1;
 	}
 
 	.time-inputs input {
-		padding: var(--spacing-xs) var(--spacing-sm);
-		border: 1px solid var(--color-border-light, rgba(0, 0, 0, 0.1));
-		border-radius: var(--border-radius-sm);
+		padding: 0.5rem;
+		border: 1px solid #e2e8f0;
+		border-radius: 0.375rem;
+		flex: 1;
+		min-width: 120px;
 	}
 
 	.service-areas,
@@ -697,15 +833,19 @@
 	.portfolio {
 		display: flex;
 		flex-direction: column;
-		gap: var(--spacing-md);
+		gap: 1rem;
 	}
 
 	.area-input,
 	.document-input,
 	.portfolio-item {
 		display: flex;
-		gap: var(--spacing-sm);
+		gap: 0.75rem;
 		align-items: flex-start;
+		background: white;
+		padding: 1rem;
+		border-radius: 0.5rem;
+		border: 1px solid #e2e8f0;
 	}
 
 	.area-input input,
@@ -713,119 +853,213 @@
 	.portfolio-item input,
 	.portfolio-item textarea {
 		flex: 1;
-		padding: var(--spacing-sm);
-		border: 1px solid var(--color-border-light, rgba(0, 0, 0, 0.1));
-		border-radius: var(--border-radius-md);
+		padding: 0.75rem;
+		border: 1px solid #e2e8f0;
+		border-radius: 0.375rem;
+		min-width: 0;
 	}
 
 	.btn-add {
-		padding: var(--spacing-sm) var(--spacing-md);
-		background: var(--color-primary-light);
-		color: var(--color-primary);
-		border: 1px solid var(--color-primary);
-		border-radius: var(--border-radius-md);
+		padding: 0.75rem 1rem;
+		background: #f1f5f9;
+		color: #3b82f6;
+		border: 1px solid #e2e8f0;
+		border-radius: 0.5rem;
 		cursor: pointer;
 		font-weight: 500;
-		transition: all var(--transition-fast);
+		transition: all 0.2s;
 		align-self: flex-start;
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
 	}
 
 	.btn-add:hover {
-		background: var(--color-primary);
+		background: #3b82f6;
 		color: white;
+		border-color: #3b82f6;
+		transform: translateY(-1px);
 	}
 
 	.btn-remove {
-		padding: var(--spacing-xs);
-		background: none;
+		padding: 0.5rem;
+		background: #fee2e2;
 		border: none;
+		border-radius: 0.375rem;
 		cursor: pointer;
-		font-size: var(--font-size-sm);
-		opacity: 0.7;
-		transition: opacity var(--transition-fast);
-	}
-
-	.btn-remove:hover {
-		opacity: 1;
-	}
-
-	.form-actions {
+		font-size: 1rem;
+		color: #991b1b;
+		transition: all 0.2s;
 		display: flex;
-		gap: var(--spacing-md);
-		justify-content: flex-end;
-		padding-top: var(--spacing-lg);
-		border-top: 1px solid var(--color-border-light, rgba(0, 0, 0, 0.1));
-	}
-
-	.btn {
-		padding: var(--spacing-sm) var(--spacing-lg);
-		border-radius: var(--border-radius-md);
-		font-size: var(--font-size-base);
-		font-weight: 600;
-		text-decoration: none;
-		transition: all var(--transition-fast);
-		border: none;
-		cursor: pointer;
-		display: inline-flex;
 		align-items: center;
 		justify-content: center;
 	}
 
-	.btn-primary {
-		background: var(--color-primary);
-		color: white;
+	.btn-remove:hover {
+		background: #fecaca;
+		transform: scale(1.05);
 	}
 
-	.btn-primary:hover:not(:disabled) {
-		background: var(--color-primary-hover);
+	.form-actions {
+		display: flex;
+		gap: 1rem;
+		justify-content: flex-end;
+		margin-top: 2rem;
+		padding-top: 2rem;
+		border-top: 1px solid #e2e8f0;
+	}
+
+	.btn {
+		padding: 0.75rem 1.5rem;
+		border-radius: 0.5rem;
+		font-weight: 500;
+		font-size: 1rem;
+		transition: all 0.2s;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
+	.btn-primary {
+		background: #3b82f6;
+		color: white;
+		border: none;
+	}
+
+	.btn-primary:hover {
+		background: #2563eb;
 		transform: translateY(-1px);
 	}
 
 	.btn-primary:disabled {
-		opacity: 0.6;
+		background: #93c5fd;
 		cursor: not-allowed;
+		transform: none;
 	}
 
 	.btn-secondary {
-		background: var(--color-background-card);
-		color: var(--color-primary);
-		border: 1px solid var(--color-primary);
+		background: white;
+		color: #64748b;
+		border: 1px solid #e2e8f0;
+		text-decoration: none;
 	}
 
 	.btn-secondary:hover {
-		background: var(--color-primary);
-		color: white;
-		transform: translateY(-1px);
+		background: #f8fafc;
+		color: #334155;
+		border-color: #cbd5e1;
 	}
 
-	/* Responsive */
-	@media (max-width: 768px) {
-		.profile-form {
-			padding: var(--spacing-lg);
+	@media (max-width: 640px) {
+		.profile-page {
+			margin: 1rem auto;
+		}
+
+		.page-header {
+			text-align: left;
+			margin-bottom: 2rem;
+		}
+
+		.page-header::after {
+			left: 0;
+			transform: none;
+		}
+
+		.form-section {
+			padding: 1.5rem;
 		}
 
 		.form-grid {
 			grid-template-columns: 1fr;
 		}
 
-		.categories-grid {
-			grid-template-columns: 1fr;
+		.working-hours {
+			flex-direction: column;
 		}
 
 		.day-schedule {
 			flex-direction: column;
-			align-items: flex-start;
-			gap: var(--spacing-sm);
+			align-items: stretch;
 		}
 
-		.area-input,
-		.document-input,
-		.portfolio-item {
-			flex-direction: column;
+		.time-inputs {
+			margin-top: 0.5rem;
 		}
 
 		.form-actions {
 			flex-direction: column;
 		}
+
+		.btn {
+			width: 100%;
+			justify-content: center;
+		}
+	}
+
+	.required {
+		color: #ef4444;
+		margin-left: 0.25rem;
+	}
+
+	.input-help {
+		font-size: 0.875rem;
+		color: #64748b;
+		margin-top: 0.25rem;
+	}
+
+	.input-with-icon {
+		position: relative;
+		display: flex;
+		align-items: center;
+	}
+
+	.currency-symbol {
+		position: absolute;
+		left: 0.75rem;
+		color: #64748b;
+		font-weight: 500;
+	}
+
+	.input-with-icon input {
+		padding-left: 2.5rem;
+	}
+
+	.section-icon {
+		font-size: 1.25rem;
+		margin-right: 0.5rem;
+	}
+
+	.message-icon {
+		font-size: 1.25rem;
+	}
+
+	.time-separator {
+		color: #64748b;
+		padding: 0 0.5rem;
+	}
+
+	.sr-only {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		padding: 0;
+		margin: -1px;
+		overflow: hidden;
+		clip: rect(0, 0, 0, 0);
+		white-space: nowrap;
+		border: 0;
+	}
+
+	.loading-dots::after {
+		content: '...';
+		animation: dots 1.5s steps(4, end) infinite;
+	}
+
+	@keyframes dots {
+		0%, 20% { content: ''; }
+		40% { content: '.'; }
+		60% { content: '..'; }
+		80%, 100% { content: '...'; }
 	}
 </style> 
