@@ -8,6 +8,8 @@
 
 	let providerProfile: any = null;
 	let bookings: any[] = [];
+	let services: any[] = [];
+	let clients: any[] = [];
 	let loading = true;
 
 	let earnings = {
@@ -16,6 +18,69 @@
 		lastMonth: 0,
 		pending: 0
 	};
+
+	let showAddEarningModal = false;
+	let showAddClientForm = false;
+	let saving = false;
+	let creatingClient = false;
+	let error = '';
+	let success = '';
+
+	// Form data for earning registration
+	let earningForm = {
+		service_id: '',
+		client_user_id: '',
+		amount: 0,
+		date: new Date().toISOString().split('T')[0],
+		notes: ''
+	};
+
+	// Form data for new client
+	let newClientForm = {
+		first_name: '',
+		last_name: '',
+		email: '',
+		phone_number: '',
+		password: 'temp123456' // Temporary password for manual clients
+	};
+
+	function openAddEarningModal() {
+		showAddEarningModal = true;
+		showAddClientForm = false;
+		earningForm = {
+			service_id: '',
+			client_user_id: '',
+			amount: 0,
+			date: new Date().toISOString().split('T')[0],
+			notes: ''
+		};
+		error = '';
+		success = '';
+	}
+
+	function closeAddEarningModal() {
+		showAddEarningModal = false;
+		showAddClientForm = false;
+		error = '';
+		success = '';
+	}
+
+	function openAddClientForm() {
+		showAddClientForm = true;
+		newClientForm = {
+			first_name: '',
+			last_name: '',
+			email: '',
+			phone_number: '',
+			password: 'temp123456'
+		};
+		error = '';
+	}
+
+	function closeAddClientForm() {
+		showAddClientForm = false;
+		error = '';
+	}
 
 	onMount(async () => {
 		await loadData();
@@ -33,14 +98,37 @@
 			if (profileError) throw profileError;
 			providerProfile = profile;
 
+			// Cargar servicios del proveedor
+			const { data: svcs, error: svcsError } = await supabase
+				.from('services')
+				.select('*')
+				.eq('provider_profile_id', profile.id)
+				.eq('is_active', true)
+				.order('title');
+
+			if (svcsError) throw svcsError;
+			services = svcs || [];
+
 			// Cargar reservas del proveedor
 			const { data: bkgs, error: bkgsError } = await supabase
 				.from('bookings')
-				.select('*')
+				.select(`
+					*,
+					clients:customers!bookings_client_user_id_fkey(*)
+				`)
 				.eq('provider_profile_id', profile.id);
 
 			if (bkgsError) throw bkgsError;
 			bookings = bkgs || [];
+
+			// Extraer clientes únicos de las reservas
+			const uniqueClients = new Map();
+			bookings.forEach(booking => {
+				if (booking.clients && !uniqueClients.has(booking.clients.user_id)) {
+					uniqueClients.set(booking.clients.user_id, booking.clients);
+				}
+			});
+			clients = Array.from(uniqueClients.values());
 
 			// Calcular ganancias
 			calculateEarnings();
@@ -49,6 +137,156 @@
 			console.error('Error loading data:', error);
 		} finally {
 			loading = false;
+		}
+	}
+
+	async function createNewClient() {
+		console.log('Creating new client...', newClientForm);
+		error = '';
+		creatingClient = true;
+		
+		if (!newClientForm.first_name.trim() || !newClientForm.last_name.trim() || !newClientForm.email.trim()) {
+			error = 'Completa todos los campos requeridos.';
+			creatingClient = false;
+			return;
+		}
+
+		try {
+			// Crear usuario en Supabase Auth
+			const { data: authData, error: authError } = await supabase.auth.signUp({
+				email: newClientForm.email,
+				password: newClientForm.password,
+				options: {
+					data: {
+						first_name: newClientForm.first_name,
+						last_name: newClientForm.last_name,
+						role: 'customer'
+					}
+				}
+			});
+
+			if (authError) throw authError;
+
+			if (!authData.user) {
+				throw new Error('Error al crear el usuario');
+			}
+
+			// El trigger debería crear automáticamente el perfil en customers
+			// Esperar un momento y luego obtener el perfil
+			await new Promise(resolve => setTimeout(resolve, 1000));
+
+			let { data: customerProfile, error: profileError } = await supabase
+				.from('customers')
+				.select('*')
+				.eq('user_id', authData.user.id)
+				.single();
+
+			if (profileError) {
+				// Si no existe el perfil, crearlo manualmente
+				const { data: newProfile, error: createError } = await supabase
+					.from('customers')
+					.insert({
+						user_id: authData.user.id,
+						first_name: newClientForm.first_name,
+						last_name: newClientForm.last_name,
+						phone_number: newClientForm.phone_number || null,
+						role: 'customer'
+					})
+					.select()
+					.single();
+
+				if (createError) throw createError;
+				customerProfile = newProfile;
+			}
+
+			// Agregar el nuevo cliente a la lista
+			clients = [...clients, customerProfile];
+			earningForm.client_user_id = customerProfile.user_id;
+
+			closeAddClientForm();
+			success = 'Cliente creado exitosamente.';
+
+		} catch (err) {
+			console.error('Error creating client:', err);
+			error = 'Error al crear el cliente. Verifica que el email no esté en uso.';
+		} finally {
+			creatingClient = false;
+		}
+	}
+
+	async function saveEarning() {
+		console.log('Saving earning...', earningForm);
+		console.log('Provider profile:', providerProfile);
+		error = '';
+		success = '';
+
+		if (!providerProfile || !providerProfile.id) {
+			error = 'Error: No se pudo obtener el perfil del proveedor.';
+			return;
+		}
+
+		if (!earningForm.service_id || !earningForm.client_user_id || !earningForm.amount || earningForm.amount <= 0) {
+			error = 'Completa todos los campos requeridos y usa un monto válido.';
+			return;
+		}
+
+		saving = true;
+
+		try {
+			// Crear fecha de inicio y fin (mismo día, 1 hora de duración)
+			const selectedDate = new Date(earningForm.date);
+			const startTime = new Date(selectedDate);
+			startTime.setHours(9, 0, 0, 0); // 9:00 AM
+			const endTime = new Date(startTime);
+			endTime.setHours(10, 0, 0, 0); // 10:00 AM
+
+			// Crear la reserva/ganancia
+			console.log('Creating booking with data:', {
+				provider_profile_id: providerProfile.id,
+				service_id: earningForm.service_id,
+				client_user_id: earningForm.client_user_id,
+				start_time: startTime.toISOString(),
+				end_time: endTime.toISOString(),
+				total_price: earningForm.amount,
+				notes_for_provider: earningForm.notes || null,
+				status: 'completed'
+			});
+
+			const { data: newBooking, error: bookingError } = await supabase
+				.from('bookings')
+				.insert({
+					provider_profile_id: providerProfile.id,
+					service_id: earningForm.service_id,
+					client_user_id: earningForm.client_user_id,
+					start_time: startTime.toISOString(),
+					end_time: endTime.toISOString(),
+					total_price: earningForm.amount,
+					notes_for_provider: earningForm.notes || null,
+					status: 'completed' // Marcado como completado inmediatamente
+				})
+				.select()
+				.single();
+
+			if (bookingError) {
+				console.error('Booking error:', bookingError);
+				throw bookingError;
+			}
+
+			console.log('Booking created successfully:', newBooking);
+
+			// Recargar datos para actualizar estadísticas
+			console.log('Reloading data...');
+			await loadData();
+			console.log('Data reloaded successfully');
+
+			closeAddEarningModal();
+			success = 'Ganancia registrada exitosamente.';
+
+		} catch (err) {
+			console.error('Error saving earning:', err);
+			error = 'Error al guardar la ganancia. Verifica que todos los campos sean válidos.';
+		} finally {
+			saving = false;
 		}
 	}
 
@@ -153,7 +391,164 @@
 		<header class="page-header">
 			<h1>Ganancias</h1>
 			<p>Revisa tus ingresos y estadísticas financieras</p>
+			<button class="btn btn-primary mt-4" on:click={openAddEarningModal}>Registrar ganancia</button>
 		</header>
+
+		{#if showAddEarningModal}
+			<div class="modal-backdrop">
+				<div class="modal">
+					<div class="modal-header">
+						<h2>Registrar ganancia</h2>
+						<button class="close-btn" on:click={closeAddEarningModal}>×</button>
+					</div>
+					<div class="modal-body">
+						{#if error}
+							<div class="error-message">{error}</div>
+						{/if}
+						{#if success}
+							<div class="success-message">{success}</div>
+						{/if}
+
+						{#if !showAddClientForm}
+							<form on:submit|preventDefault={() => {
+								console.log('Form submitted');
+								saveEarning();
+							}} class="earning-form">
+								<div class="form-group">
+									<label for="service">Servicio *</label>
+									<select id="service" bind:value={earningForm.service_id} required>
+										<option value="">Selecciona un servicio</option>
+										{#each services as service}
+											<option value={service.id}>{service.title} - {formatCurrency(service.price)}</option>
+										{/each}
+									</select>
+								</div>
+
+								<div class="form-group">
+									<label for="client">Cliente *</label>
+									<div class="client-selection">
+										<select id="client" bind:value={earningForm.client_user_id} required>
+											<option value="">Selecciona un cliente</option>
+											{#each clients as client}
+												<option value={client.user_id}>{client.first_name} {client.last_name}</option>
+											{/each}
+										</select>
+										<button type="button" class="btn btn-secondary" on:click={openAddClientForm}>
+											+ Nuevo Cliente
+										</button>
+									</div>
+								</div>
+
+								<div class="form-group">
+									<label for="amount">Monto (C$) *</label>
+									<input 
+										type="number" 
+										id="amount" 
+										bind:value={earningForm.amount} 
+										min="0" 
+										step="0.01" 
+										required 
+										placeholder="0.00"
+									/>
+								</div>
+
+								<div class="form-group">
+									<label for="date">Fecha *</label>
+									<input 
+										type="date" 
+										id="date" 
+										bind:value={earningForm.date} 
+										required
+									/>
+								</div>
+
+								<div class="form-group">
+									<label for="notes">Notas (opcional)</label>
+									<textarea 
+										id="notes" 
+										bind:value={earningForm.notes} 
+										rows="3" 
+										placeholder="Detalles adicionales sobre el servicio..."
+									></textarea>
+								</div>
+
+								<div class="form-actions">
+									<button type="button" class="btn btn-secondary" on:click={closeAddEarningModal}>
+										Cancelar
+									</button>
+									<button type="submit" class="btn btn-primary" disabled={saving}>
+										{saving ? 'Guardando...' : 'Registrar Ganancia'}
+									</button>
+									<button type="button" class="btn btn-secondary" on:click={() => {
+										console.log('Test button clicked');
+										console.log('Form data:', earningForm);
+										console.log('Provider profile:', providerProfile);
+									}}>
+										Test
+									</button>
+								</div>
+							</form>
+						{:else}
+							<form on:submit|preventDefault={createNewClient} class="client-form">
+								<h3>Agregar Nuevo Cliente</h3>
+								
+								<div class="form-group">
+									<label for="first_name">Nombre *</label>
+									<input 
+										type="text" 
+										id="first_name" 
+										bind:value={newClientForm.first_name} 
+										required 
+										placeholder="Nombre del cliente"
+									/>
+								</div>
+
+								<div class="form-group">
+									<label for="last_name">Apellido *</label>
+									<input 
+										type="text" 
+										id="last_name" 
+										bind:value={newClientForm.last_name} 
+										required 
+										placeholder="Apellido del cliente"
+									/>
+								</div>
+
+								<div class="form-group">
+									<label for="email">Email *</label>
+									<input 
+										type="email" 
+										id="email" 
+										bind:value={newClientForm.email} 
+										required 
+										placeholder="email@ejemplo.com"
+									/>
+								</div>
+
+								<div class="form-group">
+									<label for="phone">Teléfono (opcional)</label>
+									<input 
+										type="tel" 
+										id="phone" 
+										bind:value={newClientForm.phone_number} 
+										placeholder="+505 1234 5678"
+									/>
+								</div>
+
+								<div class="form-actions">
+									<button type="button" class="btn btn-secondary" on:click={closeAddClientForm} disabled={creatingClient}>
+										Cancelar
+									</button>
+									<button type="submit" class="btn btn-primary" disabled={creatingClient}>
+										{creatingClient ? 'Creando...' : 'Crear Cliente'}
+									</button>
+								</div>
+							</form>
+						{/if}
+					</div>
+				</div>
+			</div>
+		{/if}
 
 		<div class="earnings-content">
 			<!-- Resumen de Ganancias -->
@@ -512,29 +907,168 @@
 	}
 	.bar {
 		width: 100%;
-		background: linear-gradient(180deg, #3b82f6 0%, #60a5fa 100%);
-		border-radius: 0.5rem 0.5rem 0 0;
-		transition: height 0.3s;
-		margin-bottom: 0.4rem;
+		background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%);
+		border-radius: 4px 4px 0 0;
+		min-height: 8px;
+		transition: all 0.3s ease;
 	}
 	.bar-label {
-		font-size: 0.95rem;
+		font-size: 0.75rem;
 		color: #64748b;
-		margin-top: 0.2rem;
-		text-align: center;
+		margin-top: 0.5rem;
+		font-weight: 500;
 	}
-	@media (max-width: 900px) {
-		.earnings-row {
-			gap: 1.2rem;
-		}
-		.earnings-card-modern {
-			width: 160px;
-			min-width: 120px;
-			max-width: 180px;
-			padding: 1.2rem 0.5rem;
-		}
-		.bar-chart {
-			gap: 1.1rem;
-		}
+	.btn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0.75rem 1.5rem;
+		border-radius: 0.5rem;
+		font-weight: 600;
+		font-size: 0.875rem;
+		text-decoration: none;
+		border: none;
+		cursor: pointer;
+		transition: all 0.2s ease;
+	}
+	.btn-primary {
+		background: #3b82f6;
+		color: white;
+	}
+	.btn-primary:hover {
+		background: #2563eb;
+	}
+	.btn-primary:disabled {
+		background: #94a3b8;
+		cursor: not-allowed;
+	}
+	.btn-secondary {
+		background: #f1f5f9;
+		color: #475569;
+		border: 1px solid #cbd5e1;
+	}
+	.btn-secondary:hover {
+		background: #e2e8f0;
+	}
+	.modal-backdrop {
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background: rgba(0, 0, 0, 0.5);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 1000;
+		padding: 1rem;
+	}
+	.modal {
+		background: white;
+		border-radius: 1rem;
+		box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+		max-width: 500px;
+		width: 100%;
+		max-height: 90vh;
+		overflow-y: auto;
+	}
+	.modal-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 1.5rem 1.5rem 0 1.5rem;
+		border-bottom: 1px solid #e5e7eb;
+		padding-bottom: 1rem;
+	}
+	.modal-header h2 {
+		margin: 0;
+		font-size: 1.25rem;
+		font-weight: 700;
+		color: #1e293b;
+	}
+	.close-btn {
+		background: none;
+		border: none;
+		font-size: 1.5rem;
+		color: #64748b;
+		cursor: pointer;
+		padding: 0.25rem;
+		border-radius: 0.25rem;
+	}
+	.close-btn:hover {
+		background: #f1f5f9;
+		color: #475569;
+	}
+	.modal-body {
+		padding: 1.5rem;
+	}
+	.earning-form, .client-form {
+		display: flex;
+		flex-direction: column;
+		gap: 1.25rem;
+	}
+	.form-group {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+	.form-group label {
+		font-weight: 600;
+		color: #374151;
+		font-size: 0.875rem;
+	}
+	.form-group input,
+	.form-group select,
+	.form-group textarea {
+		padding: 0.75rem;
+		border: 1px solid #d1d5db;
+		border-radius: 0.5rem;
+		font-size: 0.875rem;
+		transition: border-color 0.2s ease;
+	}
+	.form-group input:focus,
+	.form-group select:focus,
+	.form-group textarea:focus {
+		outline: none;
+		border-color: #3b82f6;
+		box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+	}
+	.client-selection {
+		display: flex;
+		gap: 0.75rem;
+		align-items: flex-end;
+	}
+	.client-selection select {
+		flex: 1;
+	}
+	.form-actions {
+		display: flex;
+		gap: 0.75rem;
+		justify-content: flex-end;
+		margin-top: 1rem;
+	}
+	.error-message {
+		background: #fef2f2;
+		color: #dc2626;
+		padding: 0.75rem;
+		border-radius: 0.5rem;
+		border: 1px solid #fecaca;
+		margin-bottom: 1rem;
+		font-size: 0.875rem;
+	}
+	.success-message {
+		background: #f0fdf4;
+		color: #16a34a;
+		padding: 0.75rem;
+		border-radius: 0.5rem;
+		border: 1px solid #bbf7d0;
+		margin-bottom: 1rem;
+		font-size: 0.875rem;
+	}
+	.client-form h3 {
+		margin: 0 0 1rem 0;
+		font-size: 1.125rem;
+		font-weight: 600;
+		color: #1e293b;
 	}
 </style> 
