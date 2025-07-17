@@ -309,7 +309,9 @@ INSERT INTO categories (name, slug, description, icon) VALUES
     ('Instalación de polarizado y accesorios', 'polarizado-accesorios', 'Colocación de polarizado, audio y accesorios automotrices', '🪟'),
     ('Cerrajería', 'cerrajeria', 'Apertura, cambio y reparación de cerraduras', '🔑'),
     ('Instalación de gypsum y cielo raso', 'gypsum-cielo-raso', 'Construcción y acabados en paneles de yeso', '🏚️'),
-    ('Vidriería y aluminio', 'vidrieria-aluminio', 'Fabricación e instalación de ventanas y puertas de vidrio y aluminio', '🔲')
+    ('Vidriería y aluminio', 'vidrieria-aluminio', 'Fabricación e instalación de ventanas y puertas de vidrio y aluminio', '🔲'),
+    ('Montaje y Ensamblaje', 'montaje', 'Montaje de muebles, TV, estanterías y ensamblaje de equipos en general', '🔧'),
+    ('Instalación de electrodomésticos', 'instalacion-electrodomesticos', 'Instalación y configuración de electrodomésticos y equipos del hogar', '🏠')
 ON CONFLICT (slug) DO NOTHING;
 
 -- ===========================

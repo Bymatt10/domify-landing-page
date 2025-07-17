@@ -12,8 +12,10 @@
 	};
 
 	let categories: Category[] = [];
+	let filteredCategories: Category[] = [];
 	let loading = true;
 	let error: string | null = null;
+	let searchQuery = '';
 
 	// Mapeo de categorías a íconos SVG modernos y colores
 	const categoryIcons: Record<string, { icon: string; color: string; bgColor: string }> = {
@@ -59,19 +61,182 @@
 		return categoryIcons[key] || categoryIcons['default'];
 	}
 
+	// Función para filtrar categorías
+	function filterCategories() {
+		console.log('🔍 Filtering categories with query:', searchQuery);
+		console.log('📋 Total categories:', categories.length);
+		
+		if (!searchQuery.trim()) {
+			filteredCategories = categories;
+			console.log('✅ No query, showing all categories:', filteredCategories.length);
+			return;
+		}
+
+		const query = searchQuery.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+		console.log('🔤 Processed query:', query);
+		
+		// Primero buscar coincidencias exactas
+		const exactNameMatches = categories.filter(category => {
+			const name = category.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+			const slug = category.slug.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+			const isExact = name === query || slug === query;
+			if (isExact) console.log('🎯 Exact match found:', category.name);
+			return isExact;
+		});
+
+		// Si hay coincidencias exactas, mostrar solo esas
+		if (exactNameMatches.length > 0) {
+			filteredCategories = exactNameMatches;
+			console.log('✅ Using exact matches:', exactNameMatches.length);
+			return;
+		}
+
+		// Segundo: buscar palabras que empiecen con la consulta
+		const startsWithMatches = categories.filter(category => {
+			const name = category.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+			const slug = category.slug.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+			const words = name.split(' ');
+			const startsWith = words.some(word => word.startsWith(query)) || slug.startsWith(query);
+			if (startsWith) console.log('🚀 Starts with match:', category.name);
+			return startsWith;
+		});
+
+		if (startsWithMatches.length > 0) {
+			filteredCategories = startsWithMatches;
+			console.log('✅ Using starts with matches:', startsWithMatches.length);
+			return;
+		}
+
+		// Tercero: buscar palabras que contengan la consulta
+		const containsMatches = categories.filter(category => {
+			const name = category.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+			const slug = category.slug.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+			const contains = name.includes(query) || slug.includes(query);
+			if (contains) console.log('📝 Contains match:', category.name);
+			return contains;
+		});
+
+		if (containsMatches.length > 0) {
+			filteredCategories = containsMatches;
+			console.log('✅ Using contains matches:', containsMatches.length);
+			return;
+		}
+
+		// Si no hay coincidencias exactas, buscar en descripción
+		filteredCategories = categories.filter(category => {
+			const name = category.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+			const description = category.description.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+			const slug = category.slug.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+			
+			// Buscar palabras parciales
+			const queryWords = query.split(' ').filter(word => word.length > 2);
+			const found = queryWords.some(word => 
+				name.includes(word) || description.includes(word) || slug.includes(word)
+			);
+			if (found) console.log('📄 Description match:', category.name);
+			return found;
+		});
+		
+		console.log('🎯 Final filtered results:', filteredCategories.length);
+	}
+
+	// Función reactiva para filtrar cuando cambie la consulta
+	$: {
+		console.log('🔄 Reactive update triggered');
+		console.log('📊 Categories loaded:', categories.length);
+		console.log('🔍 Search query:', searchQuery);
+		if (categories.length > 0) {
+			console.log('✅ Calling filterCategories');
+			filterCategories();
+		} else {
+			console.log('❌ No categories loaded yet');
+		}
+	}
+
+	// Función para limpiar búsqueda
+	function clearSearch() {
+		console.log('🧹 Clearing search');
+		searchQuery = '';
+		filteredCategories = categories;
+		console.log('✅ Search cleared, showing all categories:', filteredCategories.length);
+	}
+
+	// Función para manejar la búsqueda al presionar Enter
+	function handleSearch() {
+		console.log('🎯 handleSearch called with query:', searchQuery);
+		console.log('📊 Current filtered categories:', filteredCategories.length);
+		
+		if (!searchQuery.trim()) {
+			console.log('🔄 Empty query, scrolling to all services');
+			// Si no hay búsqueda, hacer scroll a todos los servicios
+			const resultsSection = document.querySelector('#results-section');
+			if (resultsSection) {
+				resultsSection.scrollIntoView({ 
+					behavior: 'smooth',
+					block: 'start'
+				});
+			}
+			return;
+		}
+		
+		// Si solo hay un resultado, navegar directamente a él
+		if (filteredCategories.length === 1) {
+			handleCategoryClick(filteredCategories[0].slug);
+			return;
+		}
+		
+		// Si hay múltiples resultados, hacer scroll hasta la sección de resultados
+		if (filteredCategories.length > 0) {
+			const resultsSection = document.querySelector('#results-section');
+			if (resultsSection) {
+				resultsSection.scrollIntoView({ 
+					behavior: 'smooth',
+					block: 'start'
+				});
+			}
+		}
+		// Si no hay resultados, también hacer scroll para mostrar el mensaje "no encontrado"
+		else {
+			const resultsSection = document.querySelector('#results-section');
+			if (resultsSection) {
+				resultsSection.scrollIntoView({ 
+					behavior: 'smooth',
+					block: 'start'
+				});
+			}
+		}
+	}
+
+	// Función para manejar tecla Enter
+	function handleKeydown(event: KeyboardEvent) {
+		console.log('⌨️ Key pressed:', event.key);
+		if (event.key === 'Enter') {
+			console.log('🎯 Enter key detected, calling handleSearch');
+			event.preventDefault();
+			handleSearch();
+		}
+	}
+
 	onMount(async () => {
+		console.log('🚀 Component mounting, loading categories...');
 		try {
 			const res = await fetch('/api/categories');
+			console.log('📡 API response status:', res.status, res.ok);
 			if (!res.ok) {
 				throw new Error('No se pudieron cargar las categorías de servicios.');
 			}
 			const responseData = await res.json();
+			console.log('📦 Raw API response:', responseData);
 			categories = responseData.data.categories;
+			filteredCategories = categories;
+			console.log('✅ Categories loaded successfully:', categories.length);
+			console.log('📋 First few categories:', categories.slice(0, 3));
 		} catch (e: any) {
 			error = e.message;
-			console.error('Error fetching categories:', e);
+			console.error('❌ Error fetching categories:', e);
 		} finally {
 			loading = false;
+			console.log('🏁 Loading completed, loading state:', loading);
 		}
 	});
 
@@ -101,22 +266,91 @@
 						Hogar
 					</span>
 				</h1>
-				<p class="text-xl lg:text-2xl text-primary-100 max-w-3xl mx-auto">
+				<p class="text-xl lg:text-2xl text-primary-100 max-w-3xl mx-auto mb-8">
 					Encuentra profesionales verificados y de confianza para todos tus proyectos. 
 					Calidad garantizada, precios justos.
 				</p>
+
+				<!-- Search Box -->
+				<div class="max-w-2xl mx-auto">
+					<form on:submit|preventDefault={handleSearch} class="relative group">
+						<div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+							<svg class="h-5 w-5 text-gray-400 group-focus-within:text-primary-600 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+							</svg>
+						</div>
+						<input
+							type="text"
+							placeholder="¿Qué servicio necesitas? (ej: limpieza, plomería, electricidad...)"
+							bind:value={searchQuery}
+							on:keydown={handleKeydown}
+							class="w-full pl-12 pr-32 py-4 bg-white rounded-2xl border border-white/20 shadow-lg focus:outline-none focus:ring-4 focus:ring-white/30 focus:border-white text-gray-900 placeholder-gray-500 text-lg"
+						/>
+						<div class="absolute inset-y-0 right-0 flex items-center gap-1 pr-2">
+							{#if searchQuery}
+								<button
+									type="button"
+									on:click={clearSearch}
+									class="p-2 hover:bg-gray-100 rounded-xl transition-colors duration-200"
+									aria-label="Limpiar búsqueda"
+								>
+									<svg class="h-4 w-4 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+									</svg>
+								</button>
+							{/if}
+							<button
+								type="submit"
+								class="px-4 py-2 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors duration-200 font-medium"
+							>
+								Buscar
+							</button>
+						</div>
+					</form>
+					
+					{#if searchQuery && !loading}
+						<div class="text-white/80 text-sm mt-3">
+							{#if filteredCategories.length === 0}
+								No se encontraron servicios para "{searchQuery}"
+							{:else if filteredCategories.length === 1}
+								1 servicio encontrado
+							{:else}
+								{filteredCategories.length} servicios encontrados
+							{/if}
+						</div>
+					{/if}
+				</div>
 			</div>
 		</div>
 	</section>
 
 	<!-- Services Section -->
-	<section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+	<section id="results-section" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
 		<div class="text-center mb-12">
 			<h2 class="text-3xl lg:text-4xl font-bold text-secondary-900 mb-4">
-				Nuestros Servicios
+				{#if searchQuery}
+					Resultados de búsqueda
+				{:else}
+					Nuestros Servicios
+				{/if}
 			</h2>
 			<p class="text-lg text-secondary-600 max-w-2xl mx-auto">
-				Explora nuestra amplia gama de servicios profesionales. Cada categoría cuenta con expertos verificados.
+				{#if searchQuery}
+					Servicios que coinciden con tu búsqueda "{searchQuery}"
+					{#if !loading}
+						<span class="block mt-2 text-sm font-medium text-primary-600">
+							{#if filteredCategories.length === 0}
+								Sin resultados encontrados
+							{:else if filteredCategories.length === 1}
+								1 servicio encontrado
+							{:else}
+								{filteredCategories.length} servicios encontrados
+							{/if}
+						</span>
+					{/if}
+				{:else}
+					Explora nuestra amplia gama de servicios profesionales. Cada categoría cuenta con expertos verificados.
+				{/if}
 			</p>
 		</div>
 
@@ -140,6 +374,26 @@
 					Intentar de nuevo
 				</button>
 			</div>
+		{:else if filteredCategories.length === 0 && searchQuery}
+			<div class="text-center py-16">
+				<div class="inline-flex items-center justify-center w-16 h-16 bg-orange-100 rounded-full mb-4">
+					<svg class="w-8 h-8 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+					</svg>
+				</div>
+				<h3 class="text-xl font-semibold text-secondary-900 mb-2">
+					No se encontraron resultados
+				</h3>
+				<p class="text-secondary-600 mb-6">
+					No encontramos servicios que coincidan con "{searchQuery}". Intenta con otros términos o explora todas las categorías.
+				</p>
+				<button 
+					class="px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors duration-200"
+					on:click={clearSearch}
+				>
+					Ver todos los servicios
+				</button>
+			</div>
 		{:else if categories.length === 0}
 			<div class="text-center py-16">
 				<div class="inline-flex items-center justify-center w-16 h-16 bg-secondary-100 rounded-full mb-4">
@@ -155,8 +409,8 @@
 				</p>
 			</div>
 		{:else}
-			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
-				{#each categories as category (category.id)}
+			<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+				{#each filteredCategories as category (category.id)}
 					{@const iconData = getCategoryIcon(category.name)}
 					<button 
 						class="group bg-white rounded-2xl shadow-sm border border-secondary-200 p-6 lg:p-8 hover:shadow-xl hover:scale-105 transition-all duration-300 text-left"

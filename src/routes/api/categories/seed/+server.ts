@@ -101,7 +101,11 @@ export const POST: RequestHandler = async ({ request, locals }) => {
             // 👷‍♂️ Otros servicios demandados
             { name: 'Cerrajería', slug: 'cerrajeria', icon: '🔑', description: 'Apertura, cambio y reparación de cerraduras' },
             { name: 'Instalación de gypsum y cielo raso', slug: 'gypsum-cielo-raso', icon: '🏚️', description: 'Construcción y acabados en paneles de yeso' },
-            { name: 'Vidriería y aluminio', slug: 'vidrieria-aluminio', icon: '🔲', description: 'Fabricación e instalación de ventanas y puertas de vidrio y aluminio' }
+            { name: 'Vidriería y aluminio', slug: 'vidrieria-aluminio', icon: '🔲', description: 'Fabricación e instalación de ventanas y puertas de vidrio y aluminio' },
+            
+            // 🔧 Servicios de Montaje y Ensamblaje
+            { name: 'Montaje y Ensamblaje', slug: 'montaje', icon: '🔧', description: 'Montaje de muebles, TV, estanterías y ensamblaje de equipos en general' },
+            { name: 'Instalación de electrodomésticos', slug: 'instalacion-electrodomesticos', icon: '🏠', description: 'Instalación y configuración de electrodomésticos y equipos del hogar' }
         ];
 
         // Upsert categories (insert if not exists, update otherwise)
