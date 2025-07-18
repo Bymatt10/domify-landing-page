@@ -1,24 +1,20 @@
 pipeline {
     agent any
-
+    
     environment {
+        // --- General Config ---
         DOCKER_IMAGE = 'domify'
         DOCKER_TAG = "${BUILD_NUMBER}"
         CONTAINER_NAME = 'domify-app'
         PORT = '3000'
+        
+        // --- Credentials & Secrets (loaded from Jenkins Credentials) ---
         PRODUCTION_SERVER = credentials('production-server-ip')
-
-        // Placeholders vacíos, se sobreescriben con withCredentials
-        PUBLIC_SUPABASE_URL = ''
-        PUBLIC_SUPABASE_ANON_KEY = ''
-        PRIVATE_SUPABASE_SERVICE_ROLE_KEY = ''
-        SMTP_HOST = ''
-        SMTP_PORT = ''
-        SMTP_USER = ''
-        SMTP_PASS = ''
-        FROM_EMAIL = ''
+        
+        // --- Dynamic Variables (set during pipeline execution) ---
+        IS_DEPLOYABLE_BRANCH = false 
     }
-
+    
     stages {
         stage('Checkout') {
             steps {
@@ -29,19 +25,31 @@ pipeline {
                 }
             }
         }
-
+        
         stage('Environment Setup') {
             steps {
                 script {
+                    // Set BRANCH_NAME if not already set by Jenkins
                     if (!env.BRANCH_NAME) {
                         env.BRANCH_NAME = env.GIT_BRANCH ?: 'unknown'
                     }
+                    
+                    // Determine if the current branch is deployable
+                    env.IS_DEPLOYABLE_BRANCH = (env.BRANCH_NAME == 'main' || env.BRANCH_NAME == 'master' || env.BRANCH_NAME == 'develop' || env.BRANCH_NAME == 'staging')
+
+                    // Check if credentials are available, with a safe fallback
                     if (!env.PRODUCTION_SERVER) {
-                        echo "⚠️  WARNING: production-server-ip credential not found"
+                        echo "⚠️  WARNING: production-server-ip credential not found. Falling back to localhost."
                         env.PRODUCTION_SERVER = 'localhost'
                     }
+                    
+                    // Set staging server (can be a different credential or same as prod)
                     env.STAGING_SERVER = env.PRODUCTION_SERVER
+                    
+                    // Set Docker registry (defaults to no registry)
                     env.DOCKER_REGISTRY = 'localhost'
+                    
+                    // Determine target environment based on branch name
                     if (env.BRANCH_NAME == 'main' || env.BRANCH_NAME == 'master') {
                         env.TARGET_ENV = 'production'
                         env.TARGET_SERVER = env.PRODUCTION_SERVER
@@ -50,69 +58,39 @@ pipeline {
                         env.TARGET_SERVER = env.STAGING_SERVER
                     } else {
                         env.TARGET_ENV = 'development'
-                        env.TARGET_SERVER = env.STAGING_SERVER
+                        env.TARGET_SERVER = env.STAGING_SERVER // Feature branches can deploy to staging
                     }
-                    echo "Building for environment: ${env.TARGET_ENV}"
-                    echo "Target server: ${env.TARGET_SERVER}"
-                    echo "Branch: ${env.BRANCH_NAME}"
+                    
+                    echo "=================================================="
+                    echo "Branch:           ${env.BRANCH_NAME}"
+                    echo "Build for env:    ${env.TARGET_ENV}"
+                    echo "Target server:    ${env.TARGET_SERVER}"
+                    echo "Deployable:       ${env.IS_DEPLOYABLE_BRANCH}"
+                    echo "=================================================="
                 }
             }
         }
-
-        stage('Verify Node.js') {
+        
+        stage('Install Dependencies') {
             steps {
+                echo "🔧 Installing dependencies using npm ci for speed and consistency..."
                 sh '''
-                    echo "🔧 Verifying Node.js installation..."
-                    node --version
-                    npm --version
-                    echo "✅ Node.js and npm are ready!"
+                    if [ -f package-lock.json ]; then
+                        npm ci
+                    else
+                        npm install
+                    fi
                 '''
             }
         }
-
-        stage('Install Dependencies') {
-            steps {
-                script {
-                    sh '''
-                        if [ -f package-lock.json ]; then
-                            npm ci
-                        else
-                            npm install
-                        fi
-                    '''
-                }
-            }
-        }
-
+        
         stage('Code Quality & Security') {
             parallel {
                 stage('Lint') {
                     steps {
-                        withCredentials([
-                            string(credentialsId: 'supabase-public-url', variable: 'PUBLIC_SUPABASE_URL'),
-                            string(credentialsId: 'supabase-public-anon-key', variable: 'PUBLIC_SUPABASE_ANON_KEY'),
-                            string(credentialsId: 'supabase-private-service-role-key', variable: 'PRIVATE_SUPABASE_SERVICE_ROLE_KEY'),
-                            string(credentialsId: 'smtp-host', variable: 'SMTP_HOST'),
-                            string(credentialsId: 'smtp-port', variable: 'SMTP_PORT'),
-                            string(credentialsId: 'smtp-user', variable: 'SMTP_USER'),
-                            string(credentialsId: 'smtp-pass', variable: 'SMTP_PASS'),
-                            string(credentialsId: 'from-email', variable: 'FROM_EMAIL'),
-                        ]) {
-                            sh '''
-                                export PUBLIC_SUPABASE_URL=$PUBLIC_SUPABASE_URL
-                                export PUBLIC_SUPABASE_ANON_KEY=$PUBLIC_SUPABASE_ANON_KEY
-                                export PRIVATE_SUPABASE_SERVICE_ROLE_KEY=$PRIVATE_SUPABASE_SERVICE_ROLE_KEY
-                                export SMTP_HOST=$SMTP_HOST
-                                export SMTP_PORT=$SMTP_PORT
-                                export SMTP_USER=$SMTP_USER
-                                export SMTP_PASS=$SMTP_PASS
-                                export FROM_EMAIL=$FROM_EMAIL
-                                npm run check || echo "Linting completed with warnings"
-                            '''
-                        }
+                        sh 'npm run check || echo "Linting completed with warnings"'
                     }
                 }
-
                 stage('Security Audit') {
                     steps {
                         sh 'npm audit --audit-level moderate || echo "Security audit completed with warnings"'
@@ -120,34 +98,13 @@ pipeline {
                 }
             }
         }
-
+        
         stage('Build Application') {
             steps {
-                withCredentials([
-                    string(credentialsId: 'supabase-public-url', variable: 'PUBLIC_SUPABASE_URL'),
-                    string(credentialsId: 'supabase-public-anon-key', variable: 'PUBLIC_SUPABASE_ANON_KEY'),
-                    string(credentialsId: 'supabase-private-service-role-key', variable: 'PRIVATE_SUPABASE_SERVICE_ROLE_KEY'),
-                    string(credentialsId: 'smtp-host', variable: 'SMTP_HOST'),
-                    string(credentialsId: 'smtp-port', variable: 'SMTP_PORT'),
-                    string(credentialsId: 'smtp-user', variable: 'SMTP_USER'),
-                    string(credentialsId: 'smtp-pass', variable: 'SMTP_PASS'),
-                    string(credentialsId: 'from-email', variable: 'FROM_EMAIL'),
-                ]) {
-                    sh '''
-                        export PUBLIC_SUPABASE_URL=$PUBLIC_SUPABASE_URL
-                        export PUBLIC_SUPABASE_ANON_KEY=$PUBLIC_SUPABASE_ANON_KEY
-                        export PRIVATE_SUPABASE_SERVICE_ROLE_KEY=$PRIVATE_SUPABASE_SERVICE_ROLE_KEY
-                        export SMTP_HOST=$SMTP_HOST
-                        export SMTP_PORT=$SMTP_PORT
-                        export SMTP_USER=$SMTP_USER
-                        export SMTP_PASS=$SMTP_PASS
-                        export FROM_EMAIL=$FROM_EMAIL
-                        npm run build
-                    '''
-                }
+                sh 'npm run build'
             }
         }
-
+        
         stage('Build Docker Image') {
             steps {
                 sh """
@@ -157,28 +114,38 @@ pipeline {
                 """
             }
         }
-
+        
         stage('Test Docker Image') {
             steps {
-                sh """
-                    docker run -d --name test-${env.BUILD_NUMBER} -p 3001:3000 ${env.DOCKER_IMAGE}:${env.DOCKER_TAG}
-                    sleep 15
-                    curl -f http://localhost:3001/api/health || echo "Health check endpoint not available"
-                    docker stop test-${env.BUILD_NUMBER}
-                    docker rm test-${env.BUILD_NUMBER}
-                """
+                script {
+                    sh """
+                        docker run -d --name test-${env.BUILD_NUMBER} -p 3001:3000 ${env.DOCKER_IMAGE}:${env.DOCKER_TAG}
+                        
+                        # Poll the health endpoint for up to 30 seconds
+                        echo "Waiting for container to be healthy..."
+                        for i in {1..15}; do
+                            if curl -sf http://localhost:3001/api/health > /dev/null; then
+                                echo "✅ Container is healthy!"
+                                break
+                            fi
+                            echo "Still waiting... attempt \$i"
+                            sleep 2
+                        done
+                        
+                        # Final check that fails the stage if the container never became healthy
+                        curl -f http://localhost:3001/api/health
+                        
+                        docker stop test-${env.BUILD_NUMBER}
+                        docker rm test-${env.BUILD_NUMBER}
+                    """
+                }
             }
         }
-
+        
         stage('Push to Registry') {
             when {
                 allOf {
-                    anyOf {
-                        branch 'main'
-                        branch 'master'
-                        branch 'develop'
-                        branch 'staging'
-                    }
+                    expression { env.IS_DEPLOYABLE_BRANCH }
                     expression { env.DOCKER_REGISTRY != 'localhost' }
                 }
             }
@@ -194,154 +161,106 @@ pipeline {
                 }
             }
         }
-
+        
         stage('Deploy to Server') {
             when {
                 allOf {
-                    anyOf {
-                        branch 'main'
-                        branch 'master'
-                        branch 'develop'
-                        branch 'staging'
-                    }
+                    expression { env.IS_DEPLOYABLE_BRANCH }
                     expression { env.TARGET_SERVER != 'localhost' }
                 }
             }
             steps {
-                withCredentials([
-                    string(credentialsId: 'supabase-public-url', variable: 'PUBLIC_SUPABASE_URL'),
-                    string(credentialsId: 'supabase-public-anon-key', variable: 'PUBLIC_SUPABASE_ANON_KEY'),
-                    string(credentialsId: 'supabase-private-service-role-key', variable: 'PRIVATE_SUPABASE_SERVICE_ROLE_KEY'),
-                    string(credentialsId: 'smtp-host', variable: 'SMTP_HOST'),
-                    string(credentialsId: 'smtp-port', variable: 'SMTP_PORT'),
-                    string(credentialsId: 'smtp-user', variable: 'SMTP_USER'),
-                    string(credentialsId: 'smtp-pass', variable: 'SMTP_PASS'),
-                    string(credentialsId: 'from-email', variable: 'FROM_EMAIL'),
-                    sshUserPrivateKey(credentialsId: 'vps-ssh-key', keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER')
-                ]) {
+                withCredentials([sshUserPrivateKey(credentialsId: 'vps-ssh-key', keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER')]) {
                     sh """
-                        echo "Deploying to ${env.TARGET_ENV} server..."
+                        echo "Deploying to ${env.TARGET_ENV} server using Docker Compose..."
+                        
+                        # Copy the compose file to the server
                         scp -i \$SSH_KEY -o StrictHostKeyChecking=no docker-compose.yml \$SSH_USER@${env.TARGET_SERVER}:/opt/domify/
-                        scp -i \$SSH_KEY -o StrictHostKeyChecking=no deploy.sh \$SSH_USER@${env.TARGET_SERVER}:/opt/domify/
-                        ssh -i \$SSH_KEY -o StrictHostKeyChecking=no \$SSH_USER@${env.TARGET_SERVER} << EOF_REMOTE
+                        
+                        # Execute remote deployment script
+                        ssh -i \$SSH_KEY -o StrictHostKeyChecking=no \$SSH_USER@${env.TARGET_SERVER} << 'EOF_REMOTE'
                             cd /opt/domify
-                            docker pull ${env.DOCKER_REGISTRY}/${env.DOCKER_IMAGE}:${env.TARGET_ENV}
-                            docker stop ${env.CONTAINER_NAME} 2>/dev/null || true
-                            docker rm ${env.CONTAINER_NAME} 2>/dev/null || true
-                            docker run -d --name ${env.CONTAINER_NAME} --restart unless-stopped -p ${env.PORT}:3000 \\
-                                -e NODE_ENV=production \\
-                                -e PORT=3000 \\
-                                -e HOSTNAME=0.0.0.0 \\
-                                -e PUBLIC_SUPABASE_URL=\$PUBLIC_SUPABASE_URL \\
-                                -e PUBLIC_SUPABASE_ANON_KEY=\$PUBLIC_SUPABASE_ANON_KEY \\
-                                -e PRIVATE_SUPABASE_SERVICE_ROLE_KEY=\$PRIVATE_SUPABASE_SERVICE_ROLE_KEY \\
-                                -e SMTP_HOST=\$SMTP_HOST \\
-                                -e SMTP_PORT=\$SMTP_PORT \\
-                                -e SMTP_USER=\$SMTP_USER \\
-                                -e SMTP_PASS=\$SMTP_PASS \\
-                                -e FROM_EMAIL=\$FROM_EMAIL \\
-                                ${env.DOCKER_REGISTRY}/${env.DOCKER_IMAGE}:${env.TARGET_ENV}
+                            
+                            # Export Jenkins variables for docker-compose to use
+                            export DOCKER_REGISTRY=${env.DOCKER_REGISTRY}
+                            export DOCKER_IMAGE=${env.DOCKER_IMAGE}
+                            export TARGET_ENV=${env.TARGET_ENV}
+                            export CONTAINER_NAME=${env.CONTAINER_NAME}
+                            export PORT=${env.PORT}
+                            
+                            echo "Pulling new image: \${DOCKER_REGISTRY}/\${DOCKER_IMAGE}:\${TARGET_ENV}"
+                            docker-compose pull
+                            
+                            echo "Restarting service..."
+                            docker-compose up -d --force-recreate
+                            
+                            # Health check
+                            echo "Waiting for deployment to be healthy..."
                             sleep 10
                             if curl -f http://localhost:${env.PORT}/api/health > /dev/null 2>&1; then
                                 echo "✅ Deployment successful!"
                             else
-                                echo "❌ Deployment failed!"
-                                docker logs ${env.CONTAINER_NAME}
+                                echo "❌ Deployment failed! Checking logs..."
+                                docker-compose logs
                                 exit 1
                             fi
+                            
+                            echo "Cleaning up old Docker images..."
                             docker image prune -f
 EOF_REMOTE
                     """
                 }
             }
         }
-
+        
         stage('Smoke Tests') {
             when {
                 allOf {
-                    anyOf {
-                        branch 'main'
-                        branch 'master'
-                        branch 'develop'
-                        branch 'staging'
-                    }
+                    expression { env.IS_DEPLOYABLE_BRANCH }
                     expression { env.TARGET_SERVER != 'localhost' }
                 }
             }
             steps {
                 sh """
-                    curl -f http://${env.TARGET_SERVER}:${env.PORT}/ || echo "Main page test failed"
-                    curl -f http://${env.TARGET_SERVER}:${env.PORT}/api/health || echo "Health endpoint test failed"
+                    echo "Running smoke tests against http://${env.TARGET_SERVER}:${env.PORT}"
+                    sleep 5 # Give a moment for the server to be fully responsive
+                    curl -f http://${env.TARGET_SERVER}:${env.PORT}/ || echo "Smoke test failed: Main page"
+                    curl -f http://${env.TARGET_SERVER}:${env.PORT}/api/health || echo "Smoke test failed: Health endpoint"
                 """
             }
         }
-
+        
         stage('Deployment Skipped') {
             when {
-                anyOf {
-                    branch 'main'
-                    branch 'master'
-                    branch 'develop'
-                    branch 'staging'
-                }
-                expression { env.TARGET_SERVER == 'localhost' }
+                expression { env.IS_DEPLOYABLE_BRANCH && env.TARGET_SERVER == 'localhost' }
             }
             steps {
-                echo """
-                    ⚠️  Deployment skipped due to missing credentials:
-                    
-                    - TARGET_SERVER: ${env.TARGET_SERVER}
-                    - DOCKER_REGISTRY: ${env.DOCKER_REGISTRY}
-                    
-                    Please configure the following Jenkins credentials:
-                    - production-server-ip
-                    - staging-server-ip
-                    - docker-registry-url
-                    - docker-registry-credentials
-                    - vps-ssh-key
-                """
+                echo "⚠️  Deployment skipped because server credentials were not found."
             }
         }
-
+        
         stage('Cleanup') {
             steps {
-                sh """
-                    echo "🧹 Cleaning up Docker resources..."
-                    docker rmi ${env.DOCKER_IMAGE}:${env.DOCKER_TAG} || echo "Image not found or already removed"
-                    docker system prune -f || echo "Docker system prune failed"
-                    echo "Cleanup completed"
-                """
+                echo "🧹 Cleaning up local Docker resources..."
+                sh 'docker system prune -af || true'
             }
         }
     }
-
+    
     post {
         always {
-            echo "Pipeline completed. Build: ${env.BUILD_NUMBER ?: 'unknown'}"
+            script {
+                echo "Pipeline finished. Status: ${currentBuild.currentResult}"
+            }
         }
         success {
-            echo """
-                🎉 Deployment completed successfully!
-                
-                Environment: ${env.TARGET_ENV}
-                Build: ${env.BUILD_NUMBER}
-                Image: ${env.DOCKER_IMAGE}:${env.DOCKER_TAG}
-                Server: ${env.TARGET_SERVER}:${env.PORT}
-            """
+            echo "🎉 Deployment completed successfully! Environment: ${env.TARGET_ENV}, Server: ${env.TARGET_SERVER}:${env.PORT}"
         }
         failure {
-            echo """
-                ❌ Deployment failed!
-                
-                Build: ${env.BUILD_NUMBER}
-                Branch: ${env.BRANCH_NAME ?: 'unknown'}
-                Environment: ${env.TARGET_ENV ?: 'unknown'}
-                
-                Check the logs for more details.
-            """
+            echo "❌ Deployment FAILED! Build: ${env.BUILD_NUMBER}, Branch: ${env.BRANCH_NAME}, Environment: ${env.TARGET_ENV}."
         }
         unstable {
-            echo "Build completed with warnings. Check the logs for details."
+            echo "Build completed with warnings. Check logs for details."
         }
     }
 }

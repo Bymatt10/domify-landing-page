@@ -1,5 +1,5 @@
 import { createServerClient } from '@supabase/ssr'
-import { SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private'
+import { PRIVATE_SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private'
 
 const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY
@@ -16,7 +16,7 @@ if (!supabaseAnonKey) {
 
 // Cliente con service role para operaciones administrativas
 export const createSupabaseAdminClient = (fetch: typeof globalThis.fetch) => {
-    const supabaseServiceRoleKey = SUPABASE_SERVICE_ROLE_KEY;
+    const supabaseServiceRoleKey = PRIVATE_SUPABASE_SERVICE_ROLE_KEY;
 
     if (!supabaseServiceRoleKey) {
         console.error('PRIVATE_SUPABASE_SERVICE_ROLE_KEY no está definida en las variables de entorno');

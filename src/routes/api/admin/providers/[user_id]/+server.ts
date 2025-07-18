@@ -1,9 +1,10 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { SUPABASE_URL } from '$env/static/private';
-import { SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
+import { PUBLIC_SUPABASE_URL } from '$env/static/public';
+import { PRIVATE_SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
 
-// Using imported variables directly
+const SUPABASE_URL = PUBLIC_SUPABASE_URL;
+const SUPABASE_SERVICE_ROLE_KEY = PRIVATE_SUPABASE_SERVICE_ROLE_KEY;
 
 // GET - Obtener detalles de un proveedor específico
 export const GET: RequestHandler = async ({ params }) => {

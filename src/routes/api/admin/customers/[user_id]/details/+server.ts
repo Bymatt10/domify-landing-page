@@ -1,15 +1,15 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { SUPABASE_URL } from '$env/static/private';
-import { SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
+import { PUBLIC_SUPABASE_URL } from '$env/static/public';
+import { PRIVATE_SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
 
 // Función helper para hacer queries directas con fetch
 async function directSupabaseQuery(endpoint: string, options: any = {}) {
-	const url = `${SUPABASE_URL}/rest/v1/${endpoint}`;
+	const url = `${PUBLIC_SUPABASE_URL}/rest/v1/${endpoint}`;
 	const response = await fetch(url, {
 		headers: {
-			'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-			'apikey': SUPABASE_SERVICE_ROLE_KEY,
+			'Authorization': `Bearer ${PRIVATE_SUPABASE_SERVICE_ROLE_KEY}`,
+			'apikey': PRIVATE_SUPABASE_SERVICE_ROLE_KEY,
 			'Content-Type': 'application/json',
 			'Prefer': 'return=representation',
 			...options.headers
