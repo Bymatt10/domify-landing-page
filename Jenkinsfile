@@ -25,6 +25,11 @@ pipeline {
         stage('Environment Setup') {
             steps {
                 script {
+                    // Set BRANCH_NAME if not already set
+                    if (!env.BRANCH_NAME) {
+                        env.BRANCH_NAME = env.GIT_BRANCH ?: 'unknown'
+                    }
+                    
                     if (env.BRANCH_NAME == 'main' || env.BRANCH_NAME == 'master') {
                         env.TARGET_ENV = 'production'
                         env.TARGET_SERVER = env.PRODUCTION_SERVER
@@ -37,6 +42,7 @@ pipeline {
                     }
                     echo "Building for environment: ${env.TARGET_ENV}"
                     echo "Target server: ${env.TARGET_SERVER}"
+                    echo "Branch: ${env.BRANCH_NAME}"
                 }
             }
         }
@@ -87,9 +93,9 @@ pipeline {
             steps {
                 script {
                     sh """
-                        docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .
-                        docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_IMAGE}:latest
-                        docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_IMAGE}:${TARGET_ENV}
+                        docker build -t ${env.DOCKER_IMAGE}:${env.DOCKER_TAG} .
+                        docker tag ${env.DOCKER_IMAGE}:${env.DOCKER_TAG} ${env.DOCKER_IMAGE}:latest
+                        docker tag ${env.DOCKER_IMAGE}:${env.DOCKER_TAG} ${env.DOCKER_IMAGE}:${env.TARGET_ENV}
                     """
                 }
             }
@@ -99,11 +105,11 @@ pipeline {
             steps {
                 script {
                     sh """
-                        docker run -d --name test-${BUILD_NUMBER} -p 3001:3000 ${DOCKER_IMAGE}:${DOCKER_TAG}
+                        docker run -d --name test-${env.BUILD_NUMBER} -p 3001:3000 ${env.DOCKER_IMAGE}:${env.DOCKER_TAG}
                         sleep 15
                         curl -f http://localhost:3001/api/health || echo "Health check endpoint not available"
-                        docker stop test-${BUILD_NUMBER}
-                        docker rm test-${BUILD_NUMBER}
+                        docker stop test-${env.BUILD_NUMBER}
+                        docker rm test-${env.BUILD_NUMBER}
                     """
                 }
             }
@@ -122,11 +128,11 @@ pipeline {
                 script {
                     withCredentials([usernamePassword(credentialsId: 'docker-registry-credentials', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
                         sh """
-                            echo \$DOCKER_PASSWORD | docker login ${DOCKER_REGISTRY} -u \$DOCKER_USERNAME --password-stdin
-                            docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${DOCKER_TAG}
-                            docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${TARGET_ENV}
-                            docker push ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${DOCKER_TAG}
-                            docker push ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${TARGET_ENV}
+                            echo \$DOCKER_PASSWORD | docker login ${env.DOCKER_REGISTRY} -u \$DOCKER_USERNAME --password-stdin
+                            docker tag ${env.DOCKER_IMAGE}:${env.DOCKER_TAG} ${env.DOCKER_REGISTRY}/${env.DOCKER_IMAGE}:${env.DOCKER_TAG}
+                            docker tag ${env.DOCKER_IMAGE}:${env.DOCKER_TAG} ${env.DOCKER_REGISTRY}/${env.DOCKER_IMAGE}:${env.TARGET_ENV}
+                            docker push ${env.DOCKER_REGISTRY}/${env.DOCKER_IMAGE}:${env.DOCKER_TAG}
+                            docker push ${env.DOCKER_REGISTRY}/${env.DOCKER_IMAGE}:${env.TARGET_ENV}
                         """
                     }
                 }
@@ -146,23 +152,23 @@ pipeline {
                 script {
                     withCredentials([sshUserPrivateKey(credentialsId: 'vps-ssh-key', keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER')]) {
                         sh """
-                            echo "Deploying to ${TARGET_ENV} server..."
-                            scp -i \$SSH_KEY -o StrictHostKeyChecking=no docker-compose.yml \$SSH_USER@${TARGET_SERVER}:/opt/domify/
-                            scp -i \$SSH_KEY -o StrictHostKeyChecking=no deploy.sh \$SSH_USER@${TARGET_SERVER}:/opt/domify/
-                            ssh -i \$SSH_KEY -o StrictHostKeyChecking=no \$SSH_USER@${TARGET_SERVER} << 'EOF_REMOTE'
+                            echo "Deploying to ${env.TARGET_ENV} server..."
+                            scp -i \$SSH_KEY -o StrictHostKeyChecking=no docker-compose.yml \$SSH_USER@${env.TARGET_SERVER}:/opt/domify/
+                            scp -i \$SSH_KEY -o StrictHostKeyChecking=no deploy.sh \$SSH_USER@${env.TARGET_SERVER}:/opt/domify/
+                            ssh -i \$SSH_KEY -o StrictHostKeyChecking=no \$SSH_USER@${env.TARGET_SERVER} << 'EOF_REMOTE'
                                 cd /opt/domify
-                                docker pull ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${TARGET_ENV}
-                                docker stop ${CONTAINER_NAME} 2>/dev/null || true
-                                docker rm ${CONTAINER_NAME} 2>/dev/null || true
-                                docker run -d --name ${CONTAINER_NAME} --restart unless-stopped -p ${PORT}:3000 \\
+                                docker pull ${env.DOCKER_REGISTRY}/${env.DOCKER_IMAGE}:${env.TARGET_ENV}
+                                docker stop ${env.CONTAINER_NAME} 2>/dev/null || true
+                                docker rm ${env.CONTAINER_NAME} 2>/dev/null || true
+                                docker run -d --name ${env.CONTAINER_NAME} --restart unless-stopped -p ${env.PORT}:3000 \\
                                     -e NODE_ENV=production -e PORT=3000 -e HOSTNAME=0.0.0.0 \\
-                                    ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${TARGET_ENV}
+                                    ${env.DOCKER_REGISTRY}/${env.DOCKER_IMAGE}:${env.TARGET_ENV}
                                 sleep 10
-                                if curl -f http://localhost:${PORT}/api/health > /dev/null 2>&1; then
+                                if curl -f http://localhost:${env.PORT}/api/health > /dev/null 2>&1; then
                                     echo "✅ Deployment successful!"
                                 else
                                     echo "❌ Deployment failed!"
-                                    docker logs ${CONTAINER_NAME}
+                                    docker logs ${env.CONTAINER_NAME}
                                     exit 1
                                 fi
                                 docker image prune -f
@@ -185,8 +191,8 @@ EOF_REMOTE
             steps {
                 script {
                     sh """
-                        curl -f http://${TARGET_SERVER}:${PORT}/ || echo "Main page test failed"
-                        curl -f http://${TARGET_SERVER}:${PORT}/api/health || echo "Health endpoint test failed"
+                        curl -f http://${env.TARGET_SERVER}:${env.PORT}/ || echo "Main page test failed"
+                        curl -f http://${env.TARGET_SERVER}:${env.PORT}/api/health || echo "Health endpoint test failed"
                     """
                 }
             }
@@ -197,7 +203,7 @@ EOF_REMOTE
         always {
             script {
                 sh """
-                    docker rmi ${DOCKER_IMAGE}:${DOCKER_TAG} || true
+                    docker rmi ${env.DOCKER_IMAGE}:${env.DOCKER_TAG} || true
                     docker system prune -f || true
                 """
             }
@@ -209,8 +215,8 @@ EOF_REMOTE
                 
                 Environment: ${env.TARGET_ENV}
                 Build: ${env.BUILD_NUMBER}
-                Image: ${DOCKER_IMAGE}:${DOCKER_TAG}
-                Server: ${env.TARGET_SERVER}:${PORT}
+                Image: ${env.DOCKER_IMAGE}:${env.DOCKER_TAG}
+                Server: ${env.TARGET_SERVER}:${env.PORT}
             """
         }
         
@@ -219,8 +225,8 @@ EOF_REMOTE
                 ❌ Deployment failed!
                 
                 Build: ${env.BUILD_NUMBER}
-                Branch: ${env.BRANCH_NAME}
-                Environment: ${env.TARGET_ENV}
+                Branch: ${env.BRANCH_NAME ?: 'unknown'}
+                Environment: ${env.TARGET_ENV ?: 'unknown'}
                 
                 Check the logs for more details.
             """
