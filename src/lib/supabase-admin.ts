@@ -1,19 +1,19 @@
 import { createClient } from '@supabase/supabase-js';
-import { PUBLIC_SUPABASE_URL } from '$env/static/public';
-import { PRIVATE_SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
+import { SUPABASE_URL } from '$env/static/private';
+import { SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
 
-if (!PUBLIC_SUPABASE_URL) {
-    throw new Error('PUBLIC_SUPABASE_URL is not defined');
+if (!SUPABASE_URL) {
+    throw new Error('SUPABASE_URL is not defined');
 }
 
-if (!PRIVATE_SUPABASE_SERVICE_ROLE_KEY) {
-    throw new Error('PRIVATE_SUPABASE_SERVICE_ROLE_KEY is not defined');
+if (!SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error('SUPABASE_SERVICE_ROLE_KEY is not defined');
 }
 
 // Cliente administrativo con service role - bypass RLS
 export const supabaseAdmin = createClient(
-    PUBLIC_SUPABASE_URL,
-    PRIVATE_SUPABASE_SERVICE_ROLE_KEY,
+    SUPABASE_URL,
+    SUPABASE_SERVICE_ROLE_KEY,
     {
         auth: {
             autoRefreshToken: false,
