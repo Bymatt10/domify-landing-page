@@ -69,6 +69,7 @@
 					<a href="/" class="text-gray-900 text-base font-medium hover:text-primary-600 transition-colors duration-200 whitespace-nowrap">Inicio</a>
 					<a href="/services" class="text-gray-900 text-base font-medium hover:text-primary-600 transition-colors duration-200 whitespace-nowrap">Servicios</a>
 					<a href="/about" class="text-gray-900 text-base font-medium hover:text-primary-600 transition-colors duration-200 whitespace-nowrap">Quiénes somos</a>
+					<a href="/contact" class="text-gray-900 text-base font-medium hover:text-primary-600 transition-colors duration-200 whitespace-nowrap">Contacto</a>
 					{#if session}
 						{#if finalIsAdmin}
 							<a href="/admin" class="text-gray-900 text-base font-medium hover:text-primary-600 transition-colors duration-200 whitespace-nowrap">Panel Admin</a>
@@ -134,6 +135,7 @@
 			<a href="/" class="block px-4 py-2 text-gray-900 hover:text-primary-600 hover:bg-gray-50 transition-colors duration-200">Inicio</a>
 			<a href="/services" class="block px-4 py-2 text-gray-900 hover:text-primary-600 hover:bg-gray-50 transition-colors duration-200">Servicios</a>
 			<a href="/about" class="block px-4 py-2 text-gray-900 hover:text-primary-600 hover:bg-gray-50 transition-colors duration-200">Quiénes somos</a>
+			<a href="/contact" class="block px-4 py-2 text-gray-900 hover:text-primary-600 hover:bg-gray-50 transition-colors duration-200">Contacto</a>
 			{#if session}
 				{#if finalIsAdmin}
 					<a href="/admin" class="block px-4 py-2 text-gray-900 hover:text-primary-600 hover:bg-gray-50 transition-colors duration-200">Panel Admin</a>

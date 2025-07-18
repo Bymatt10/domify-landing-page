@@ -6,7 +6,7 @@ export default defineConfig({
 	css: {
 		postcss: './postcss.config.js',
 	},
-	envPrefix: ['PUBLIC_', 'VITE_', 'MAILER_', 'SMTP_', 'FROM_'],
+	envPrefix: ['PUBLIC_', 'VITE_', 'MAILER_', 'SMTP_', 'FROM_', 'SENDGRID_'],
 	define: {
 		// Make environment variables available to the server
 		'process.env.MAILER_SMTP_HOST': JSON.stringify(process.env.MAILER_SMTP_HOST),
@@ -18,6 +18,7 @@ export default defineConfig({
 		'process.env.SMTP_USER': JSON.stringify(process.env.SMTP_USER),
 		'process.env.SMTP_PASS': JSON.stringify(process.env.SMTP_PASS),
 		'process.env.FROM_EMAIL': JSON.stringify(process.env.FROM_EMAIL),
+		'process.env.SENDGRID_API_KEY': JSON.stringify(process.env.SENDGRID_API_KEY),
 	},
 	server: {
 		port: 5173,

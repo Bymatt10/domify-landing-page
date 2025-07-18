@@ -3,6 +3,7 @@
 	import { invalidateAll } from '$app/navigation';
 	import { supabase } from '$lib/supabase';
 	import Navbar from '$lib/components/Navbar.svelte';
+	import NotificationContainer from '$lib/components/NotificationContainer.svelte';
 	import { injectSpeedInsights } from '@vercel/speed-insights/sveltekit';
 	import { browser } from '$app/environment';
 	import '../app.css';
@@ -67,6 +68,7 @@
 	<main class="flex-1 w-full bg-gray-50">
 		<slot />
 	</main>
+	<NotificationContainer />
 	<footer class="bg-primary-600 text-white py-12 border-t border-gray-200">
 		<div class="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
 			<div class="flex flex-col gap-4">

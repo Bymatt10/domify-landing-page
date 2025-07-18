@@ -146,7 +146,7 @@ CREATE TABLE payments (
 -- Reseñas
 CREATE TABLE reviews (
     id SERIAL PRIMARY KEY,
-    booking_id UUID UNIQUE NOT NULL REFERENCES bookings(id),
+    booking_id UUID REFERENCES bookings(id),
     reviewer_user_id UUID NOT NULL REFERENCES auth.users(id),
     provider_profile_id UUID NOT NULL REFERENCES provider_profiles(id),
     rating INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5),

@@ -34,6 +34,8 @@
 			comment: string;
 			reviewer_name: string;
 			created_at: string;
+			updated_at?: string;
+			reviewer_user_id?: string;
 			can_review: boolean;
 		}>;
 	};
@@ -174,7 +176,36 @@
 		applyFilters();
 	}
 
-	function openProfileModal(provider: Provider) {
+	async function openProfileModal(provider: Provider) {
+		// Resetear estado de contacto para el nuevo proveedor
+		hasContactedProvider = false;
+		showReviewForm = false;
+		newReview = { rating: 5, comment: '' };
+		
+		// Cargar reseñas reales del proveedor
+		try {
+			const response = await fetch(`/api/reviews?provider_id=${provider.id}`);
+			const result = await response.json();
+			
+			if (response.ok && result.data?.reviews) {
+				// Formatear las reseñas para mostrar
+				const formattedReviews = result.data.reviews.map((review: any) => ({
+					...review,
+					reviewer_name: `${review.reviewer?.first_name || ''} ${review.reviewer?.last_name || ''}`.trim() || 'Usuario Anónimo'
+				}));
+				provider.reviews = formattedReviews;
+			} else {
+				provider.reviews = [];
+			}
+		} catch (error) {
+			console.error('Error loading reviews:', error);
+			provider.reviews = [];
+			// Mostrar mensaje de error si es un problema de base de datos
+			if (error instanceof Error && error.message.includes('relationship')) {
+				console.warn('La tabla reviews necesita ser actualizada. Ejecuta los comandos SQL en /api/debug/fix-reviews-table');
+			}
+		}
+		
 		// Agregar datos de ejemplo para demostración (en implementación real vendrían de la API)
 		const enhancedProvider = {
 			...provider,
@@ -266,10 +297,22 @@
 	}
 
 	function closeProfileModal() {
+		// Si hay un comentario en progreso, preguntar antes de cerrar
+		if (showReviewForm && newReview.comment.trim()) {
+			if (confirm('¿Estás seguro de que quieres cerrar? Perderás el comentario que estabas escribiendo.')) {
+				closeModalConfirmed();
+			}
+		} else {
+			closeModalConfirmed();
+		}
+	}
+
+	function closeModalConfirmed() {
 		showProfileModal = false;
 		selectedProvider = null;
 		showReviewForm = false;
 		showAllPortfolio = false;
+		hasContactedProvider = false; // Resetear el estado de contacto solo al cerrar completamente
 		newReview = { rating: 5, comment: '' };
 		// Restaurar scroll del body
 		if (typeof window !== 'undefined') {
@@ -277,9 +320,19 @@
 		}
 	}
 
+	function handleContactProvider() {
+		hasContactedProvider = true;
+		// Aquí puedes agregar lógica adicional para el contacto
+		// Por ejemplo, abrir WhatsApp, llamar, o mostrar un formulario de contacto
+		console.log('Usuario ha contactado al proveedor:', selectedProvider?.business_name);
+	}
+
 	function toggleReviewForm() {
 		showReviewForm = !showReviewForm;
 		if (showReviewForm) {
+			newReview = { rating: 5, comment: '' };
+		} else {
+			// Al cancelar el formulario, mantener el estado de contacto pero limpiar el comentario
 			newReview = { rating: 5, comment: '' };
 		}
 	}
@@ -289,18 +342,28 @@
 		
 		submittingReview = true;
 		try {
-			// Aquí iría la llamada a la API para enviar el review
-			// Por ahora simulamos el comportamiento
-			await new Promise(resolve => setTimeout(resolve, 1000));
-			
-			// Agregar el review localmente (en una implementación real vendría de la API)
+			const response = await fetch('/api/reviews', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({
+					provider_id: selectedProvider.id,
+					rating: newReview.rating,
+					comment: newReview.comment
+				})
+			});
+
+			const result = await response.json();
+
+			if (!response.ok) {
+				throw new Error(result.error || 'Error al enviar la reseña');
+			}
+
+			// Agregar la nueva reseña al inicio de la lista
 			const newReviewData = {
-				id: Date.now().toString(),
-				rating: newReview.rating,
-				comment: newReview.comment,
-				reviewer_name: 'Usuario Actual', // En implementación real vendría del usuario logueado
-				created_at: new Date().toISOString(),
-				can_review: false
+				...result.data.review,
+				reviewer_name: `${result.data.review.reviewer?.first_name || ''} ${result.data.review.reviewer?.last_name || ''}`.trim() || 'Usuario Anónimo'
 			};
 			
 			if (selectedProvider.reviews) {
@@ -309,19 +372,20 @@
 				selectedProvider.reviews = [newReviewData];
 			}
 			
-			// Recalcular rating promedio
-			if (selectedProvider.reviews.length > 0) {
-				const avgRating = selectedProvider.reviews.reduce((sum, review) => sum + review.rating, 0) / selectedProvider.reviews.length;
-				selectedProvider.rating = Math.round(avgRating * 10) / 10;
-				selectedProvider.total_reviews = selectedProvider.reviews.length;
-			}
+			// Actualizar estadísticas del proveedor
+			selectedProvider.rating = result.data.review.provider_profile?.average_rating || selectedProvider.rating;
+			selectedProvider.total_reviews = result.data.review.provider_profile?.total_reviews || selectedProvider.total_reviews;
 			
 			// Resetear formulario
 			showReviewForm = false;
 			newReview = { rating: 5, comment: '' };
 			
+			// Mostrar mensaje de éxito
+			notifications.success('¡Reseña enviada exitosamente!');
+			
 		} catch (error) {
 			console.error('Error submitting review:', error);
+			notifications.error(error instanceof Error ? error.message : 'Error al enviar la reseña');
 		} finally {
 			submittingReview = false;
 		}
@@ -334,6 +398,96 @@
 			month: 'long',
 			day: 'numeric'
 		});
+	}
+
+	// Función para editar una reseña
+	function editReview(review: any) {
+		editingReview = {
+			id: review.id,
+			rating: review.rating,
+			comment: review.comment
+		};
+	}
+
+	// Función para actualizar una reseña
+	async function updateReview(reviewId: string) {
+		if (!editingReview || !editingReview.comment.trim()) return;
+		
+		submittingReview = true;
+		try {
+			const response = await fetch(`/api/reviews/${reviewId}`, {
+				method: 'PUT',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({
+					rating: editingReview.rating,
+					comment: editingReview.comment
+				})
+			});
+
+			const result = await response.json();
+
+			if (!response.ok) {
+				throw new Error(result.error || 'Error al actualizar la reseña');
+			}
+
+			// Actualizar la reseña en la lista
+			if (selectedProvider?.reviews) {
+				const reviewIndex = selectedProvider.reviews.findIndex((r: any) => r.id === reviewId);
+				if (reviewIndex !== -1) {
+					selectedProvider.reviews[reviewIndex] = {
+						...selectedProvider.reviews[reviewIndex],
+						rating: editingReview.rating,
+						comment: editingReview.comment,
+						updated_at: new Date().toISOString()
+					};
+				}
+			}
+			
+			// Resetear formulario de edición
+			editingReview = null;
+			
+			// Mostrar mensaje de éxito
+			notifications.success('¡Reseña actualizada exitosamente!');
+			
+		} catch (error) {
+			console.error('Error updating review:', error);
+			notifications.error(error instanceof Error ? error.message : 'Error al actualizar la reseña');
+		} finally {
+			submittingReview = false;
+		}
+	}
+
+	// Función para eliminar una reseña
+	async function deleteReview(reviewId: string) {
+		if (!confirm('¿Estás seguro de que quieres eliminar esta reseña? Esta acción no se puede deshacer.')) {
+			return;
+		}
+		
+		try {
+			const response = await fetch(`/api/reviews/${reviewId}`, {
+				method: 'DELETE'
+			});
+
+			const result = await response.json();
+
+			if (!response.ok) {
+				throw new Error(result.error || 'Error al eliminar la reseña');
+			}
+
+			// Eliminar la reseña de la lista
+			if (selectedProvider?.reviews) {
+				selectedProvider.reviews = selectedProvider.reviews.filter((r: any) => r.id !== reviewId);
+			}
+			
+			// Mostrar mensaje de éxito
+			notifications.success('¡Reseña eliminada exitosamente!');
+			
+		} catch (error) {
+			console.error('Error deleting review:', error);
+			notifications.error(error instanceof Error ? error.message : 'Error al eliminar la reseña');
+		}
 	}
 
 	function formatCategoryName(slug: string): string {
@@ -366,6 +520,13 @@
 		comment: ''
 	};
 	let submittingReview = false;
+	let hasContactedProvider = false; // Nuevo estado para rastrear si el usuario ha contactado al proveedor
+	let isAuthenticated = false; // Estado para verificar si el usuario está autenticado
+	let editingReview: any = null; // Para editar reseñas
+	let currentUser: any = null; // Usuario actual
+
+	// Importar el store de notificaciones
+	import { notifications } from '$lib/stores/notifications';
 
 	// Sistema de portafolio
 	let showAllPortfolio = false;
@@ -399,9 +560,21 @@
 		});
 	}
 
-	onMount(() => {
+	onMount(async () => {
 		fetchProviders();
 		loadCategoryServices();
+		
+		// Verificar si el usuario está autenticado y obtener información
+		try {
+			const response = await fetch('/api/me');
+			if (response.ok) {
+				const userData = await response.json();
+				isAuthenticated = true;
+				currentUser = userData.user;
+			}
+		} catch (error) {
+			console.error('Error checking authentication:', error);
+		}
 	});
 
 	function loadCategoryServices() {
@@ -1586,12 +1759,49 @@
 								<h3 class="text-2xl font-semibold text-secondary-900">
 									Comentarios ({selectedProvider.reviews?.length || 0})
 								</h3>
-								<button 
-									class="bg-primary-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-primary-700 transition-colors duration-200"
-									on:click={toggleReviewForm}
-								>
-									{showReviewForm ? 'Cancelar' : 'Escribir Comentario'}
-								</button>
+								{#if !isAuthenticated}
+									<div class="flex items-center justify-between bg-orange-50 p-3 rounded-lg">
+										<div class="flex items-center gap-2 text-orange-600 text-sm">
+											<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+											</svg>
+											Debes iniciar sesión para poder comentar
+										</div>
+										<a href="/auth/login" class="bg-orange-600 text-white px-3 py-1 rounded text-sm hover:bg-orange-700 transition-colors">
+											Iniciar Sesión
+										</a>
+									</div>
+								{:else if hasContactedProvider}
+									<button 
+										class="bg-primary-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-primary-700 transition-colors duration-200 flex items-center gap-2"
+										on:click={toggleReviewForm}
+									>
+										{#if showReviewForm}
+											Cancelar
+										{:else}
+											<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+											</svg>
+											Escribir Comentario
+										{/if}
+									</button>
+								{:else}
+									<div class="flex items-center gap-2 text-secondary-600 text-sm">
+										<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+										</svg>
+										Contacta al proveedor para poder comentar
+									</div>
+								{/if}
+								
+								{#if hasContactedProvider}
+									<div class="flex items-center gap-2 text-green-600 text-sm mt-2 bg-green-50 p-2 rounded-lg">
+										<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+										</svg>
+										¡Ya puedes comentar sobre este proveedor! Tu comentario se mantendrá mientras el perfil esté abierto.
+									</div>
+								{/if}
 							</div>
 							
 							<!-- Formulario de Nuevo Comentario -->
@@ -1645,7 +1855,7 @@
 											class="border border-secondary-300 text-secondary-700 px-6 py-2 rounded-lg font-medium hover:bg-secondary-50 transition-colors duration-200"
 											on:click={toggleReviewForm}
 										>
-											Cancelar
+											Cancelar (mantener contacto)
 										</button>
 									</div>
 								</div>
@@ -1659,23 +1869,112 @@
 											<div class="flex items-start justify-between mb-3">
 												<div>
 													<h5 class="font-semibold text-secondary-900">{review.reviewer_name}</h5>
-													<p class="text-sm text-secondary-500">{formatDate(review.created_at)}</p>
+													<p class="text-sm text-secondary-500">
+														{formatDate(review.created_at)}
+														{#if review.updated_at && review.updated_at !== review.created_at}
+															<span class="text-xs text-secondary-400 ml-2">(editado)</span>
+														{/if}
+													</p>
 												</div>
-												<div class="flex items-center gap-1">
-													{#each Array(5) as _, i}
-														<svg 
-															class="w-4 h-4"
-															class:text-yellow-400={i < review.rating}
-															class:text-secondary-300={i >= review.rating}
-															fill="currentColor" 
-															viewBox="0 0 20 20"
-														>
-															<path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+												<div class="flex items-center gap-2">
+													<div class="flex items-center gap-1">
+														{#each Array(5) as _, i}
+															<svg 
+																class="w-4 h-4"
+																class:text-yellow-400={i < review.rating}
+																class:text-secondary-300={i >= review.rating}
+																fill="currentColor" 
+																viewBox="0 0 20 20"
+															>
+																<path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
 															</svg>
-													{/each}
+														{/each}
+													</div>
+													
+													<!-- Botones de editar/eliminar solo para el autor -->
+													{#if isAuthenticated && review.reviewer_user_id === currentUser?.id}
+														<div class="flex items-center gap-1 ml-2">
+															<button 
+																class="text-secondary-400 hover:text-primary-600 transition-colors p-1"
+																on:click={() => editReview(review)}
+																title="Editar comentario"
+															>
+																<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+																	<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+																</svg>
+															</button>
+															<button 
+																class="text-secondary-400 hover:text-red-600 transition-colors p-1"
+																on:click={() => deleteReview(review.id)}
+																title="Eliminar comentario"
+															>
+																<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+																	<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+																</svg>
+															</button>
+														</div>
+													{/if}
 												</div>
 											</div>
-											<p class="text-secondary-700 leading-relaxed">{review.comment}</p>
+											
+											<!-- Mostrar formulario de edición o comentario normal -->
+											{#if editingReview && editingReview.id === review.id}
+												<div class="bg-secondary-50 rounded-lg p-4 mb-3">
+													<h6 class="font-medium text-secondary-900 mb-3">Editar comentario</h6>
+													
+													<!-- Rating -->
+													<div class="mb-3">
+														<label class="block text-sm font-medium text-secondary-700 mb-1">Calificación</label>
+														<div class="flex items-center gap-1">
+															{#each Array(5) as _, i}
+																<button 
+																	class="text-xl transition-colors duration-200"
+																	class:text-yellow-400={i < editingReview.rating}
+																	class:text-secondary-300={i >= editingReview.rating}
+																	on:click={() => editingReview.rating = i + 1}
+																>
+																	★
+																</button>
+															{/each}
+															<span class="ml-2 text-sm text-secondary-600">({editingReview.rating} estrella{editingReview.rating !== 1 ? 's' : ''})</span>
+														</div>
+													</div>
+													
+													<!-- Comentario -->
+													<div class="mb-3">
+														<label class="block text-sm font-medium text-secondary-700 mb-1">Comentario</label>
+														<textarea 
+															bind:value={editingReview.comment}
+															placeholder="Escribe tu experiencia con este proveedor..."
+															class="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none"
+															rows="3"
+														></textarea>
+													</div>
+													
+													<!-- Botones -->
+													<div class="flex gap-2">
+														<button 
+															class="bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors duration-200 disabled:opacity-50"
+															disabled={submittingReview || !editingReview.comment.trim()}
+															on:click={() => updateReview(review.id)}
+														>
+															{#if submittingReview}
+																Guardando...
+															{:else}
+																Guardar Cambios
+															{/if}
+														</button>
+														<button 
+															class="border border-secondary-300 text-secondary-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-secondary-50 transition-colors duration-200"
+															on:click={() => editingReview = null}
+														>
+															Cancelar
+														</button>
+													</div>
+												</div>
+											{:else}
+												<p class="text-secondary-700 leading-relaxed">{review.comment}</p>
+											{/if}
 										</div>
 									{/each}
 								</div>
@@ -1695,23 +1994,47 @@
 						<!-- Botones de Acción -->
 						<div class="border-t border-secondary-200 pt-6">
 							<div class="flex flex-col sm:flex-row gap-4">
-								<button class="flex-1 bg-green-600 text-white py-4 px-6 rounded-xl font-semibold hover:bg-green-700 transition-colors duration-200 flex items-center justify-center gap-2">
-									<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
-									</svg>
-									Llamar Ahora
-								</button>
-								<button class="flex-1 bg-primary-600 text-white py-4 px-6 rounded-xl font-semibold hover:bg-primary-700 transition-colors duration-200 flex items-center justify-center gap-2">
+								{#if selectedProvider?.phone}
+									<button 
+										class="flex-1 bg-green-600 text-white py-4 px-6 rounded-xl font-semibold hover:bg-green-700 transition-colors duration-200 flex items-center justify-center gap-2"
+										on:click={() => {
+											handleContactProvider();
+											if (selectedProvider?.phone) {
+												window.location.href = `tel:${selectedProvider.phone}`;
+											}
+										}}
+									>
+										<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
+										</svg>
+										Llamar Ahora
+									</button>
+								{/if}
+								<button 
+									class="flex-1 bg-primary-600 text-white py-4 px-6 rounded-xl font-semibold hover:bg-primary-700 transition-colors duration-200 flex items-center justify-center gap-2"
+									on:click={() => {
+										handleContactProvider();
+										// Aquí puedes agregar lógica para WhatsApp o mensaje
+										if (selectedProvider?.phone && selectedProvider?.business_name) {
+											const message = `Hola ${selectedProvider.business_name}, me interesa contratar sus servicios. ¿Podría proporcionarme más información?`;
+											const encodedMessage = encodeURIComponent(message);
+											window.open(`https://wa.me/${selectedProvider.phone.replace(/[^0-9]/g, '')}?text=${encodedMessage}`, '_blank');
+										}
+									}}
+								>
 									<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-3.582 8-8 8a8.013 8.013 0 01-2.248-.307l-3.5 2.151.643-2.818A8.003 8.003 0 013 12c0-4.418 3.582-8 8-8s8 3.582 8 8z"></path>
 									</svg>
-									Enviar Mensaje
+									{hasContactedProvider ? '✓ Contactado' : 'Contactar'}
 								</button>
-								<button class="flex-1 border-2 border-primary-600 text-primary-600 py-4 px-6 rounded-xl font-semibold hover:bg-primary-50 transition-colors duration-200 flex items-center justify-center gap-2">
+								<button 
+									class="flex-1 border-2 border-primary-600 text-primary-600 py-4 px-6 rounded-xl font-semibold hover:bg-primary-50 transition-colors duration-200 flex items-center justify-center gap-2"
+									on:click={handleContactProvider}
+								>
 									<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3a4 4 0 118 0v4m-4 6v4m-6-2h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"></path>
 									</svg>
-									Solicitar Cotización
+									{hasContactedProvider ? '✓ Cotización Solicitada' : 'Solicitar Cotización'}
 								</button>
 							</div>
 						</div>

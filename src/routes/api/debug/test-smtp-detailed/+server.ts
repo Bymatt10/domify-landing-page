@@ -1,16 +1,28 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import nodemailer from 'nodemailer';
-import { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, FROM_EMAIL } from '$env/static/private';
 
 export const GET: RequestHandler = async () => {
     try {
-        console.log('🔧 Detailed SMTP Test Starting...');
-        console.log('Configuration:');
-        console.log('- SMTP_HOST:', SMTP_HOST);
-        console.log('- SMTP_PORT:', SMTP_PORT);
-        console.log('- SMTP_USER:', SMTP_USER);
-        console.log('- FROM_EMAIL:', FROM_EMAIL);
+        const SMTP_HOST = import.meta.env.SMTP_HOST;
+        const SMTP_PORT = import.meta.env.SMTP_PORT;
+        const SMTP_USER = import.meta.env.SMTP_USER;
+        const SMTP_PASS = import.meta.env.SMTP_PASS;
+        const FROM_EMAIL = import.meta.env.FROM_EMAIL;
+
+        // Verificar configuración
+        if (!SMTP_HOST || !SMTP_PORT || !SMTP_USER || !SMTP_PASS) {
+            return json({
+                error: 'Configuración SMTP incompleta',
+                config: {
+                    host: SMTP_HOST || 'NOT SET',
+                    port: SMTP_PORT || 'NOT SET',
+                    user: SMTP_USER ? SMTP_USER.substring(0, 10) + '...' : 'NOT SET',
+                    pass_configured: !!SMTP_PASS,
+                    from_email: FROM_EMAIL || 'NOT SET'
+                }
+            }, { status: 500 });
+        }
 
         // Crear transporter
         const transporter = nodemailer.createTransport({
@@ -19,82 +31,86 @@ export const GET: RequestHandler = async () => {
             secure: false,
             auth: {
                 user: SMTP_USER,
-                pass: SMTP_PASS,
+                pass: SMTP_PASS
             },
-            tls: {
-                rejectUnauthorized: false
-            }
+            debug: true, // Habilitar debug
+            logger: true  // Habilitar logs
         });
 
         // Verificar conexión
-        console.log('🔍 Testing SMTP connection...');
+        let verifyResult;
         try {
-            await transporter.verify();
-            console.log('✅ SMTP connection verified successfully');
+            verifyResult = await transporter.verify();
         } catch (verifyError) {
-            console.error('❌ SMTP verification failed:', verifyError);
             return json({
-                success: false,
-                error: 'SMTP connection failed',
-                details: verifyError
+                error: 'Error al verificar conexión SMTP',
+                verify_error: verifyError instanceof Error ? verifyError.message : 'Unknown error',
+                config: {
+                    host: SMTP_HOST,
+                    port: SMTP_PORT,
+                    user: SMTP_USER.substring(0, 10) + '...',
+                    from_email: FROM_EMAIL
+                }
             }, { status: 500 });
         }
 
-        // Intentar enviar email
-        console.log('📧 Attempting to send test email...');
-        const mailOptions = {
-            from: `"Domify Test" <${FROM_EMAIL}>`,
-            to: 'matthewreyesvanegas46@gmail.com',
-            subject: '🧪 Prueba SMTP Detallada - ' + new Date().toLocaleTimeString(),
+        // Enviar email de prueba
+        const testEmail = {
+            from: `"Test SMTP" <${FROM_EMAIL}>`,
+            to: 'test@example.com',
+            subject: 'Test SMTP - ' + new Date().toISOString(),
+            text: 'Este es un email de prueba para verificar la configuración SMTP.',
             html: `
-                <h2>🧪 Prueba SMTP Detallada</h2>
-                <p><strong>Desde:</strong> ${FROM_EMAIL}</p>
-                <p><strong>Para:</strong> matthewreyesvanegas46@gmail.com</p>
-                <p><strong>Hora:</strong> ${new Date().toLocaleString()}</p>
-                <p><strong>Servidor:</strong> ${SMTP_HOST}:${SMTP_PORT}</p>
-                <p>Si recibes este email, la configuración funciona correctamente.</p>
-            `,
-            text: `Prueba SMTP desde ${FROM_EMAIL} hacia matthewreyesvanegas46@gmail.com`
+                <h2>Test SMTP - Domify</h2>
+                <p>Este es un email de prueba para verificar la configuración SMTP.</p>
+                <p><strong>Fecha:</strong> ${new Date().toLocaleString('es-ES')}</p>
+                <p><strong>Host:</strong> ${SMTP_HOST}</p>
+                <p><strong>Puerto:</strong> ${SMTP_PORT}</p>
+                <p><strong>Usuario:</strong> ${SMTP_USER.substring(0, 10)}...</p>
+            `
         };
 
-        console.log('📤 Sending email with options:', {
-            from: mailOptions.from,
-            to: mailOptions.to,
-            subject: mailOptions.subject
-        });
-
-        const info = await transporter.sendMail(mailOptions);
-        
-        console.log('✅ Email sent successfully!');
-        console.log('Message ID:', info.messageId);
-        console.log('Response:', info.response);
+        let sendResult;
+        try {
+            sendResult = await transporter.sendMail(testEmail);
+        } catch (sendError) {
+            return json({
+                error: 'Error al enviar email de prueba',
+                send_error: sendError instanceof Error ? sendError.message : 'Unknown error',
+                verify_success: verifyResult,
+                config: {
+                    host: SMTP_HOST,
+                    port: SMTP_PORT,
+                    user: SMTP_USER.substring(0, 10) + '...',
+                    from_email: FROM_EMAIL
+                }
+            }, { status: 500 });
+        }
 
         return json({
             success: true,
-            message: 'Email enviado exitosamente',
-            details: {
-                messageId: info.messageId,
-                response: info.response,
-                from: FROM_EMAIL,
-                to: 'matthewreyesvanegas46@gmail.com',
-                timestamp: new Date().toISOString()
-            }
+            message: 'Email de prueba enviado exitosamente',
+            verify_result: verifyResult,
+            send_result: {
+                messageId: sendResult.messageId,
+                response: sendResult.response,
+                accepted: sendResult.accepted,
+                rejected: sendResult.rejected
+            },
+            config: {
+                host: SMTP_HOST,
+                port: SMTP_PORT,
+                user: SMTP_USER.substring(0, 10) + '...',
+                from_email: FROM_EMAIL
+            },
+            timestamp: new Date().toISOString()
         });
 
-    } catch (error: any) {
-        console.error('❌ Detailed SMTP test failed:', error);
-        
+    } catch (error) {
         return json({
-            success: false,
-            error: 'Error en prueba SMTP detallada',
-            details: {
-                message: error.message,
-                code: error.code,
-                command: error.command,
-                response: error.response,
-                responseCode: error.responseCode,
-                stack: error.stack
-            }
+            error: 'Error general en test SMTP',
+            details: error instanceof Error ? error.message : 'Unknown error',
+            timestamp: new Date().toISOString()
         }, { status: 500 });
     }
 }; 
