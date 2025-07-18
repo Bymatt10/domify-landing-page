@@ -30,6 +30,20 @@ pipeline {
                         env.BRANCH_NAME = env.GIT_BRANCH ?: 'unknown'
                     }
                     
+                    // Check if credentials are available
+                    if (!env.PRODUCTION_SERVER) {
+                        echo "⚠️  WARNING: production-server-ip credential not found"
+                        env.PRODUCTION_SERVER = 'localhost'
+                    }
+                    if (!env.STAGING_SERVER) {
+                        echo "⚠️  WARNING: staging-server-ip credential not found"
+                        env.STAGING_SERVER = 'localhost'
+                    }
+                    if (!env.DOCKER_REGISTRY) {
+                        echo "⚠️  WARNING: docker-registry-url credential not found"
+                        env.DOCKER_REGISTRY = 'localhost'
+                    }
+                    
                     if (env.BRANCH_NAME == 'main' || env.BRANCH_NAME == 'master') {
                         env.TARGET_ENV = 'production'
                         env.TARGET_SERVER = env.PRODUCTION_SERVER
@@ -117,11 +131,14 @@ pipeline {
         
         stage('Push to Registry') {
             when {
-                anyOf {
-                    branch 'main'
-                    branch 'master'
-                    branch 'develop'
-                    branch 'staging'
+                allOf {
+                    anyOf {
+                        branch 'main'
+                        branch 'master'
+                        branch 'develop'
+                        branch 'staging'
+                    }
+                    expression { env.DOCKER_REGISTRY != 'localhost' }
                 }
             }
             steps {
@@ -141,11 +158,14 @@ pipeline {
         
         stage('Deploy to Server') {
             when {
-                anyOf {
-                    branch 'main'
-                    branch 'master'
-                    branch 'develop'
-                    branch 'staging'
+                allOf {
+                    anyOf {
+                        branch 'main'
+                        branch 'master'
+                        branch 'develop'
+                        branch 'staging'
+                    }
+                    expression { env.TARGET_SERVER != 'localhost' }
                 }
             }
             steps {
@@ -181,11 +201,14 @@ EOF_REMOTE
         
         stage('Smoke Tests') {
             when {
-                anyOf {
-                    branch 'main'
-                    branch 'master'
-                    branch 'develop'
-                    branch 'staging'
+                allOf {
+                    anyOf {
+                        branch 'main'
+                        branch 'master'
+                        branch 'develop'
+                        branch 'staging'
+                    }
+                    expression { env.TARGET_SERVER != 'localhost' }
                 }
             }
             steps {
@@ -197,15 +220,46 @@ EOF_REMOTE
                 }
             }
         }
+        
+        stage('Deployment Skipped') {
+            when {
+                anyOf {
+                    branch 'main'
+                    branch 'master'
+                    branch 'develop'
+                    branch 'staging'
+                }
+                expression { env.TARGET_SERVER == 'localhost' }
+            }
+            steps {
+                script {
+                    echo """
+                        ⚠️  Deployment skipped due to missing credentials:
+                        
+                        - TARGET_SERVER: ${env.TARGET_SERVER}
+                        - DOCKER_REGISTRY: ${env.DOCKER_REGISTRY}
+                        
+                        Please configure the following Jenkins credentials:
+                        - production-server-ip
+                        - staging-server-ip
+                        - docker-registry-url
+                        - docker-registry-credentials
+                        - vps-ssh-key
+                    """
+                }
+            }
+        }
     }
     
     post {
         always {
-            script {
-                sh """
-                    docker rmi ${env.DOCKER_IMAGE}:${env.DOCKER_TAG} || true
-                    docker system prune -f || true
-                """
+            node {
+                script {
+                    sh """
+                        docker rmi ${env.DOCKER_IMAGE}:${env.DOCKER_TAG} || true
+                        docker system prune -f || true
+                    """
+                }
             }
         }
         
