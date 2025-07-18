@@ -62,9 +62,11 @@ pipeline {
                 script {
                     sh '''
                         echo "🔧 Checking Node.js installation..."
+                        
                         # Check if Node.js is already installed
                         if command -v node &> /dev/null; then
-                            echo "✅ Node.js already installed: $(node --version)"
+                            NODE_VERSION=$(node --version)
+                            echo "✅ Node.js already installed: $NODE_VERSION"
                         else
                             echo "❌ Node.js not found. Please install Node.js in the Jenkins container:"
                             echo "   docker exec -it jenkins /bin/bash"
@@ -75,7 +77,8 @@ pipeline {
                         
                         # Check if npm is available
                         if command -v npm &> /dev/null; then
-                            echo "✅ npm already installed: $(npm --version)"
+                            NPM_VERSION=$(npm --version)
+                            echo "✅ npm already installed: $NPM_VERSION"
                         else
                             echo "❌ npm not found. Please install npm in the Jenkins container:"
                             echo "   docker exec -it jenkins /bin/bash"
