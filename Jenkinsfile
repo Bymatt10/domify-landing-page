@@ -7,7 +7,6 @@ pipeline {
         CONTAINER_NAME = 'domify-app'
         PORT = '3000'
         PRODUCTION_SERVER = credentials('production-server-ip')
-        STAGING_SERVER = credentials('staging-server-ip')
         DOCKER_REGISTRY = credentials('docker-registry-url')
     }
     
@@ -35,14 +34,13 @@ pipeline {
                         echo "⚠️  WARNING: production-server-ip credential not found"
                         env.PRODUCTION_SERVER = 'localhost'
                     }
-                    if (!env.STAGING_SERVER) {
-                        echo "⚠️  WARNING: staging-server-ip credential not found"
-                        env.STAGING_SERVER = 'localhost'
-                    }
                     if (!env.DOCKER_REGISTRY) {
                         echo "⚠️  WARNING: docker-registry-url credential not found"
                         env.DOCKER_REGISTRY = 'localhost'
                     }
+                    
+                    // Set staging server to same as production
+                    env.STAGING_SERVER = env.PRODUCTION_SERVER
                     
                     if (env.BRANCH_NAME == 'main' || env.BRANCH_NAME == 'master') {
                         env.TARGET_ENV = 'production'
