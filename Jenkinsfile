@@ -249,19 +249,25 @@ EOF_REMOTE
                 }
             }
         }
+        
+        stage('Cleanup') {
+            steps {
+                script {
+                    sh """
+                        echo "🧹 Cleaning up Docker resources..."
+                        docker rmi ${env.DOCKER_IMAGE}:${env.DOCKER_TAG} || echo "Image not found or already removed"
+                        docker system prune -f || echo "Docker system prune failed"
+                        echo "Cleanup completed"
+                    """
+                }
+            }
+        }
     }
     
     post {
         always {
             script {
-                try {
-                    sh """
-                        docker rmi ${env.DOCKER_IMAGE}:${env.DOCKER_TAG} || true
-                        docker system prune -f || true
-                    """
-                } catch (Exception e) {
-                    echo "⚠️  Docker cleanup failed: ${e.getMessage()}"
-                }
+                echo "Pipeline completed. Build: ${env.BUILD_NUMBER ?: 'unknown'}"
             }
         }
         
