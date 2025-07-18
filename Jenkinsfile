@@ -57,34 +57,14 @@ pipeline {
             }
         }
         
-        stage('Install Node.js') {
+        stage('Verify Node.js') {
             steps {
                 script {
                     sh '''
-                        echo "🔧 Checking Node.js installation..."
-                        
-                        # Check if Node.js is already installed
-                        if command -v node &> /dev/null; then
-                            NODE_VERSION=$(node --version)
-                            echo "✅ Node.js already installed: $NODE_VERSION"
-                        else
-                            echo "❌ Node.js not found. Please install Node.js in the Jenkins container:"
-                            echo "   docker exec -it jenkins /bin/bash"
-                            echo "   curl -fsSL https://deb.nodesource.com/setup_18.x | sudo bash -"
-                            echo "   sudo apt-get update && sudo apt-get install -y nodejs"
-                            exit 1
-                        fi
-                        
-                        # Check if npm is available
-                        if command -v npm &> /dev/null; then
-                            NPM_VERSION=$(npm --version)
-                            echo "✅ npm already installed: $NPM_VERSION"
-                        else
-                            echo "❌ npm not found. Please install npm in the Jenkins container:"
-                            echo "   docker exec -it jenkins /bin/bash"
-                            echo "   sudo apt-get install -y npm"
-                            exit 1
-                        fi
+                        echo "🔧 Verifying Node.js installation..."
+                        node --version
+                        npm --version
+                        echo "✅ Node.js and npm are ready!"
                     '''
                 }
             }

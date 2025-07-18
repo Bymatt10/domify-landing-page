@@ -1,0 +1,33 @@
+# Jenkins Dockerfile with Node.js preinstalled
+FROM jenkins/jenkins:lts-jdk17
+
+USER root
+
+# Install Node.js 18.x
+RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
+    && apt-get update \
+    && apt-get install -y nodejs \
+    && npm install -g npm@latest
+
+# Install additional tools that might be useful
+RUN apt-get install -y \
+    curl \
+    wget \
+    git \
+    docker.io \
+    && rm -rf /var/lib/apt/lists/*
+
+# Verify installations
+RUN node --version \
+    && npm --version \
+    && echo "✅ Node.js and npm installed successfully"
+
+# Switch back to jenkins user
+USER jenkins
+
+# Set environment variables
+ENV NODE_ENV=production
+ENV PATH="/usr/local/bin:${PATH}"
+
+# Expose Jenkins port
+EXPOSE 8080 50000 
