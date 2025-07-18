@@ -61,23 +61,26 @@ pipeline {
             steps {
                 script {
                     sh '''
-                        echo "🔧 Installing Node.js..."
+                        echo "🔧 Checking Node.js installation..."
                         # Check if Node.js is already installed
-                        if ! command -v node &> /dev/null; then
-                            echo "Node.js not found, installing..."
-                            curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
-                            apt-get update
-                            apt-get install -y nodejs
+                        if command -v node &> /dev/null; then
+                            echo "✅ Node.js already installed: $(node --version)"
                         else
-                            echo "Node.js already installed: $(node --version)"
+                            echo "❌ Node.js not found. Please install Node.js in the Jenkins container:"
+                            echo "   docker exec -it jenkins /bin/bash"
+                            echo "   curl -fsSL https://deb.nodesource.com/setup_18.x | sudo bash -"
+                            echo "   sudo apt-get update && sudo apt-get install -y nodejs"
+                            exit 1
                         fi
                         
                         # Check if npm is available
-                        if ! command -v npm &> /dev/null; then
-                            echo "npm not found, installing..."
-                            apt-get install -y npm
+                        if command -v npm &> /dev/null; then
+                            echo "✅ npm already installed: $(npm --version)"
                         else
-                            echo "npm already installed: $(npm --version)"
+                            echo "❌ npm not found. Please install npm in the Jenkins container:"
+                            echo "   docker exec -it jenkins /bin/bash"
+                            echo "   sudo apt-get install -y npm"
+                            exit 1
                         fi
                     '''
                 }
