@@ -253,12 +253,14 @@ EOF_REMOTE
     
     post {
         always {
-            node {
-                script {
+            script {
+                try {
                     sh """
                         docker rmi ${env.DOCKER_IMAGE}:${env.DOCKER_TAG} || true
                         docker system prune -f || true
                     """
+                } catch (Exception e) {
+                    echo "⚠️  Docker cleanup failed: ${e.getMessage()}"
                 }
             }
         }
