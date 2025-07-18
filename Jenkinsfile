@@ -57,6 +57,33 @@ pipeline {
             }
         }
         
+        stage('Install Node.js') {
+            steps {
+                script {
+                    sh '''
+                        echo "🔧 Installing Node.js..."
+                        # Check if Node.js is already installed
+                        if ! command -v node &> /dev/null; then
+                            echo "Node.js not found, installing..."
+                            curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+                            apt-get update
+                            apt-get install -y nodejs
+                        else
+                            echo "Node.js already installed: $(node --version)"
+                        fi
+                        
+                        # Check if npm is available
+                        if ! command -v npm &> /dev/null; then
+                            echo "npm not found, installing..."
+                            apt-get install -y npm
+                        else
+                            echo "npm already installed: $(npm --version)"
+                        fi
+                    '''
+                }
+            }
+        }
+        
         stage('Install Dependencies') {
             steps {
                 script {
