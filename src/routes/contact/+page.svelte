@@ -114,36 +114,7 @@
 </svelte:head>
 
 <div class="min-h-screen bg-gradient-to-br from-primary-50 to-secondary-50">
-	<!-- Header -->
-	<div class="bg-white shadow-sm border-b border-secondary-200">
-		<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-			<div class="flex justify-between items-center py-6">
-				<div class="flex items-center">
-					<a href="/" class="flex items-center space-x-2">
-						<div class="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
-							<span class="text-white font-bold text-lg">D</span>
-						</div>
-						<span class="text-xl font-bold text-secondary-900">Domify</span>
-					</a>
-				</div>
-				<nav class="hidden md:flex space-x-8">
-					<a href="/" class="text-secondary-600 hover:text-primary-600 transition-colors">Inicio</a>
-					<a href="/services" class="text-secondary-600 hover:text-primary-600 transition-colors">Servicios</a>
-					<a href="/about" class="text-secondary-600 hover:text-primary-600 transition-colors">Acerca de</a>
-					<a href="/contact" class="text-primary-600 font-medium">Contacto</a>
-				</nav>
-				<div class="flex items-center space-x-4">
-					{#if isAuthenticated}
-						<a href="/profile" class="text-secondary-600 hover:text-primary-600 transition-colors">Mi Perfil</a>
-						<a href="/auth/logout" class="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors">Cerrar Sesión</a>
-					{:else}
-						<a href="/auth/login" class="text-secondary-600 hover:text-primary-600 transition-colors">Iniciar Sesión</a>
-						<a href="/auth/signup" class="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors">Registrarse</a>
-					{/if}
-				</div>
-			</div>
-		</div>
-	</div>
+	<!-- (Header duplicado eliminado; se usará el navbar global) -->
 
 	<!-- Main Content -->
 	<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
