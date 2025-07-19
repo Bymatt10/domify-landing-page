@@ -21,6 +21,13 @@ declare global {
 	}
 }
 
+// Definir las variables de entorno públicas
+declare module '$env/static/public' {
+	export const PUBLIC_SUPABASE_URL: string;
+	export const PUBLIC_SUPABASE_ANON_KEY: string;
+	export const PUBLIC_SITE_URL: string;
+}
+
 // Definir las variables de entorno privadas
 declare module '$env/static/private' {
 	export const SMTP_HOST: string | undefined;
