@@ -1,8 +1,13 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from '@sveltejs/kit';
 import { supabaseAdmin } from '$lib/supabase-admin.js';
-
 import { getSupabaseUrl, getSupabaseAnonKey, getSupabaseServiceRoleKey } from '$lib/env-utils';
+
+// Get environment variables with fallbacks
+const SUPABASE_URL = getSupabaseUrl();
+const SUPABASE_ANON_KEY = getSupabaseAnonKey();
+const SERVICE_ROLE_KEY = getSupabaseServiceRoleKey();
+
 export const GET: RequestHandler = async ({ url }) => {
   try {
     const results = {
@@ -111,11 +116,6 @@ export const GET: RequestHandler = async ({ url }) => {
     // 6. Test de conexión directa con variables
     try {
       const { createClient } = await import('@supabase/supabase-js');
-
-// Get environment variables with fallbacks
-const SUPABASE_URL = getSupabaseUrl();
-const SUPABASE_ANON_KEY = getSupabaseAnonKey();
-const SERVICE_ROLE_KEY = getSupabaseServiceRoleKey();
 
       const testClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
         auth: {

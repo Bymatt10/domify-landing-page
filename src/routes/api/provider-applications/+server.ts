@@ -2,8 +2,13 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from '@sveltejs/kit';
 import { sendEmail, type WelcomeEmailData } from '$lib/email.js';
 import { createClient } from '@supabase/supabase-js';
-
 import { getSupabaseUrl, getSupabaseAnonKey, getSupabaseServiceRoleKey } from '$lib/env-utils';
+
+// Get environment variables with fallbacks
+const SUPABASE_URL = getSupabaseUrl();
+const SUPABASE_ANON_KEY = getSupabaseAnonKey();
+const SERVICE_ROLE_KEY = getSupabaseServiceRoleKey();
+
 // Cliente directo para admin operations
 const supabaseAdmin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
   auth: {
@@ -52,12 +57,6 @@ async function sendWelcomeEmail(email: string, tempPassword: string, providerNam
     
     // Importar el servicio de email
     const { sendEmail, createProviderWelcomeEmail } = await import('$lib/email-service');
-
-// Get environment variables with fallbacks
-const SUPABASE_URL = getSupabaseUrl();
-const SUPABASE_ANON_KEY = getSupabaseAnonKey();
-const SERVICE_ROLE_KEY = getSupabaseServiceRoleKey();
-
     
     // Crear el HTML del email usando la plantilla
     const emailHtml = createProviderWelcomeEmail({
