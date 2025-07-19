@@ -6,7 +6,6 @@ pipeline {
         DOCKER_TAG = "${BUILD_NUMBER}"
         CONTAINER_NAME = 'domify-app'
         PORT = '3000'
-        PRODUCTION_SERVER = credentials('production-server-ip')
         
         // Environment variables for build with fallbacks
         PUBLIC_SUPABASE_URL = "${env.PUBLIC_SUPABASE_URL ?: 'https://fallback.supabase.co'}"
@@ -33,32 +32,53 @@ pipeline {
             }
         }
 
-        stage('Deploy to VPS') {
+        stage('Build Docker Image') {
             steps {
                 script {
-                    sshagent(['vps-ssh-key']) {
-                        sh """
-                            ssh -o StrictHostKeyChecking=no usuario@IP_VPS '
-                                set -e
-                                # Clonar si no existe la carpeta
-                                if [ ! -d /opt/domify ]; then
-                                    git clone https://github.com/Bymatt10/domify-landing-page.git /opt/domify
-                                fi
+                    // Build the Docker image locally
+                    sh """
+                        docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} \
+                        --build-arg PUBLIC_SUPABASE_URL='${PUBLIC_SUPABASE_URL}' \
+                        --build-arg PUBLIC_SUPABASE_ANON_KEY='${PUBLIC_SUPABASE_ANON_KEY}' \
+                        --build-arg SUPABASE_SERVICE_ROLE_KEY='${SUPABASE_SERVICE_ROLE_KEY}' \
+                        --build-arg SMTP_HOST='${SMTP_HOST}' \
+                        --build-arg SMTP_PORT='${SMTP_PORT}' \
+                        --build-arg SMTP_USER='${SMTP_USER}' \
+                        --build-arg SMTP_PASS='${SMTP_PASS}' \
+                        --build-arg FROM_EMAIL='${FROM_EMAIL}' \
+                        .
+                    """
+                    
+                    // Tag as latest
+                    sh "docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_IMAGE}:latest"
+                }
+            }
+        }
 
-                                cd /opt/domify
-                                git pull origin main
-
-                                # Opcional: revisar rama correcta
-                                git checkout main
-
-                                # Copiar o actualizar .env.production si no está versionado
-                                # echo "ENV_VARIABLE=value" > .env.production
-
-                                # Levantar con Docker Compose
-                                docker compose up -d --build
-                            '
-                        """
-                    }
+        stage('Deploy Locally') {
+            steps {
+                script {
+                    // Stop existing container if running
+                    sh "docker stop ${CONTAINER_NAME} || true"
+                    sh "docker rm ${CONTAINER_NAME} || true"
+                    
+                    // Run new container
+                    sh """
+                        docker run -d \
+                        --name ${CONTAINER_NAME} \
+                        -p ${PORT}:3000 \
+                        -e NODE_ENV=production \
+                        -e PUBLIC_SUPABASE_URL='${PUBLIC_SUPABASE_URL}' \
+                        -e PUBLIC_SUPABASE_ANON_KEY='${PUBLIC_SUPABASE_ANON_KEY}' \
+                        -e SUPABASE_SERVICE_ROLE_KEY='${SUPABASE_SERVICE_ROLE_KEY}' \
+                        -e SMTP_HOST='${SMTP_HOST}' \
+                        -e SMTP_PORT='${SMTP_PORT}' \
+                        -e SMTP_USER='${SMTP_USER}' \
+                        -e SMTP_PASS='${SMTP_PASS}' \
+                        -e FROM_EMAIL='${FROM_EMAIL}' \
+                        --restart unless-stopped \
+                        ${DOCKER_IMAGE}:latest
+                    """
                 }
             }
         }
@@ -67,9 +87,14 @@ pipeline {
     post {
         success {
             echo "✅ Deployment completed successfully!"
+            echo "🚀 Application is running at http://localhost:${PORT}"
         }
         failure {
             echo "❌ Deployment failed. Check logs for details."
+        }
+        always {
+            // Clean up old images to save space
+            sh "docker image prune -f || true"
         }
     }
 }
