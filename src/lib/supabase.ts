@@ -1,18 +1,9 @@
 import { createClient } from '@supabase/supabase-js'
 import { createBrowserClient, createServerClient, isBrowser } from '@supabase/ssr'
+import { getSupabaseUrl, getSupabaseAnonKey } from './env-utils'
 
-const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL
-const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY
-
-if (!supabaseUrl) {
-    console.error('PUBLIC_SUPABASE_URL no está definida en las variables de entorno');
-    throw new Error('PUBLIC_SUPABASE_URL no está definida');
-}
-
-if (!supabaseAnonKey) {
-    console.error('PUBLIC_SUPABASE_ANON_KEY no está definida en las variables de entorno');
-    throw new Error('PUBLIC_SUPABASE_ANON_KEY no está definida');
-}
+const supabaseUrl = getSupabaseUrl()
+const supabaseAnonKey = getSupabaseAnonKey()
 
 export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey, {
     auth: {

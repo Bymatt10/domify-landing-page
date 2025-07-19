@@ -7,6 +7,16 @@ pipeline {
         CONTAINER_NAME = 'domify-app'
         PORT = '3000'
         PRODUCTION_SERVER = credentials('production-server-ip')
+        
+        // Environment variables for build
+        PUBLIC_SUPABASE_URL = credentials('public-supabase-url')
+        PUBLIC_SUPABASE_ANON_KEY = credentials('public-supabase-anon-key')
+        SUPABASE_SERVICE_ROLE_KEY = credentials('supabase-service-role-key')
+        SMTP_HOST = credentials('smtp-host')
+        SMTP_PORT = credentials('smtp-port')
+        SMTP_USER = credentials('smtp-user')
+        SMTP_PASS = credentials('smtp-pass')
+        FROM_EMAIL = credentials('from-email')
     }
 
     stages {
