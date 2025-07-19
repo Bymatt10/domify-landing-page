@@ -1,7 +1,5 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from '$env/static/public';
-
 import { getSupabaseUrl, getSupabaseAnonKey, getSupabaseServiceRoleKey } from '$lib/env-utils';
 
 // Get environment variables with fallbacks
