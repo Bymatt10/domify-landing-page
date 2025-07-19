@@ -2,6 +2,8 @@ pipeline {
     agent any
 
     environment {
+        DOCKER_IMAGE = 'domify'
+        DOCKER_TAG = "${BUILD_NUMBER}"
         CONTAINER_NAME = 'domify-app'
         PORT = '3000'
         DOMAIN = "${env.DOMAIN ?: 'domify.app'}"
@@ -31,9 +33,83 @@ pipeline {
             }
         }
 
-        stage('Deploy with Node.js') {
+        stage('Check Docker Availability') {
             steps {
                 script {
+                    def dockerAvailable = sh(script: 'command -v docker', returnStatus: true) == 0
+                    env.DOCKER_AVAILABLE = dockerAvailable.toString()
+                    
+                    if (dockerAvailable) {
+                        echo "✅ Docker is available - will use containerized deployment"
+                    } else {
+                        echo "⚠️ Docker not found - will use direct Node.js deployment"
+                        echo "💡 To use Docker, install it with:"
+                        echo "   sudo apt update && sudo apt install docker.io"
+                        echo "   sudo usermod -aG docker jenkins"
+                        echo "   sudo systemctl restart jenkins"
+                    }
+                }
+            }
+        }
+
+        stage('Deploy with Docker') {
+            when {
+                environment name: 'DOCKER_AVAILABLE', value: 'true'
+            }
+            steps {
+                script {
+                    echo "🐳 Deploying with Docker..."
+                    
+                    // Stop and remove existing container
+                    sh "docker stop ${CONTAINER_NAME} || true"
+                    sh "docker rm ${CONTAINER_NAME} || true"
+                    
+                    // Build new image
+                    sh """
+                        docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} \
+                        --build-arg PUBLIC_SUPABASE_URL='${PUBLIC_SUPABASE_URL}' \
+                        --build-arg PUBLIC_SUPABASE_ANON_KEY='${PUBLIC_SUPABASE_ANON_KEY}' \
+                        --build-arg SUPABASE_SERVICE_ROLE_KEY='${SUPABASE_SERVICE_ROLE_KEY}' \
+                        --build-arg SMTP_HOST='${SMTP_HOST}' \
+                        --build-arg SMTP_PORT='${SMTP_PORT}' \
+                        --build-arg SMTP_USER='${SMTP_USER}' \
+                        --build-arg SMTP_PASS='${SMTP_PASS}' \
+                        --build-arg FROM_EMAIL='${FROM_EMAIL}' \
+                        .
+                    """
+                    
+                    // Tag as latest
+                    sh "docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_IMAGE}:latest"
+                    
+                    // Run new container
+                    sh """
+                        docker run -d \
+                        --name ${CONTAINER_NAME} \
+                        -p ${PORT}:3000 \
+                        -e NODE_ENV=production \
+                        -e PUBLIC_SUPABASE_URL='${PUBLIC_SUPABASE_URL}' \
+                        -e PUBLIC_SUPABASE_ANON_KEY='${PUBLIC_SUPABASE_ANON_KEY}' \
+                        -e SUPABASE_SERVICE_ROLE_KEY='${SUPABASE_SERVICE_ROLE_KEY}' \
+                        -e SMTP_HOST='${SMTP_HOST}' \
+                        -e SMTP_PORT='${SMTP_PORT}' \
+                        -e SMTP_USER='${SMTP_USER}' \
+                        -e SMTP_PASS='${SMTP_PASS}' \
+                        -e FROM_EMAIL='${FROM_EMAIL}' \
+                        --restart unless-stopped \
+                        ${DOCKER_IMAGE}:latest
+                    """
+                }
+            }
+        }
+
+        stage('Deploy with Node.js') {
+            when {
+                environment name: 'DOCKER_AVAILABLE', value: 'false'
+            }
+            steps {
+                script {
+                    echo "📦 Deploying with Node.js (fallback)..."
+                    
                     // Stop any existing process on port 3000
                     sh """
                         # Kill any process using port 3000
@@ -154,7 +230,15 @@ EOF
 
     post {
         success {
-            echo "✅ Deployment completed successfully!"
+            script {
+                if (env.DOCKER_AVAILABLE == 'true') {
+                    echo "✅ Deployment completed successfully with Docker!"
+                    echo "🐳 Container: ${CONTAINER_NAME}"
+                } else {
+                    echo "✅ Deployment completed successfully with Node.js!"
+                    echo "📦 Process: node build/index.js"
+                }
+            }
             echo "🚀 Application is running on port ${PORT}"
             echo "🌐 Should be accessible at: http://${DOMAIN}"
             echo "📝 Check logs with: tail -f app.log"
@@ -169,6 +253,12 @@ EOF
             sh "cat app.log || echo 'No log file found'"
         }
         always {
+            // Clean up old Docker images if Docker is available
+            script {
+                if (env.DOCKER_AVAILABLE == 'true') {
+                    sh "docker image prune -f || true"
+                }
+            }
             // Archive the log file
             archiveArtifacts artifacts: 'app.log', fingerprint: true, allowEmptyArchive: true
         }
