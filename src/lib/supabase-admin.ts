@@ -1,19 +1,14 @@
 import { createClient } from '@supabase/supabase-js';
-import { PUBLIC_SUPABASE_URL } from '$env/static/public';
-import { PRIVATE_SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
+import { getSupabaseUrl, getSupabaseServiceRoleKey } from '$lib/env-utils';
 
-if (!PUBLIC_SUPABASE_URL) {
-    throw new Error('PUBLIC_SUPABASE_URL is not defined');
-}
-
-if (!PRIVATE_SUPABASE_SERVICE_ROLE_KEY) {
-    throw new Error('PRIVATE_SUPABASE_SERVICE_ROLE_KEY is not defined');
-}
+// Get environment variables with fallbacks
+const SUPABASE_URL = getSupabaseUrl();
+const SERVICE_ROLE_KEY = getSupabaseServiceRoleKey();
 
 // Cliente administrativo con service role - bypass RLS
 export const supabaseAdmin = createClient(
-    PUBLIC_SUPABASE_URL,
-    PRIVATE_SUPABASE_SERVICE_ROLE_KEY,
+    SUPABASE_URL,
+    SERVICE_ROLE_KEY,
     {
         auth: {
             autoRefreshToken: false,

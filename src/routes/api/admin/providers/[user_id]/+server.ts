@@ -1,10 +1,10 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { PUBLIC_SUPABASE_URL } from '$env/static/public';
-import { PRIVATE_SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
+import { getSupabaseUrl, getSupabaseServiceRoleKey } from '$lib/env-utils';
 
-const SUPABASE_URL = PUBLIC_SUPABASE_URL;
-const SUPABASE_SERVICE_ROLE_KEY = PRIVATE_SUPABASE_SERVICE_ROLE_KEY;
+// Get environment variables with fallbacks
+const SUPABASE_URL = getSupabaseUrl();
+const SUPABASE_SERVICE_ROLE_KEY = getSupabaseServiceRoleKey();
 
 // GET - Obtener detalles de un proveedor específico
 export const GET: RequestHandler = async ({ params }) => {

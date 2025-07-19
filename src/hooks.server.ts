@@ -2,11 +2,11 @@ import { createServerClient } from '@supabase/ssr'
 import { createClient } from '@supabase/supabase-js';
 import type { Handle } from '@sveltejs/kit'
 import { ExceptionHandler } from '$lib/exceptions';
-import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/public';
-import { PRIVATE_SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
+import { getSupabaseUrl, getSupabaseAnonKey, getSupabaseServiceRoleKey } from '$lib/env-utils';
 
-const supabaseUrl = PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = PUBLIC_SUPABASE_ANON_KEY;
+// Get environment variables with fallbacks
+const supabaseUrl = getSupabaseUrl();
+const supabaseAnonKey = getSupabaseAnonKey();
 
 export const handle: Handle = async ({ event, resolve }) => {
 	/**
@@ -38,7 +38,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 	 * Creates a Supabase admin client for administrative operations.
 	 * Uses the service role key to bypass RLS policies.
 	 */
-	event.locals.supabaseAdmin = createClient(supabaseUrl, PRIVATE_SUPABASE_SERVICE_ROLE_KEY, {
+	event.locals.supabaseAdmin = createClient(supabaseUrl, getSupabaseServiceRoleKey(), {
 		auth: {
 			autoRefreshToken: false,
 			persistSession: false
