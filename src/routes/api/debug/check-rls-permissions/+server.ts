@@ -1,9 +1,8 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from '@sveltejs/kit';
 import { supabaseAdmin } from '$lib/supabase-admin.js';
-import { PUBLIC_SUPABASE_URL } from '$env/static/public';
-import { PRIVATE_SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
 
+import { getSupabaseUrl, getSupabaseAnonKey, getSupabaseServiceRoleKey } from '$lib/env-utils';
 export const GET: RequestHandler = async ({ url }) => {
   try {
     const results = {
@@ -96,10 +95,10 @@ export const GET: RequestHandler = async ({ url }) => {
 
     // 5. Verificar variables de entorno (corregido)
     const envCheck = {
-      SUPABASE_URL: !!PUBLIC_SUPABASE_URL,
-      SUPABASE_URL_VALUE: PUBLIC_SUPABASE_URL?.substring(0, 30) + '...',
-      SERVICE_ROLE_KEY: !!PRIVATE_SUPABASE_SERVICE_ROLE_KEY,
-      SERVICE_ROLE_KEY_VALUE: PRIVATE_SUPABASE_SERVICE_ROLE_KEY?.substring(0, 30) + '...',
+      SUPABASE_URL: !!SUPABASE_URL,
+      SUPABASE_URL_VALUE: SUPABASE_URL?.substring(0, 30) + '...',
+      SERVICE_ROLE_KEY: !!SERVICE_ROLE_KEY,
+      SERVICE_ROLE_KEY_VALUE: SERVICE_ROLE_KEY?.substring(0, 30) + '...',
       NODE_ENV: process.env.NODE_ENV
     };
 
@@ -112,7 +111,13 @@ export const GET: RequestHandler = async ({ url }) => {
     // 6. Test de conexión directa con variables
     try {
       const { createClient } = await import('@supabase/supabase-js');
-      const testClient = createClient(PUBLIC_SUPABASE_URL, PRIVATE_SUPABASE_SERVICE_ROLE_KEY, {
+
+// Get environment variables with fallbacks
+const SUPABASE_URL = getSupabaseUrl();
+const SUPABASE_ANON_KEY = getSupabaseAnonKey();
+const SERVICE_ROLE_KEY = getSupabaseServiceRoleKey();
+
+      const testClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
         auth: {
           autoRefreshToken: false,
           persistSession: false

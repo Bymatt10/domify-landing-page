@@ -1,7 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from '@sveltejs/kit';
-import { PUBLIC_SUPABASE_URL } from '$env/static/public';
-import { PRIVATE_SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
+
+import { getSupabaseUrl, getSupabaseAnonKey, getSupabaseServiceRoleKey } from '$lib/env-utils';
 import { 
     ExceptionHandler, 
     ValidationException, 
@@ -10,13 +10,19 @@ import {
     validateRequired
 } from '$lib/exceptions';
 
+// Get environment variables with fallbacks
+const SUPABASE_URL = getSupabaseUrl();
+const SUPABASE_ANON_KEY = getSupabaseAnonKey();
+const SERVICE_ROLE_KEY = getSupabaseServiceRoleKey();
+
+
 // Función helper para hacer queries directas con fetch
 async function directSupabaseQuery(endpoint: string, options: any = {}) {
-  const url = `${PUBLIC_SUPABASE_URL}/rest/v1/${endpoint}`;
+  const url = `${SUPABASE_URL}/rest/v1/${endpoint}`;
   const response = await fetch(url, {
     headers: {
-      'Authorization': `Bearer ${PRIVATE_SUPABASE_SERVICE_ROLE_KEY}`,
-      'apikey': PRIVATE_SUPABASE_SERVICE_ROLE_KEY,
+      'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
+      'apikey': SERVICE_ROLE_KEY,
       'Content-Type': 'application/json',
       'Prefer': 'return=representation',
       ...options.headers
@@ -185,10 +191,10 @@ export const GET: RequestHandler = async ({ url }) => {
             
             try {
                 // Obtener el usuario desde auth.users usando el user_id
-                const authResponse = await fetch(`${PUBLIC_SUPABASE_URL}/auth/v1/admin/users/${provider.user_id}`, {
+                const authResponse = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${provider.user_id}`, {
                     headers: {
-                        'Authorization': `Bearer ${PRIVATE_SUPABASE_SERVICE_ROLE_KEY}`,
-                        'apikey': PRIVATE_SUPABASE_SERVICE_ROLE_KEY,
+                        'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
+                        'apikey': SERVICE_ROLE_KEY,
                         'Content-Type': 'application/json'
                     }
                 });

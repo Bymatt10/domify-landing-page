@@ -2,11 +2,10 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from '@sveltejs/kit';
 import { sendEmail, type WelcomeEmailData } from '$lib/email.js';
 import { createClient } from '@supabase/supabase-js';
-import { PUBLIC_SUPABASE_URL } from '$env/static/public';
-import { PRIVATE_SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
 
+import { getSupabaseUrl, getSupabaseAnonKey, getSupabaseServiceRoleKey } from '$lib/env-utils';
 // Cliente directo para admin operations
-const supabaseAdmin = createClient(PUBLIC_SUPABASE_URL, PRIVATE_SUPABASE_SERVICE_ROLE_KEY, {
+const supabaseAdmin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
   auth: {
     autoRefreshToken: false,
     persistSession: false
@@ -15,11 +14,11 @@ const supabaseAdmin = createClient(PUBLIC_SUPABASE_URL, PRIVATE_SUPABASE_SERVICE
 
 // Función helper para hacer queries directas con fetch
 async function directSupabaseQuery(endpoint: string, options: any = {}) {
-  const url = `${PUBLIC_SUPABASE_URL}/rest/v1/${endpoint}`;
+  const url = `${SUPABASE_URL}/rest/v1/${endpoint}`;
   const response = await fetch(url, {
     headers: {
-      'Authorization': `Bearer ${PRIVATE_SUPABASE_SERVICE_ROLE_KEY}`,
-      'apikey': PRIVATE_SUPABASE_SERVICE_ROLE_KEY,
+      'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
+      'apikey': SERVICE_ROLE_KEY,
       'Content-Type': 'application/json',
       'Prefer': 'return=representation',
       ...options.headers
@@ -53,6 +52,12 @@ async function sendWelcomeEmail(email: string, tempPassword: string, providerNam
     
     // Importar el servicio de email
     const { sendEmail, createProviderWelcomeEmail } = await import('$lib/email-service');
+
+// Get environment variables with fallbacks
+const SUPABASE_URL = getSupabaseUrl();
+const SUPABASE_ANON_KEY = getSupabaseAnonKey();
+const SERVICE_ROLE_KEY = getSupabaseServiceRoleKey();
+
     
     // Crear el HTML del email usando la plantilla
     const emailHtml = createProviderWelcomeEmail({
@@ -544,11 +549,11 @@ export const PUT: RequestHandler = async ({ request, url, locals }) => {
     const currentApp = currentAppData[0];
 
     // Actualizar la aplicación usando fetch directo
-    const updateResponse = await fetch(`${PUBLIC_SUPABASE_URL}/rest/v1/provider_applications?id=eq.${id}`, {
+    const updateResponse = await fetch(`${SUPABASE_URL}/rest/v1/provider_applications?id=eq.${id}`, {
       method: 'PATCH',
       headers: {
-        'Authorization': `Bearer ${PRIVATE_SUPABASE_SERVICE_ROLE_KEY}`,
-        'apikey': PRIVATE_SUPABASE_SERVICE_ROLE_KEY,
+        'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
+        'apikey': SERVICE_ROLE_KEY,
         'Content-Type': 'application/json',
         'Prefer': 'return=representation'
       },

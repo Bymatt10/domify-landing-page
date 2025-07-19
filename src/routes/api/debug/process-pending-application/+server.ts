@@ -1,16 +1,22 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { PUBLIC_SUPABASE_URL } from '$env/static/public';
-import { PRIVATE_SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
 import { sendEmail, createProviderWelcomeEmail } from '$lib/email-service';
+
+
+import { getSupabaseUrl, getSupabaseAnonKey, getSupabaseServiceRoleKey } from '$lib/env-utils';
+
+// Get environment variables with fallbacks
+const SUPABASE_URL = getSupabaseUrl();
+const SUPABASE_ANON_KEY = getSupabaseAnonKey();
+const SERVICE_ROLE_KEY = getSupabaseServiceRoleKey();
 
 // Función helper para hacer queries directas con fetch
 async function directSupabaseQuery(endpoint: string, options: any = {}) {
-  const url = `${PUBLIC_SUPABASE_URL}/rest/v1/${endpoint}`;
+  const url = `${SUPABASE_URL}/rest/v1/${endpoint}`;
   const response = await fetch(url, {
     headers: {
-      'Authorization': `Bearer ${PRIVATE_SUPABASE_SERVICE_ROLE_KEY}`,
-      'apikey': PRIVATE_SUPABASE_SERVICE_ROLE_KEY,
+      'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
+      'apikey': SERVICE_ROLE_KEY,
       'Content-Type': 'application/json',
       'Prefer': 'return=representation',
       ...options.headers
@@ -58,10 +64,10 @@ export const GET: RequestHandler = async ({ url }) => {
         // Verificar si ya existe un usuario con este email
         let existingUser = null;
         try {
-            const authResponse = await fetch(`${PUBLIC_SUPABASE_URL}/auth/v1/admin/users`, {
+            const authResponse = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, {
                 headers: {
-                    'Authorization': `Bearer ${PRIVATE_SUPABASE_SERVICE_ROLE_KEY}`,
-                    'apikey': PRIVATE_SUPABASE_SERVICE_ROLE_KEY,
+                    'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
+                    'apikey': SERVICE_ROLE_KEY,
                     'Content-Type': 'application/json'
                 }
             });
@@ -82,11 +88,11 @@ export const GET: RequestHandler = async ({ url }) => {
             console.log('👤 Creating new user...');
             tempPassword = generateRandomPassword();
 
-            const createUserResponse = await fetch(`${PUBLIC_SUPABASE_URL}/auth/v1/admin/users`, {
+            const createUserResponse = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${PRIVATE_SUPABASE_SERVICE_ROLE_KEY}`,
-                    'apikey': PRIVATE_SUPABASE_SERVICE_ROLE_KEY,
+                    'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
+                    'apikey': SERVICE_ROLE_KEY,
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({

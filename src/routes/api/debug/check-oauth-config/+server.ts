@@ -1,7 +1,13 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/public';
-import { PRIVATE_SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from '$env/static/public';
+
+import { getSupabaseUrl, getSupabaseAnonKey, getSupabaseServiceRoleKey } from '$lib/env-utils';
+
+// Get environment variables with fallbacks
+const SUPABASE_URL = getSupabaseUrl();
+const SUPABASE_ANON_KEY = getSupabaseAnonKey();
+const SERVICE_ROLE_KEY = getSupabaseServiceRoleKey();
 
 export const GET: RequestHandler = async ({ locals: { supabase } }) => {
   try {
@@ -9,9 +15,9 @@ export const GET: RequestHandler = async ({ locals: { supabase } }) => {
     
     // Verificar configuración de entorno
     const envVars = {
-      PUBLIC_SUPABASE_URL: PUBLIC_SUPABASE_URL ? 'SET' : 'NOT SET',
-      PUBLIC_SUPABASE_ANON_KEY: PUBLIC_SUPABASE_ANON_KEY ? 'SET' : 'NOT SET',
-      PRIVATE_SUPABASE_SERVICE_ROLE_KEY: PRIVATE_SUPABASE_SERVICE_ROLE_KEY ? 'SET' : 'NOT SET'
+      SUPABASE_URL: SUPABASE_URL ? 'SET' : 'NOT SET',
+      SUPABASE_ANON_KEY: SUPABASE_ANON_KEY ? 'SET' : 'NOT SET',
+      SERVICE_ROLE_KEY: SERVICE_ROLE_KEY ? 'SET' : 'NOT SET'
     };
     
     console.log('Variables de entorno:', envVars);

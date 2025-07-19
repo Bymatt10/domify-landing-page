@@ -1,7 +1,13 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/public';
-import { PRIVATE_SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from '$env/static/public';
+
+import { getSupabaseUrl, getSupabaseAnonKey, getSupabaseServiceRoleKey } from '$lib/env-utils';
+
+// Get environment variables with fallbacks
+const SUPABASE_URL = getSupabaseUrl();
+const SUPABASE_ANON_KEY = getSupabaseAnonKey();
+const SERVICE_ROLE_KEY = getSupabaseServiceRoleKey();
 
 export const GET: RequestHandler = async ({ locals }) => {
   try {
@@ -9,20 +15,20 @@ export const GET: RequestHandler = async ({ locals }) => {
       timestamp: new Date().toISOString(),
       environment_check: {
         supabase_url: {
-          exists: !!PUBLIC_SUPABASE_URL,
-          value: PUBLIC_SUPABASE_URL || 'NOT SET',
-          is_localhost: PUBLIC_SUPABASE_URL?.includes('localhost') || false
+          exists: !!SUPABASE_URL,
+          value: SUPABASE_URL || 'NOT SET',
+          is_localhost: SUPABASE_URL?.includes('localhost') || false
         },
         anon_key: {
-          exists: !!PUBLIC_SUPABASE_ANON_KEY,
-          prefix: PUBLIC_SUPABASE_ANON_KEY ? PUBLIC_SUPABASE_ANON_KEY.substring(0, 20) + '...' : 'NOT SET',
-          length: PUBLIC_SUPABASE_ANON_KEY ? PUBLIC_SUPABASE_ANON_KEY.length : 0
+          exists: !!SUPABASE_ANON_KEY,
+          prefix: SUPABASE_ANON_KEY ? SUPABASE_ANON_KEY.substring(0, 20) + '...' : 'NOT SET',
+          length: SUPABASE_ANON_KEY ? SUPABASE_ANON_KEY.length : 0
         },
         service_role_key: {
-          exists: !!PRIVATE_SUPABASE_SERVICE_ROLE_KEY,
-          prefix: PRIVATE_SUPABASE_SERVICE_ROLE_KEY ? PRIVATE_SUPABASE_SERVICE_ROLE_KEY.substring(0, 20) + '...' : 'NOT SET',
-          length: PRIVATE_SUPABASE_SERVICE_ROLE_KEY ? PRIVATE_SUPABASE_SERVICE_ROLE_KEY.length : 0,
-          is_service_role: PRIVATE_SUPABASE_SERVICE_ROLE_KEY ? PRIVATE_SUPABASE_SERVICE_ROLE_KEY.includes('service_role') : false
+          exists: !!SERVICE_ROLE_KEY,
+          prefix: SERVICE_ROLE_KEY ? SERVICE_ROLE_KEY.substring(0, 20) + '...' : 'NOT SET',
+          length: SERVICE_ROLE_KEY ? SERVICE_ROLE_KEY.length : 0,
+          is_service_role: SERVICE_ROLE_KEY ? SERVICE_ROLE_KEY.includes('service_role') : false
         }
       }
     };
