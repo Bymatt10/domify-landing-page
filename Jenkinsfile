@@ -5,7 +5,7 @@ pipeline {
         DOCKER_IMAGE = 'domify'
         DOCKER_TAG = "${BUILD_NUMBER}"
         CONTAINER_NAME = 'domify-app'
-        PORT = '3000'
+        PORT = '4000'
         DOMAIN = "${env.DOMAIN ?: 'domify.app'}"
         
         // Environment variables for build with fallbacks
@@ -110,10 +110,10 @@ pipeline {
                 script {
                     echo "📦 Deploying with Node.js (fallback)..."
                     
-                    // Stop any existing process on port 3000
+                    // Stop any existing process on port 4000
                     sh """
-                        # Kill any process using port 3000
-                        sudo pkill -f 'node.*3000' || true
+                        # Kill any process using port 4000
+                        sudo pkill -f 'node.*4000' || true
                         sleep 2
                     """
                     
