@@ -1,15 +1,18 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { PUBLIC_SUPABASE_URL } from '$env/static/public';
-import { PRIVATE_SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
+import { getSupabaseUrl, getSupabaseServiceRoleKey } from '$lib/env-utils';
+
+// Get environment variables with fallbacks
+const SUPABASE_URL = getSupabaseUrl();
+const SERVICE_ROLE_KEY = getSupabaseServiceRoleKey();
 
 async function directSupabaseQuery(endpoint: string, method = 'GET', body?: any) {
-	const url = `${PUBLIC_SUPABASE_URL}/rest/v1/${endpoint}`;
+	const url = `${SUPABASE_URL}/rest/v1/${endpoint}`;
 	const options: RequestInit = {
 		method,
 		headers: {
-			'Authorization': `Bearer ${PRIVATE_SUPABASE_SERVICE_ROLE_KEY}`,
-			'apikey': PRIVATE_SUPABASE_SERVICE_ROLE_KEY,
+			'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
+			'apikey': SERVICE_ROLE_KEY,
 			'Content-Type': 'application/json',
 			'Prefer': 'return=representation'
 		}
@@ -32,12 +35,12 @@ async function directSupabaseQuery(endpoint: string, method = 'GET', body?: any)
 // Función para actualizar el estado del usuario en Supabase Auth
 async function updateUserAuthStatus(userId: string, isActive: boolean) {
 	try {
-		const authUrl = `${PUBLIC_SUPABASE_URL}/auth/v1/admin/users/${userId}`;
+		const authUrl = `${SUPABASE_URL}/auth/v1/admin/users/${userId}`;
 		const response = await fetch(authUrl, {
 			method: 'PUT',
 			headers: {
-				'Authorization': `Bearer ${PRIVATE_SUPABASE_SERVICE_ROLE_KEY}`,
-				'apikey': PRIVATE_SUPABASE_SERVICE_ROLE_KEY,
+				'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
+				'apikey': SERVICE_ROLE_KEY,
 				'Content-Type': 'application/json'
 			},
 			body: JSON.stringify({
@@ -81,11 +84,11 @@ export const PUT: RequestHandler = async ({ params, request }) => {
 		// Si se proporciona un email, actualizar también en auth.users
 		if (updateData.email && updateData.email.trim() !== '') {
 			try {
-				const emailUpdateResponse = await fetch(`${PUBLIC_SUPABASE_URL}/auth/v1/admin/users/${user_id}`, {
+				const emailUpdateResponse = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${user_id}`, {
 					method: 'PUT',
 					headers: {
-						'apikey': PRIVATE_SUPABASE_SERVICE_ROLE_KEY,
-						'Authorization': `Bearer ${PRIVATE_SUPABASE_SERVICE_ROLE_KEY}`,
+						'apikey': SERVICE_ROLE_KEY,
+						'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
 						'Content-Type': 'application/json'
 					},
 					body: JSON.stringify({
