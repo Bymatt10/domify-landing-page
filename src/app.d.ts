@@ -23,18 +23,18 @@ declare global {
 
 // Definir las variables de entorno privadas
 declare module '$env/static/private' {
-	export const SMTP_HOST: string;
-	export const SMTP_PORT: string;
-	export const SMTP_USER: string;
-	export const SMTP_PASS: string;
-	export const FROM_EMAIL: string;
-	export const SUPABASE_URL: string;
-	export const SUPABASE_ANON_KEY: string;
-	export const SUPABASE_SERVICE_ROLE_KEY: string;
-	export const MAILER_SMTP_HOST: string;
-	export const MAILER_SMTP_PORT: string;
-	export const MAILER_SMTP_USER: string;
-	export const MAILER_SMTP_PASS: string;
+	export const SMTP_HOST: string | undefined;
+	export const SMTP_PORT: string | undefined;
+	export const SMTP_USER: string | undefined;
+	export const SMTP_PASS: string | undefined;
+	export const FROM_EMAIL: string | undefined;
+	export const SUPABASE_URL: string | undefined;
+	export const SUPABASE_ANON_KEY: string | undefined;
+	export const SUPABASE_SERVICE_ROLE_KEY: string | undefined;
+	export const MAILER_SMTP_HOST: string | undefined;
+	export const MAILER_SMTP_PORT: string | undefined;
+	export const MAILER_SMTP_USER: string | undefined;
+	export const MAILER_SMTP_PASS: string | undefined;
 }
 
 export {};

@@ -21,16 +21,17 @@ let transporter: nodemailer.Transporter | null = null;
 function createTransporter(): nodemailer.Transporter | null {
 	try {
 		console.log('=== DEBUG: Variables de entorno de email ===');
-		console.log('MAILER_SMTP_HOST:', process.env.MAILER_SMTP_HOST);
-		console.log('MAILER_SMTP_PORT:', process.env.MAILER_SMTP_PORT);
-		console.log('MAILER_SMTP_USER:', process.env.MAILER_SMTP_USER ? 'Configurado' : 'No configurado');
-		console.log('MAILER_SMTP_PASS:', process.env.MAILER_SMTP_PASS ? 'Configurado' : 'No configurado');
+		// Use import.meta.env for client-side or $env for server-side
+		const host = import.meta.env.MAILER_SMTP_HOST || process.env.MAILER_SMTP_HOST;
+		const port = import.meta.env.MAILER_SMTP_PORT || process.env.MAILER_SMTP_PORT;
+		const user = import.meta.env.MAILER_SMTP_USER || process.env.MAILER_SMTP_USER;
+		const pass = import.meta.env.MAILER_SMTP_PASS || process.env.MAILER_SMTP_PASS;
+		
+		console.log('MAILER_SMTP_HOST:', host);
+		console.log('MAILER_SMTP_PORT:', port);
+		console.log('MAILER_SMTP_USER:', user ? 'Configurado' : 'No configurado');
+		console.log('MAILER_SMTP_PASS:', pass ? 'Configurado' : 'No configurado');
 		console.log('==========================================');
-
-		const host = process.env.MAILER_SMTP_HOST;
-		const port = process.env.MAILER_SMTP_PORT ? parseInt(process.env.MAILER_SMTP_PORT) : undefined;
-		const user = process.env.MAILER_SMTP_USER;
-		const pass = process.env.MAILER_SMTP_PASS;
 
 		if (!host || !port || !user || !pass) {
 			console.error('[EMAIL ERROR] Faltan variables de entorno para Mailtrap SMTP.');
@@ -42,7 +43,7 @@ function createTransporter(): nodemailer.Transporter | null {
 
 		return nodemailer.createTransport({
 			host,
-			port,
+			port: parseInt(port),
 			auth: { user, pass },
 			secure: false,
 			tls: {
@@ -133,7 +134,7 @@ Este mensaje fue enviado automáticamente desde el formulario de "Ser Domifito"
 `;
 
 	return sendEmail({
-		to: process.env.MAILER_ADMIN_EMAIL || 'admin@demomailtrap.co',
+		to: (import.meta.env.MAILER_ADMIN_EMAIL || process.env.MAILER_ADMIN_EMAIL) || 'admin@demomailtrap.co',
 		subject: 'Nueva solicitud de proveedor de servicios - Domify',
 		text: emailContent,
 		replyTo: formData.email
