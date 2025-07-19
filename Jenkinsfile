@@ -8,15 +8,15 @@ pipeline {
         PORT = '3000'
         PRODUCTION_SERVER = credentials('production-server-ip')
         
-        // Environment variables for build
-        PUBLIC_SUPABASE_URL = credentials('public-supabase-url')
-        PUBLIC_SUPABASE_ANON_KEY = credentials('public-supabase-anon-key')
-        SUPABASE_SERVICE_ROLE_KEY = credentials('supabase-service-role-key')
-        SMTP_HOST = credentials('smtp-host')
-        SMTP_PORT = credentials('smtp-port')
-        SMTP_USER = credentials('smtp-user')
-        SMTP_PASS = credentials('smtp-pass')
-        FROM_EMAIL = credentials('from-email')
+        // Environment variables for build with fallbacks
+        PUBLIC_SUPABASE_URL = "${env.PUBLIC_SUPABASE_URL ?: 'https://fallback.supabase.co'}"
+        PUBLIC_SUPABASE_ANON_KEY = "${env.PUBLIC_SUPABASE_ANON_KEY ?: 'fallback-anon-key'}"
+        SUPABASE_SERVICE_ROLE_KEY = "${env.SUPABASE_SERVICE_ROLE_KEY ?: 'fallback-service-role-key'}"
+        SMTP_HOST = "${env.SMTP_HOST ?: 'localhost'}"
+        SMTP_PORT = "${env.SMTP_PORT ?: '587'}"
+        SMTP_USER = "${env.SMTP_USER ?: 'fallback-user'}"
+        SMTP_PASS = "${env.SMTP_PASS ?: 'fallback-password'}"
+        FROM_EMAIL = "${env.FROM_EMAIL ?: 'noreply@domify.app'}"
     }
 
     stages {
