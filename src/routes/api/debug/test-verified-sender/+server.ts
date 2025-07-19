@@ -1,7 +1,15 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import nodemailer from 'nodemailer';
-import { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS } from '$env/static/private';
+
+import { getSmtpHost, getSmtpPort, getSmtpUser, getSmtpPass, getFromEmail } from '$lib/env-utils';
+
+// Get environment variables with fallbacks
+const SMTP_HOST = getSmtpHost();
+const SMTP_PORT = getSmtpPort();
+const SMTP_USER = getSmtpUser();
+const SMTP_PASS = getSmtpPass();
+const FROM_EMAIL = getFromEmail();
 
 export const GET: RequestHandler = async ({ url }) => {
   const testEmail = url.searchParams.get('email') || 'matthewreyesvanegas46@gmail.com';

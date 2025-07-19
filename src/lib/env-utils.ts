@@ -54,4 +54,71 @@ export function getSiteUrl(): string {
 	
 	// Default fallback
 	return 'http://localhost:3000';
+}
+
+// SMTP environment variables
+export function getSmtpHost(): string {
+	try {
+		const { SMTP_HOST } = require('$env/static/private');
+		if (SMTP_HOST) return SMTP_HOST;
+	} catch (e) {
+		if (import.meta.env.SMTP_HOST) {
+			return import.meta.env.SMTP_HOST;
+		}
+	}
+	
+	throw new Error('SMTP_HOST is not defined');
+}
+
+export function getSmtpPort(): string {
+	try {
+		const { SMTP_PORT } = require('$env/static/private');
+		if (SMTP_PORT) return SMTP_PORT;
+	} catch (e) {
+		if (import.meta.env.SMTP_PORT) {
+			return import.meta.env.SMTP_PORT;
+		}
+	}
+	
+	throw new Error('SMTP_PORT is not defined');
+}
+
+export function getSmtpUser(): string {
+	try {
+		const { SMTP_USER } = require('$env/static/private');
+		if (SMTP_USER) return SMTP_USER;
+	} catch (e) {
+		if (import.meta.env.SMTP_USER) {
+			return import.meta.env.SMTP_USER;
+		}
+	}
+	
+	throw new Error('SMTP_USER is not defined');
+}
+
+export function getSmtpPass(): string {
+	try {
+		const { SMTP_PASS } = require('$env/static/private');
+		if (SMTP_PASS) return SMTP_PASS;
+	} catch (e) {
+		if (import.meta.env.SMTP_PASS) {
+			return import.meta.env.SMTP_PASS;
+		}
+	}
+	
+	throw new Error('SMTP_PASS is not defined');
+}
+
+export function getFromEmail(): string {
+	try {
+		const { FROM_EMAIL } = require('$env/static/private');
+		if (FROM_EMAIL) return FROM_EMAIL;
+	} catch (e) {
+		if (import.meta.env.FROM_EMAIL) {
+			return import.meta.env.FROM_EMAIL;
+		}
+	}
+	
+	// Default fallback
+	return 'noreply@domify.app';
 } 
