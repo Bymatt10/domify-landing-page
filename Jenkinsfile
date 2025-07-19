@@ -85,8 +85,9 @@ pipeline {
                     sh """
                         docker run -d \
                         --name ${CONTAINER_NAME} \
-                        -p ${PORT}:3000 \
+                        -p ${PORT}:${PORT} \
                         -e NODE_ENV=production \
+                        -e PORT=${PORT} \
                         -e PUBLIC_SUPABASE_URL='${PUBLIC_SUPABASE_URL}' \
                         -e PUBLIC_SUPABASE_ANON_KEY='${PUBLIC_SUPABASE_ANON_KEY}' \
                         -e SUPABASE_SERVICE_ROLE_KEY='${SUPABASE_SERVICE_ROLE_KEY}' \
@@ -132,8 +133,8 @@ pipeline {
                         export SMTP_PASS='${SMTP_PASS}'
                         export FROM_EMAIL='${FROM_EMAIL}'
                         
-                        # Start the application in background
-                        nohup node build/index.js > app.log 2>&1 &
+                        # Run app explicitly on configured port
+                        nohup node build/index.js --port ${PORT} --host 0.0.0.0 > app.log 2>&1 &
                         
                         # Wait a moment for startup
                         sleep 3
