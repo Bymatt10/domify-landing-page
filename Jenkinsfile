@@ -61,46 +61,114 @@ pipeline {
                 script {
                     echo "🐳 Deploying with Docker..."
                     
-                    // Stop and remove existing container
-                    sh "docker stop ${CONTAINER_NAME} || true"
-                    sh "docker rm ${CONTAINER_NAME} || true"
+                    // Save current version for rollback
+                    def currentImage = sh(script: "docker images ${DOCKER_IMAGE}:latest --format '{{.ID}}'", returnStdout: true).trim()
+                    def currentContainer = sh(script: "docker ps -a --filter name=${CONTAINER_NAME} --format '{{.Image}}'", returnStdout: true).trim()
                     
-                    // Build new image
-                    sh """
-                        docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} \
-                        --build-arg PUBLIC_SUPABASE_URL='${PUBLIC_SUPABASE_URL}' \
-                        --build-arg PUBLIC_SUPABASE_ANON_KEY='${PUBLIC_SUPABASE_ANON_KEY}' \
-                        --build-arg PRIVATE_SUPABASE_SERVICE_ROLE_KEY='${SUPABASE_SERVICE_ROLE_KEY}' \
-                        --build-arg SMTP_HOST='${SMTP_HOST}' \
-                        --build-arg SMTP_PORT='${SMTP_PORT}' \
-                        --build-arg SMTP_USER='${SMTP_USER}' \
-                        --build-arg SMTP_PASS='${SMTP_PASS}' \
-                        --build-arg FROM_EMAIL='${FROM_EMAIL}' \
-                        .
-                    """
+                    if (currentImage && currentImage != '<none>') {
+                        env.PREVIOUS_IMAGE = currentImage
+                        echo "📸 Saved current image for rollback: ${currentImage}"
+                    }
                     
-                    // Tag as latest
-                    sh "docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_IMAGE}:latest"
+                    if (currentContainer && currentContainer != '<none>') {
+                        env.PREVIOUS_CONTAINER = currentContainer
+                        echo "📸 Saved current container for rollback: ${currentContainer}"
+                    }
                     
-                    // Run new container
-                    sh """
-                        docker run -d \
-                        --name ${CONTAINER_NAME} \
-                        -p ${PORT}:${PORT} \
-                        -e NODE_ENV=production \
-                        -e PORT=${PORT} \
-                        -e PUBLIC_SUPABASE_URL='${PUBLIC_SUPABASE_URL}' \
-                        -e PUBLIC_SUPABASE_ANON_KEY='${PUBLIC_SUPABASE_ANON_KEY}' \
-                        -e SUPABASE_SERVICE_ROLE_KEY='${SUPABASE_SERVICE_ROLE_KEY}' \
-                        -e PRIVATE_SUPABASE_SERVICE_ROLE_KEY='${SUPABASE_SERVICE_ROLE_KEY}' \
-                        -e SMTP_HOST='${SMTP_HOST}' \
-                        -e SMTP_PORT='${SMTP_PORT}' \
-                        -e SMTP_USER='${SMTP_USER}' \
-                        -e SMTP_PASS='${SMTP_PASS}' \
-                        -e FROM_EMAIL='${FROM_EMAIL}' \
-                        --restart unless-stopped \
-                        ${DOCKER_IMAGE}:latest
-                    """
+                    try {
+                        // Stop and remove existing container
+                        sh "docker stop ${CONTAINER_NAME} || true"
+                        sh "docker rm ${CONTAINER_NAME} || true"
+                        
+                        // Build new image
+                        sh """
+                            docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} \
+                            --build-arg PUBLIC_SUPABASE_URL='${PUBLIC_SUPABASE_URL}' \
+                            --build-arg PUBLIC_SUPABASE_ANON_KEY='${PUBLIC_SUPABASE_ANON_KEY}' \
+                            --build-arg PRIVATE_SUPABASE_SERVICE_ROLE_KEY='${SUPABASE_SERVICE_ROLE_KEY}' \
+                            --build-arg SMTP_HOST='${SMTP_HOST}' \
+                            --build-arg SMTP_PORT='${SMTP_PORT}' \
+                            --build-arg SMTP_USER='${SMTP_USER}' \
+                            --build-arg SMTP_PASS='${SMTP_PASS}' \
+                            --build-arg FROM_EMAIL='${FROM_EMAIL}' \
+                            .
+                        """
+                        
+                        // Tag as latest
+                        sh "docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_IMAGE}:latest"
+                        
+                        // Run new container
+                        sh """
+                            docker run -d \
+                            --name ${CONTAINER_NAME} \
+                            -p ${PORT}:${PORT} \
+                            -e NODE_ENV=production \
+                            -e PORT=${PORT} \
+                            -e PUBLIC_SUPABASE_URL='${PUBLIC_SUPABASE_URL}' \
+                            -e PUBLIC_SUPABASE_ANON_KEY='${PUBLIC_SUPABASE_ANON_KEY}' \
+                            -e SUPABASE_SERVICE_ROLE_KEY='${SUPABASE_SERVICE_ROLE_KEY}' \
+                            -e PRIVATE_SUPABASE_SERVICE_ROLE_KEY='${SUPABASE_SERVICE_ROLE_KEY}' \
+                            -e SMTP_HOST='${SMTP_HOST}' \
+                            -e SMTP_PORT='${SMTP_PORT}' \
+                            -e SMTP_USER='${SMTP_USER}' \
+                            -e SMTP_PASS='${SMTP_PASS}' \
+                            -e FROM_EMAIL='${FROM_EMAIL}' \
+                            --restart unless-stopped \
+                            ${DOCKER_IMAGE}:latest
+                        """
+                        
+                        // Wait for container to start and check health
+                        sleep(10)
+                        
+                        // Health check
+                        def healthCheck = sh(script: "curl -f http://localhost:${PORT} > /dev/null 2>&1", returnStatus: true)
+                        
+                        if (healthCheck != 0) {
+                            throw new Exception("Health check failed - new deployment is not responding")
+                        }
+                        
+                        echo "✅ New deployment successful and healthy!"
+                        
+                    } catch (Exception e) {
+                        echo "❌ Deployment failed: ${e.getMessage()}"
+                        echo "🔄 Starting rollback to previous version..."
+                        
+                        // Rollback to previous version
+                        sh "docker stop ${CONTAINER_NAME} || true"
+                        sh "docker rm ${CONTAINER_NAME} || true"
+                        
+                        if (env.PREVIOUS_IMAGE && env.PREVIOUS_IMAGE != '<none>') {
+                            // Restore previous image as latest
+                            sh "docker tag ${env.PREVIOUS_IMAGE} ${DOCKER_IMAGE}:latest"
+                            
+                            // Run previous container
+                            sh """
+                                docker run -d \
+                                --name ${CONTAINER_NAME} \
+                                -p ${PORT}:${PORT} \
+                                -e NODE_ENV=production \
+                                -e PORT=${PORT} \
+                                -e PUBLIC_SUPABASE_URL='${PUBLIC_SUPABASE_URL}' \
+                                -e PUBLIC_SUPABASE_ANON_KEY='${PUBLIC_SUPABASE_ANON_KEY}' \
+                                -e SUPABASE_SERVICE_ROLE_KEY='${SUPABASE_SERVICE_ROLE_KEY}' \
+                                -e PRIVATE_SUPABASE_SERVICE_ROLE_KEY='${SUPABASE_SERVICE_ROLE_KEY}' \
+                                -e SMTP_HOST='${SMTP_HOST}' \
+                                -e SMTP_PORT='${SMTP_PORT}' \
+                                -e SMTP_USER='${SMTP_USER}' \
+                                -e SMTP_PASS='${SMTP_PASS}' \
+                                -e FROM_EMAIL='${FROM_EMAIL}' \
+                                --restart unless-stopped \
+                                ${DOCKER_IMAGE}:latest
+                            """
+                            
+                            echo "✅ Rollback completed - previous version restored"
+                        } else {
+                            echo "⚠️ No previous version available for rollback"
+                        }
+                        
+                        // Re-throw the exception to mark the build as failed
+                        throw e
+                    }
                 }
             }
         }
@@ -113,41 +181,93 @@ pipeline {
                 script {
                     echo "📦 Deploying with Node.js (fallback)..."
                     
-                    // Stop any existing process on port 4000
-                    sh """
-                        # Kill any process using port 4000
-                        sudo pkill -f 'node.*4000' || true
-                        sleep 2
-                    """
+                    // Save current process PID for rollback
+                    def currentPid = sh(script: "pgrep -f 'node.*${PORT}'", returnStdout: true).trim()
+                    if (currentPid) {
+                        env.PREVIOUS_PID = currentPid
+                        echo "📸 Saved current process PID for rollback: ${currentPid}"
+                    }
                     
-                    // Start the application in background
-                    sh """
-                        # Set environment variables and start the app
-                        export NODE_ENV=production
-                        export PORT=${PORT}
-                        export HOSTNAME=0.0.0.0
-                        export PUBLIC_SUPABASE_URL='${PUBLIC_SUPABASE_URL}'
-                        export PUBLIC_SUPABASE_ANON_KEY='${PUBLIC_SUPABASE_ANON_KEY}'
-                        export SUPABASE_SERVICE_ROLE_KEY='${SUPABASE_SERVICE_ROLE_KEY}'
-                        export SMTP_HOST='${SMTP_HOST}'
-                        export SMTP_PORT='${SMTP_PORT}'
-                        export SMTP_USER='${SMTP_USER}'
-                        export SMTP_PASS='${SMTP_PASS}'
-                        export FROM_EMAIL='${FROM_EMAIL}'
+                    try {
+                        // Stop any existing process on port 4000
+                        sh """
+                            # Kill any process using port 4000
+                            sudo pkill -f 'node.*${PORT}' || true
+                            sleep 2
+                        """
                         
-                        # Run app explicitly on configured port
-                        nohup node build/index.js --port ${PORT} --host 0.0.0.0 > app.log 2>&1 &
+                        // Start the application in background
+                        sh """
+                            # Set environment variables and start the app
+                            export NODE_ENV=production
+                            export PORT=${PORT}
+                            export HOSTNAME=0.0.0.0
+                            export PUBLIC_SUPABASE_URL='${PUBLIC_SUPABASE_URL}'
+                            export PUBLIC_SUPABASE_ANON_KEY='${PUBLIC_SUPABASE_ANON_KEY}'
+                            export SUPABASE_SERVICE_ROLE_KEY='${SUPABASE_SERVICE_ROLE_KEY}'
+                            export SMTP_HOST='${SMTP_HOST}'
+                            export SMTP_PORT='${SMTP_PORT}'
+                            export SMTP_USER='${SMTP_USER}'
+                            export SMTP_PASS='${SMTP_PASS}'
+                            export FROM_EMAIL='${FROM_EMAIL}'
+                            
+                            # Run app explicitly on configured port
+                            nohup node build/index.js --port ${PORT} --host 0.0.0.0 > app.log 2>&1 &
+                            
+                            # Wait a moment for startup
+                            sleep 3
+                        """
                         
-                        # Wait a moment for startup
-                        sleep 3
+                        // Health check
+                        def healthCheck = sh(script: "curl -f http://localhost:${PORT} > /dev/null 2>&1", returnStatus: true)
                         
-                        # Check if app is running locally first
-                        if curl -f http://localhost:${PORT} > /dev/null 2>&1; then
-                            echo "✅ Application started successfully on port ${PORT}"
-                        else
-                            echo "⚠️ Application may not be responding yet, check logs"
-                        fi
-                    """
+                        if (healthCheck != 0) {
+                            throw new Exception("Health check failed - new deployment is not responding")
+                        }
+                        
+                        echo "✅ New deployment successful and healthy!"
+                        
+                    } catch (Exception e) {
+                        echo "❌ Deployment failed: ${e.getMessage()}"
+                        echo "🔄 Starting rollback to previous version..."
+                        
+                        // Kill new process if it exists
+                        sh "sudo pkill -f 'node.*${PORT}' || true"
+                        sleep(2)
+                        
+                        if (env.PREVIOUS_PID) {
+                            // Try to restart the previous process
+                            sh """
+                                # Check if previous process still exists
+                                if ps -p ${env.PREVIOUS_PID} > /dev/null 2>&1; then
+                                    echo "✅ Previous process still running, no action needed"
+                                else
+                                    echo "🔄 Restarting previous version..."
+                                    # Restart with previous environment (you might want to save this)
+                                    export NODE_ENV=production
+                                    export PORT=${PORT}
+                                    export HOSTNAME=0.0.0.0
+                                    export PUBLIC_SUPABASE_URL='${PUBLIC_SUPABASE_URL}'
+                                    export PUBLIC_SUPABASE_ANON_KEY='${PUBLIC_SUPABASE_ANON_KEY}'
+                                    export SUPABASE_SERVICE_ROLE_KEY='${SUPABASE_SERVICE_ROLE_KEY}'
+                                    export SMTP_HOST='${SMTP_HOST}'
+                                    export SMTP_PORT='${SMTP_PORT}'
+                                    export SMTP_USER='${SMTP_USER}'
+                                    export SMTP_PASS='${SMTP_PASS}'
+                                    export FROM_EMAIL='${FROM_EMAIL}'
+                                    
+                                    nohup node build/index.js --port ${PORT} --host 0.0.0.0 > app.log 2>&1 &
+                                fi
+                            """
+                            
+                            echo "✅ Rollback completed - previous version restored"
+                        } else {
+                            echo "⚠️ No previous version available for rollback"
+                        }
+                        
+                        // Re-throw the exception to mark the build as failed
+                        throw e
+                    }
                 }
             }
         }
