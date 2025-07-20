@@ -83,8 +83,9 @@
 					<button
 						class="inline-flex text-gray-400 hover:text-gray-600 focus:outline-none focus:text-gray-600 transition-colors duration-200"
 						on:click={hide}
+						aria-label="Cerrar notificación"
 					>
-						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
 						</svg>
 					</button>

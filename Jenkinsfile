@@ -12,6 +12,7 @@ pipeline {
         PUBLIC_SUPABASE_URL = "${env.PUBLIC_SUPABASE_URL ?: 'https://fallback.supabase.co'}"
         PUBLIC_SUPABASE_ANON_KEY = "${env.PUBLIC_SUPABASE_ANON_KEY ?: 'fallback-anon-key'}"
         SUPABASE_SERVICE_ROLE_KEY = "${env.SUPABASE_SERVICE_ROLE_KEY ?: 'fallback-service-role-key'}"
+        PRIVATE_SUPABASE_SERVICE_ROLE_KEY = "${env.SUPABASE_SERVICE_ROLE_KEY ?: 'fallback-service-role-key'}"
         SMTP_HOST = "${env.SMTP_HOST ?: 'localhost'}"
         SMTP_PORT = "${env.SMTP_PORT ?: '587'}"
         SMTP_USER = "${env.SMTP_USER ?: 'fallback-user'}"
@@ -90,6 +91,7 @@ pipeline {
                         -e PORT=${PORT} \
                         -e PUBLIC_SUPABASE_URL='${PUBLIC_SUPABASE_URL}' \
                         -e PUBLIC_SUPABASE_ANON_KEY='${PUBLIC_SUPABASE_ANON_KEY}' \
+                        -e SUPABASE_SERVICE_ROLE_KEY='${SUPABASE_SERVICE_ROLE_KEY}' \
                         -e PRIVATE_SUPABASE_SERVICE_ROLE_KEY='${SUPABASE_SERVICE_ROLE_KEY}' \
                         -e SMTP_HOST='${SMTP_HOST}' \
                         -e SMTP_PORT='${SMTP_PORT}' \

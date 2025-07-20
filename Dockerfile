@@ -1,27 +1,19 @@
-# Multi-stage build for SvelteKit application
-FROM node:18-alpine AS base
+# Use Node.js 18 as base image
+FROM node:18-alpine AS builder
 
-# Install dependencies only when needed
-FROM base AS deps
-RUN apk add --no-cache libc6-compat
+# Set working directory
 WORKDIR /app
 
-# Install production dependencies
-COPY package.json package-lock.json ./
+# Copy package files
+COPY package*.json ./
 
-RUN npm install --production
+# Install dependencies
+RUN npm ci --only=production
 
-# Rebuild the source code only when needed
-FROM base AS builder
-
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
+# Copy source code
 COPY . .
 
-# Install all dependencies for build
-RUN npm install
-
-# Set build-time environment variables with defaults
+# Set build-time environment variables
 ARG PUBLIC_SUPABASE_URL
 ARG PUBLIC_SUPABASE_ANON_KEY
 ARG PRIVATE_SUPABASE_SERVICE_ROLE_KEY
@@ -31,6 +23,7 @@ ARG SMTP_USER
 ARG SMTP_PASS
 ARG FROM_EMAIL
 
+# Set environment variables for build
 ENV PUBLIC_SUPABASE_URL=${PUBLIC_SUPABASE_URL}
 ENV PUBLIC_SUPABASE_ANON_KEY=${PUBLIC_SUPABASE_ANON_KEY}
 ENV PRIVATE_SUPABASE_SERVICE_ROLE_KEY=${PRIVATE_SUPABASE_SERVICE_ROLE_KEY}
@@ -43,32 +36,35 @@ ENV FROM_EMAIL=${FROM_EMAIL}
 # Build the application
 RUN npm run build
 
-# Production image, copy all the files and run the app
-FROM base AS runner
+# Production stage
+FROM node:18-alpine AS production
+
+# Create app user
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S svelte -u 1001
+
+# Set working directory
 WORKDIR /app
 
-ENV NODE_ENV=production
+# Copy package files
+COPY package*.json ./
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 svelte
+# Install only production dependencies
+RUN npm ci --only=production && npm cache clean --force
 
-# Copy the built application
-COPY --from=builder /app/build ./build
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./package.json
+# Copy built application from builder stage
+COPY --from=builder --chown=svelte:nodejs /app/build ./build
+COPY --from=builder --chown=svelte:nodejs /app/static ./static
 
-# Copy static assets
-COPY --from=builder /app/static ./static
-
-# Change ownership to the svelte user
-RUN chown -R svelte:nodejs /app
-
+# Switch to non-root user
 USER svelte
 
-EXPOSE 3000
+# Expose port
+EXPOSE 4000
 
-ENV PORT=3000
-ENV HOSTNAME="0.0.0.0"
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:4000', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })" || exit 1
 
 # Start the application
-CMD ["node", "build"]
+CMD ["node", "build/index.js"]

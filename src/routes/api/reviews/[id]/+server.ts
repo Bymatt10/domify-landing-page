@@ -55,7 +55,7 @@ export const GET: RequestHandler = async ({ params, locals }) => {
 // PUT: Editar una reseña
 export const PUT: RequestHandler = async ({ params, request, locals }) => {
 	try {
-		const session = await locals.getSession();
+		const { session, user } = await locals.safeGetSession();
 		
 		if (!session?.user) {
 			return json({ error: 'No autorizado' }, { status: 401 });
@@ -148,7 +148,7 @@ export const PUT: RequestHandler = async ({ params, request, locals }) => {
 // DELETE: Eliminar una reseña
 export const DELETE: RequestHandler = async ({ params, locals }) => {
 	try {
-		const session = await locals.getSession();
+		const { session, user } = await locals.safeGetSession();
 		
 		if (!session?.user) {
 			return json({ error: 'No autorizado' }, { status: 401 });

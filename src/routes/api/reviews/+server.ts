@@ -70,7 +70,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 // POST: Crear una nueva reseña
 export const POST: RequestHandler = async ({ request, locals }) => {
 	try {
-		const session = await locals.getSession();
+		const { session, user } = await locals.safeGetSession();
 		
 		if (!session?.user) {
 			return json({ error: 'No autorizado' }, { status: 401 });
