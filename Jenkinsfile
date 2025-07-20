@@ -118,13 +118,30 @@ pipeline {
                         """
                         
                         // Wait for container to start and check health
-                        sleep(10)
+                        echo "⏳ Waiting for container to start..."
+                        sleep(15)
                         
-                        // Health check
-                        def healthCheck = sh(script: "curl -f http://localhost:${PORT} > /dev/null 2>&1", returnStatus: true)
+                        // Health check with retries
+                        def healthCheckPassed = false
+                        for (int i = 1; i <= 5; i++) {
+                            echo "🔍 Health check attempt ${i}/5..."
+                            def healthCheck = sh(script: "curl -f http://localhost:${PORT} > /dev/null 2>&1", returnStatus: true)
+                            
+                            if (healthCheck == 0) {
+                                healthCheckPassed = true
+                                echo "✅ Health check passed on attempt ${i}"
+                                break
+                            } else {
+                                echo "⚠️ Health check failed on attempt ${i}, waiting 5 seconds..."
+                                sleep(5)
+                            }
+                        }
                         
-                        if (healthCheck != 0) {
-                            throw new Exception("Health check failed - new deployment is not responding")
+                        if (!healthCheckPassed) {
+                            // Get container logs for debugging
+                            echo "📋 Container logs:"
+                            sh "docker logs ${CONTAINER_NAME} || echo 'Could not get container logs'"
+                            throw new Exception("Health check failed after 5 attempts - new deployment is not responding")
                         }
                         
                         echo "✅ New deployment successful and healthy!"
