@@ -69,7 +69,7 @@ pipeline {
                         docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} \
                         --build-arg PUBLIC_SUPABASE_URL='${PUBLIC_SUPABASE_URL}' \
                         --build-arg PUBLIC_SUPABASE_ANON_KEY='${PUBLIC_SUPABASE_ANON_KEY}' \
-                        --build-arg SUPABASE_SERVICE_ROLE_KEY='${SUPABASE_SERVICE_ROLE_KEY}' \
+                        --build-arg PRIVATE_SUPABASE_SERVICE_ROLE_KEY='${SUPABASE_SERVICE_ROLE_KEY}' \
                         --build-arg SMTP_HOST='${SMTP_HOST}' \
                         --build-arg SMTP_PORT='${SMTP_PORT}' \
                         --build-arg SMTP_USER='${SMTP_USER}' \
@@ -90,7 +90,7 @@ pipeline {
                         -e PORT=${PORT} \
                         -e PUBLIC_SUPABASE_URL='${PUBLIC_SUPABASE_URL}' \
                         -e PUBLIC_SUPABASE_ANON_KEY='${PUBLIC_SUPABASE_ANON_KEY}' \
-                        -e SUPABASE_SERVICE_ROLE_KEY='${SUPABASE_SERVICE_ROLE_KEY}' \
+                        -e PRIVATE_SUPABASE_SERVICE_ROLE_KEY='${SUPABASE_SERVICE_ROLE_KEY}' \
                         -e SMTP_HOST='${SMTP_HOST}' \
                         -e SMTP_PORT='${SMTP_PORT}' \
                         -e SMTP_USER='${SMTP_USER}' \
