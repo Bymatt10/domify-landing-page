@@ -418,6 +418,17 @@ EOF
     }
 
     post {
+        always {
+            node {
+                script {
+                    if (env.DOCKER_AVAILABLE == 'true') {
+                        sh "docker image prune -f || true"
+                    }
+                    // Archive the log file
+                    archiveArtifacts artifacts: 'app.log', fingerprint: true, allowEmptyArchive: true
+                }
+            }
+        }
         success {
             script {
                 if (env.DOCKER_AVAILABLE == 'true') {
@@ -438,18 +449,12 @@ EOF
             echo "   3. Set DOMAIN environment variable in Jenkins"
         }
         failure {
-            echo "❌ Deployment failed. Check logs for details."
-            sh "cat app.log || echo 'No log file found'"
-        }
-        always {
-            // Clean up old Docker images if Docker is available
-            script {
-                if (env.DOCKER_AVAILABLE == 'true') {
-                    sh "docker image prune -f || true"
+            node {
+                script {
+                    echo "❌ Deployment failed. Check logs for details."
+                    sh "cat app.log || echo 'No log file found'"
                 }
             }
-            // Archive the log file
-            archiveArtifacts artifacts: 'app.log', fingerprint: true, allowEmptyArchive: true
         }
     }
 }
