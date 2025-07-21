@@ -166,99 +166,29 @@ pipeline {
                             ${DOCKER_IMAGE}:latest
                         """
                         
-                        // Wait for container to start and check health
+                        // Wait for container to start
                         echo "⏳ Waiting for container to start..."
-                        sleep(30) // Give more time for SvelteKit to initialize
+                        sleep(20)
                         
-                        // Health check with retries and better debugging
+                        // Simple health check
                         def healthCheckPassed = false
-                        for (int i = 1; i <= 5; i++) {
-                            echo "🔍 Health check attempt ${i}/5..."
-                            
-                            // Check if container is running
-                            def containerStatus = sh(script: "docker ps --filter name=${CONTAINER_NAME} --format '{{.Status}}'", returnStdout: true).trim()
-                            echo "📋 Container status: ${containerStatus}"
-                            
-                            // Try multiple health check methods
-                            def healthCheck = 1
-                            
-                            // Method 1: Check if port is listening on host
-                            try {
-                                def portCheck = sh(script: "ss -tuln | grep :${PORT}", returnStatus: true)
-                                if (portCheck == 0) {
-                                    echo "✅ Port ${PORT} is listening on host"
-                                } else {
-                                    echo "⚠️ Port ${PORT} not found on host"
-                                }
-                            } catch (Exception e) {
-                                echo "⚠️ Could not check port status"
-                            }
-                            
-                            // Method 2: Health check from inside container first
-                            try {
-                                healthCheck = sh(script: "docker exec ${CONTAINER_NAME} curl -f http://localhost:${PORT} > /dev/null 2>&1", returnStatus: true)
-                                if (healthCheck == 0) {
-                                    echo "✅ Container internal health check passed"
-                                } else {
-                                    echo "⚠️ Container internal health check failed"
-                                }
-                            } catch (Exception e) {
-                                echo "⚠️ Could not run internal health check: ${e.getMessage()}"
-                            }
-                            
-                            // Method 3: Try specific health endpoint from outside
-                            if (healthCheck != 0) {
-                                try {
-                                    healthCheck = sh(script: "curl -f http://localhost:${PORT}/api/health > /dev/null 2>&1", returnStatus: true)
-                                    if (healthCheck == 0) {
-                                        echo "✅ Health endpoint responded"
-                                    }
-                                } catch (Exception e) {
-                                    echo "⚠️ Health endpoint not available"
-                                }
-                            }
-                            
-                            // Method 4: Try basic HTTP request with timeout
-                            if (healthCheck != 0) {
-                                try {
-                                    healthCheck = sh(script: "timeout 10 curl -f http://localhost:${PORT} > /dev/null 2>&1", returnStatus: true)
-                                    if (healthCheck == 0) {
-                                        echo "✅ Basic HTTP request succeeded"
-                                    }
-                                } catch (Exception e) {
-                                    echo "⚠️ Basic HTTP request failed"
-                                }
-                            }
-                            
-                            // Method 5: Check if we can connect to port with telnet
-                            if (healthCheck != 0) {
-                                try {
-                                    healthCheck = sh(script: "timeout 5 bash -c '</dev/tcp/localhost/${PORT}' > /dev/null 2>&1", returnStatus: true)
-                                    if (healthCheck == 0) {
-                                        echo "✅ TCP connection successful"
-                                    }
-                                } catch (Exception e) {
-                                    echo "⚠️ TCP connection failed"
-                                }
-                            }
+                        for (int i = 1; i <= 3; i++) {
+                            echo "🔍 Health check attempt ${i}/3..."
+                            def healthCheck = sh(script: "curl -f http://localhost:${PORT}/api/health", returnStatus: true)
                             
                             if (healthCheck == 0) {
                                 healthCheckPassed = true
-                                echo "✅ Health check passed on attempt ${i}"
+                                echo "✅ Health check passed"
                                 break
                             } else {
-                                echo "⚠️ Health check failed on attempt ${i}, waiting 10 seconds..."
-                                echo "📋 Container logs (last 10 lines):"
-                                sh "docker logs --tail 10 ${CONTAINER_NAME} || echo 'Could not get container logs'"
+                                echo "⚠️ Health check failed, waiting 10 seconds..."
+                                sh "docker logs --tail 5 ${CONTAINER_NAME}"
                                 sleep(10)
                             }
                         }
                         
                         if (!healthCheckPassed) {
-                            // Get container logs for debugging
-                            echo "📋 Container logs:"
-                            sh "docker logs ${CONTAINER_NAME} || echo 'Could not get container logs'"
-                            throw new Exception("Health check failed after 5 attempts - new deployment is not responding")
+                            throw new Exception("Health check failed - deployment not responding")
                         }
                         
                         echo "✅ New deployment successful and healthy!"
