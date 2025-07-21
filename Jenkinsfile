@@ -419,14 +419,12 @@ EOF
 
     post {
         always {
-            node {
-                script {
-                    if (env.DOCKER_AVAILABLE == 'true') {
-                        sh "docker image prune -f || true"
-                    }
-                    // Archive the log file
-                    archiveArtifacts artifacts: 'app.log', fingerprint: true, allowEmptyArchive: true
+            script {
+                if (env.DOCKER_AVAILABLE == 'true') {
+                    sh "docker image prune -f || true"
                 }
+                // Archive the log file
+                archiveArtifacts artifacts: 'app.log', fingerprint: true, allowEmptyArchive: true
             }
         }
         success {
@@ -449,11 +447,9 @@ EOF
             echo "   3. Set DOMAIN environment variable in Jenkins"
         }
         failure {
-            node {
-                script {
-                    echo "❌ Deployment failed. Check logs for details."
-                    sh "cat app.log || echo 'No log file found'"
-                }
+            script {
+                echo "❌ Deployment failed. Check logs for details."
+                sh "cat app.log || echo 'No log file found'"
             }
         }
     }
