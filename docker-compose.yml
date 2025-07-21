@@ -3,15 +3,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      args:
-        PUBLIC_SUPABASE_URL: ${PUBLIC_SUPABASE_URL}
-        PUBLIC_SUPABASE_ANON_KEY: ${PUBLIC_SUPABASE_ANON_KEY}
-        PRIVATE_SUPABASE_SERVICE_ROLE_KEY: ${PRIVATE_SUPABASE_SERVICE_ROLE_KEY}
-        SMTP_HOST: ${SMTP_HOST}
-        SMTP_PORT: ${SMTP_PORT}
-        SMTP_USER: ${SMTP_USER}
-        SMTP_PASS: ${SMTP_PASS}
-        FROM_EMAIL: ${FROM_EMAIL}
     container_name: domify-app
     ports:
       - "3000:3000"
@@ -19,18 +10,15 @@ services:
       NODE_ENV: production
       PORT: 3000
       HOSTNAME: 0.0.0.0
-
-      # Supabase config
-      PUBLIC_SUPABASE_URL: ${PUBLIC_SUPABASE_URL}
-      PUBLIC_SUPABASE_ANON_KEY: ${PUBLIC_SUPABASE_ANON_KEY}
-      PRIVATE_SUPABASE_SERVICE_ROLE_KEY: ${PRIVATE_SUPABASE_SERVICE_ROLE_KEY}
-
-      # SMTP config
-      SMTP_HOST: ${SMTP_HOST}
-      SMTP_PORT: ${SMTP_PORT}
-      SMTP_USER: ${SMTP_USER}
-      SMTP_PASS: ${SMTP_PASS}
-      FROM_EMAIL: ${FROM_EMAIL}
+      # Las siguientes variables se configurarán desde Portainer:
+      # PUBLIC_SUPABASE_URL: 
+      # PUBLIC_SUPABASE_ANON_KEY: 
+      # PRIVATE_SUPABASE_SERVICE_ROLE_KEY: 
+      # SMTP_HOST: 
+      # SMTP_PORT: 
+      # SMTP_USER: 
+      # SMTP_PASS: 
+      # FROM_EMAIL: 
     restart: unless-stopped
     networks:
       - domify-network

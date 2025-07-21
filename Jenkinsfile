@@ -8,22 +8,71 @@ pipeline {
         PORT = '4000'
         DOMAIN = "${env.DOMAIN ?: 'domify.app'}"
         
-        // Environment variables for build with fallbacks
-        PUBLIC_SUPABASE_URL = "${env.PUBLIC_SUPABASE_URL ?: 'https://fallback.supabase.co'}"
-        PUBLIC_SUPABASE_ANON_KEY = "${env.PUBLIC_SUPABASE_ANON_KEY ?: 'fallback-anon-key'}"
-        SUPABASE_SERVICE_ROLE_KEY = "${env.SUPABASE_SERVICE_ROLE_KEY ?: 'fallback-service-role-key'}"
-        PRIVATE_SUPABASE_SERVICE_ROLE_KEY = "${env.SUPABASE_SERVICE_ROLE_KEY ?: 'fallback-service-role-key'}"
-        SMTP_HOST = "${env.SMTP_HOST ?: 'localhost'}"
-        SMTP_PORT = "${env.SMTP_PORT ?: '587'}"
-        SMTP_USER = "${env.SMTP_USER ?: 'fallback-user'}"
-        SMTP_PASS = "${env.SMTP_PASS ?: 'fallback-password'}"
-        FROM_EMAIL = "${env.FROM_EMAIL ?: 'noreply@domify.app'}"
+        // Using Jenkins credentials for sensitive data
+        PUBLIC_SUPABASE_URL = credentials('public-supabase-url')
+        PUBLIC_SUPABASE_ANON_KEY = credentials('public-supabase-anon-key')
+        SUPABASE_SERVICE_ROLE_KEY = credentials('supabase-service-role-key')
+        SMTP_HOST = credentials('smtp-host')
+        SMTP_PORT = credentials('smtp-port')
+        SMTP_USER = credentials('smtp-user')
+        SMTP_PASS = credentials('smtp-pass')
+        FROM_EMAIL = credentials('from-email')
+        
+        // Keep fallbacks for non-sensitive vars
+        PRIVATE_SUPABASE_SERVICE_ROLE_KEY = "${SUPABASE_SERVICE_ROLE_KEY}"
     }
 
     stages {
         stage('Checkout') {
             steps {
                 checkout scm
+            }
+        }
+
+        stage('Validate Secrets') {
+            steps {
+                script {
+                    echo "🔐 Validating Jenkins secrets configuration..."
+                    
+                    // Validate that secrets are not empty/default values
+                    def requiredSecrets = [
+                        'PUBLIC_SUPABASE_URL': env.PUBLIC_SUPABASE_URL,
+                        'PUBLIC_SUPABASE_ANON_KEY': env.PUBLIC_SUPABASE_ANON_KEY,
+                        'SUPABASE_SERVICE_ROLE_KEY': env.SUPABASE_SERVICE_ROLE_KEY,
+                        'SMTP_HOST': env.SMTP_HOST,
+                        'SMTP_USER': env.SMTP_USER,
+                        'SMTP_PASS': env.SMTP_PASS,
+                        'FROM_EMAIL': env.FROM_EMAIL
+                    ]
+                    
+                    def missingSecrets = []
+                    requiredSecrets.each { name, value ->
+                        if (!value || value.trim().isEmpty()) {
+                            missingSecrets.add(name)
+                        }
+                    }
+                    
+                    if (!missingSecrets.isEmpty()) {
+                        def errorMsg = "❌ Missing or empty Jenkins credentials: ${missingSecrets.join(', ')}\n"
+                        errorMsg += "💡 Please configure these secrets in Jenkins:\n"
+                        errorMsg += "   - Go to Manage Jenkins > Credentials\n"
+                        errorMsg += "   - Add Secret Text credentials with IDs:\n"
+                        missingSecrets.each { secret ->
+                            def credentialId = secret.toLowerCase().replace('_', '-')
+                            errorMsg += "     * ${credentialId}\n"
+                        }
+                        error(errorMsg)
+                    }
+                    
+                    echo "✅ All required secrets are configured"
+                    
+                    // Log configuration (without exposing values)
+                    echo "📋 Configuration Summary:"
+                    echo "   - Supabase URL: ${env.PUBLIC_SUPABASE_URL ? 'CONFIGURED' : 'MISSING'}"
+                    echo "   - Supabase Keys: ${env.PUBLIC_SUPABASE_ANON_KEY && env.SUPABASE_SERVICE_ROLE_KEY ? 'CONFIGURED' : 'MISSING'}"
+                    echo "   - SMTP Settings: ${env.SMTP_HOST && env.SMTP_USER ? 'CONFIGURED' : 'MISSING'}"
+                    echo "   - From Email: ${env.FROM_EMAIL ? 'CONFIGURED' : 'MISSING'}"
+                }
             }
         }
 
