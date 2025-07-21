@@ -419,7 +419,7 @@ EOF
 
     post {
         always {
-            node {
+            node('any') {
                 script {
                     if (env.DOCKER_AVAILABLE == 'true') {
                         sh "docker image prune -f || true"
@@ -449,7 +449,7 @@ EOF
             echo "   3. Set DOMAIN environment variable in Jenkins"
         }
         failure {
-            node {
+            node('any') {
                 script {
                     echo "❌ Deployment failed. Check logs for details."
                     sh "cat app.log || echo 'No log file found'"
