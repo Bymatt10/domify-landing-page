@@ -172,14 +172,24 @@ pipeline {
                             set -x  # Re-enable command logging
                         """
                         
-                        // Wait for container to start
-                        echo "⏳ Waiting for container to start..."
-                        sleep(20)
+                        // Wait for container to start and SvelteKit to initialize
+                        echo "⏳ Waiting for container to start and SvelteKit to initialize..."
+                        sleep(30)
                         
                         // Network and health check diagnosis
                         def healthCheckPassed = false
-                        for (int i = 1; i <= 3; i++) {
-                            echo "🔍 Health check attempt ${i}/3..."
+                        for (int i = 1; i <= 5; i++) {
+                            echo "🔍 Health check attempt ${i}/5..."
+                            
+                            // Check if container is running
+                            def containerRunning = sh(script: "docker ps --filter name=${CONTAINER_NAME} --filter status=running --quiet", returnStdout: true).trim()
+                            if (!containerRunning) {
+                                echo "❌ Container is not running"
+                                sh "docker ps --filter name=${CONTAINER_NAME}"
+                                sh "docker logs --tail 20 ${CONTAINER_NAME}"
+                                sleep(10)
+                                continue
+                            }
                             
                             // Diagnose network issues
                             echo "🔍 Checking container network status..."
@@ -189,26 +199,39 @@ pipeline {
                             
                             // Try health check from inside container first
                             echo "🔍 Testing from inside container..."
-                            def internalCheck = sh(script: "docker exec ${CONTAINER_NAME} curl -f http://localhost:${PORT}/api/health", returnStatus: true)
+                            def internalCheck = sh(script: "docker exec ${CONTAINER_NAME} curl -f -m 10 http://localhost:${PORT}/api/health 2>/dev/null", returnStatus: true)
                             
                             if (internalCheck == 0) {
                                 echo "✅ Internal health check passed"
+                                
+                                // Get and display health check response
+                                def healthResponse = sh(script: "docker exec ${CONTAINER_NAME} curl -s http://localhost:${PORT}/api/health", returnStdout: true).trim()
+                                echo "📋 Health response: ${healthResponse}"
                             } else {
                                 echo "❌ Internal health check failed - app not responding"
-                                sh "docker logs --tail 10 ${CONTAINER_NAME}"
-                                sleep(10)
+                                sh "docker logs --tail 15 ${CONTAINER_NAME}"
+                                
+                                // Check if the app is at least listening on the port
+                                def portCheck = sh(script: "docker exec ${CONTAINER_NAME} netstat -tlnp | grep :${PORT} || echo 'Port not listening'", returnStdout: true)
+                                echo "🔍 Port status inside container: ${portCheck}"
+                                
+                                sleep(15)
                                 continue
                             }
                             
                             // Try health check from host
                             echo "🔍 Testing from host..."
-                            def healthCheck = sh(script: "curl -f http://localhost:${PORT}/api/health", returnStatus: true)
+                            def healthCheck = sh(script: "curl -f -m 10 http://localhost:${PORT}/api/health 2>/dev/null", returnStatus: true)
                             
                             if (healthCheck == 0) {
+                                // Get and display health check response from host
+                                def hostHealthResponse = sh(script: "curl -s http://localhost:${PORT}/api/health", returnStdout: true).trim()
+                                echo "📋 Health response from host: ${hostHealthResponse}"
+                                
                                 // Verify static assets are served correctly
                                 echo "🔍 Checking static assets..."
-                                def faviconCheck = sh(script: "curl -f http://localhost:${PORT}/favicon.png", returnStatus: true)
-                                def logoCheck = sh(script: "curl -f http://localhost:${PORT}/icon-domify.png", returnStatus: true)
+                                def faviconCheck = sh(script: "curl -f -m 5 http://localhost:${PORT}/favicon.png 2>/dev/null", returnStatus: true)
+                                def logoCheck = sh(script: "curl -f -m 5 http://localhost:${PORT}/icon-domify.png 2>/dev/null", returnStatus: true)
                                 
                                 if (faviconCheck == 0) {
                                     echo "✅ Favicon is served correctly"
@@ -234,14 +257,18 @@ pipeline {
                                 echo "📋 Container IP: ${containerIP}"
                                 
                                 if (containerIP) {
-                                    def ipCheck = sh(script: "curl -f http://${containerIP}:${PORT}/api/health", returnStatus: true)
+                                    def ipCheck = sh(script: "curl -f -m 10 http://${containerIP}:${PORT}/api/health 2>/dev/null", returnStatus: true)
                                     if (ipCheck == 0) {
                                         echo "✅ Direct IP health check passed"
                                         
+                                        // Get and display health check response from IP
+                                        def ipHealthResponse = sh(script: "curl -s http://${containerIP}:${PORT}/api/health", returnStdout: true).trim()
+                                        echo "📋 Health response from IP: ${ipHealthResponse}"
+                                        
                                         // Verify static assets via IP
                                         echo "🔍 Checking static assets via IP..."
-                                        def faviconIPCheck = sh(script: "curl -f http://${containerIP}:${PORT}/favicon.png", returnStatus: true)
-                                        def logoIPCheck = sh(script: "curl -f http://${containerIP}:${PORT}/icon-domify.png", returnStatus: true)
+                                        def faviconIPCheck = sh(script: "curl -f -m 5 http://${containerIP}:${PORT}/favicon.png 2>/dev/null", returnStatus: true)
+                                        def logoIPCheck = sh(script: "curl -f -m 5 http://${containerIP}:${PORT}/icon-domify.png 2>/dev/null", returnStatus: true)
                                         
                                         if (faviconIPCheck == 0) {
                                             echo "✅ Favicon is served correctly via IP"
@@ -260,7 +287,7 @@ pipeline {
                                     }
                                 }
                                 
-                                sleep(10)
+                                sleep(15)
                             }
                         }
                         
@@ -360,15 +387,57 @@ pipeline {
                             # Run app explicitly on configured port
                             nohup node build/index.js --port ${PORT} --host 0.0.0.0 > app.log 2>&1 &
                             
-                            # Wait a moment for startup
-                            sleep 3
+                            # Wait for SvelteKit to initialize
+                            sleep 30
                             set -x  # Re-enable command logging
                         """
                         
-                        // Health check
-                        def healthCheck = sh(script: "curl -f http://localhost:${PORT} > /dev/null 2>&1", returnStatus: true)
+                        // Health check with retry logic
+                        def healthCheckPassed = false
+                        for (int i = 1; i <= 5; i++) {
+                            echo "🔍 Health check attempt ${i}/5..."
+                            
+                            // Check if process is running
+                            def processCheck = sh(script: "pgrep -f 'node.*build/index.js'", returnStatus: true)
+                            if (processCheck != 0) {
+                                echo "❌ Node.js process not running"
+                                sh "tail -20 app.log || echo 'No log file found'"
+                                sleep(10)
+                                continue
+                            }
+                            
+                            // Try health check
+                            def healthCheck = sh(script: "curl -f -m 10 http://localhost:${PORT}/api/health 2>/dev/null", returnStatus: true)
+                            
+                            if (healthCheck == 0) {
+                                // Get and display health check response
+                                def healthResponse = sh(script: "curl -s http://localhost:${PORT}/api/health", returnStdout: true).trim()
+                                echo "📋 Health response: ${healthResponse}"
+                                
+                                // Test root endpoint as well
+                                def rootCheck = sh(script: "curl -f -m 10 http://localhost:${PORT} 2>/dev/null", returnStatus: true)
+                                if (rootCheck == 0) {
+                                    echo "✅ Root endpoint also accessible"
+                                } else {
+                                    echo "⚠️ Root endpoint not accessible, but health endpoint is working"
+                                }
+                                
+                                healthCheckPassed = true
+                                echo "✅ Health check passed - App deployed successfully!"
+                                break
+                            } else {
+                                echo "❌ Health check failed"
+                                sh "tail -10 app.log || echo 'No log file found'"
+                                
+                                // Check if port is being used
+                                def portCheck = sh(script: "netstat -tlnp | grep :${PORT} || echo 'Port not in use'", returnStdout: true)
+                                echo "🔍 Port status: ${portCheck}"
+                                
+                                sleep(15)
+                            }
+                        }
                         
-                        if (healthCheck != 0) {
+                        if (!healthCheckPassed) {
                             throw new Exception("Health check failed - new deployment is not responding")
                         }
                         
@@ -469,26 +538,43 @@ EOF
         stage('Health Check') {
             steps {
                 script {
-                    // Give the app time to start
+                    // Give the app time to start (already waited in previous stages, but being safe)
                     sleep(5)
                     
                     // Check if the application is responding
                     sh """
-                        echo "🔍 Testing application accessibility..."
+                        echo "🔍 Final application accessibility test..."
                         
-                        # Test localhost
-                        for i in {1..5}; do
-                            if curl -f http://localhost:${PORT} > /dev/null 2>&1; then
-                                echo "✅ Local health check passed - Application is running on port ${PORT}"
-                                break
+                        # Test localhost health endpoint
+                        if curl -f -m 10 http://localhost:${PORT}/api/health > /dev/null 2>&1; then
+                            echo "✅ Local health check passed - Application is running on port ${PORT}"
+                            
+                            # Display health status
+                            echo "📋 Health status:"
+                            curl -s http://localhost:${PORT}/api/health | head -5
+                            
+                            # Test root endpoint
+                            if curl -f -m 10 http://localhost:${PORT} > /dev/null 2>&1; then
+                                echo "✅ Root endpoint also accessible"
+                            else
+                                echo "⚠️ Root endpoint check failed, but health endpoint is working"
                             fi
-                            echo "⏳ Attempt \$i/5 - Waiting for application to start..."
-                            sleep 3
-                        done
+                        else
+                            echo "❌ Local health check failed"
+                            if [ -f app.log ]; then
+                                echo "📋 Recent application logs:"
+                                tail -10 app.log
+                            fi
+                            exit 1
+                        fi
                         
-                        # Test domain (if accessible)
-                        if curl -f http://${DOMAIN} > /dev/null 2>&1; then
+                        # Test domain health endpoint (if accessible)
+                        if curl -f -m 10 http://${DOMAIN}/api/health > /dev/null 2>&1; then
                             echo "✅ Domain health check passed - Application accessible at http://${DOMAIN}"
+                            
+                            # Display domain health status
+                            echo "📋 Domain health status:"
+                            curl -s http://${DOMAIN}/api/health | head -5
                         else
                             echo "⚠️ Domain not yet accessible. May need DNS configuration."
                         fi
