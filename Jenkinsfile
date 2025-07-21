@@ -129,39 +129,39 @@ pipeline {
                         sh "docker stop ${CONTAINER_NAME} || true"
                         sh "docker rm ${CONTAINER_NAME} || true"
                         
-                        // Build new image
+                        // Build new image with environment variables
                         sh """
                             docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} \
-                            --build-arg PUBLIC_SUPABASE_URL='${PUBLIC_SUPABASE_URL}' \
-                            --build-arg PUBLIC_SUPABASE_ANON_KEY='${PUBLIC_SUPABASE_ANON_KEY}' \
-                            --build-arg PRIVATE_SUPABASE_SERVICE_ROLE_KEY='${SUPABASE_SERVICE_ROLE_KEY}' \
-                            --build-arg SMTP_HOST='${SMTP_HOST}' \
-                            --build-arg SMTP_PORT='${SMTP_PORT}' \
-                            --build-arg SMTP_USER='${SMTP_USER}' \
-                            --build-arg SMTP_PASS='${SMTP_PASS}' \
-                            --build-arg FROM_EMAIL='${FROM_EMAIL}' \
+                            --build-arg PUBLIC_SUPABASE_URL="${env.PUBLIC_SUPABASE_URL}" \
+                            --build-arg PUBLIC_SUPABASE_ANON_KEY="${env.PUBLIC_SUPABASE_ANON_KEY}" \
+                            --build-arg PRIVATE_SUPABASE_SERVICE_ROLE_KEY="${env.PUBLIC_SUPABASE_SERVICE_ROLE_KEY}" \
+                            --build-arg SMTP_HOST="${env.SMTP_HOST}" \
+                            --build-arg SMTP_PORT="${env.SMTP_PORT}" \
+                            --build-arg SMTP_USER="${env.SMTP_USER}" \
+                            --build-arg SMTP_PASS="${env.SMTP_PASS}" \
+                            --build-arg FROM_EMAIL="${env.FROM_EMAIL}" \
                             .
                         """
                         
                         // Tag as latest
                         sh "docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_IMAGE}:latest"
                         
-                        // Run new container
+                        // Run new container with environment variables
                         sh """
                             docker run -d \
                             --name ${CONTAINER_NAME} \
                             -p ${PORT}:${PORT} \
                             -e NODE_ENV=production \
                             -e PORT=${PORT} \
-                            -e PUBLIC_SUPABASE_URL='${PUBLIC_SUPABASE_URL}' \
-                            -e PUBLIC_SUPABASE_ANON_KEY='${PUBLIC_SUPABASE_ANON_KEY}' \
-                            -e SUPABASE_SERVICE_ROLE_KEY='${SUPABASE_SERVICE_ROLE_KEY}' \
-                            -e PRIVATE_SUPABASE_SERVICE_ROLE_KEY='${SUPABASE_SERVICE_ROLE_KEY}' \
-                            -e SMTP_HOST='${SMTP_HOST}' \
-                            -e SMTP_PORT='${SMTP_PORT}' \
-                            -e SMTP_USER='${SMTP_USER}' \
-                            -e SMTP_PASS='${SMTP_PASS}' \
-                            -e FROM_EMAIL='${FROM_EMAIL}' \
+                            -e PUBLIC_SUPABASE_URL="${env.PUBLIC_SUPABASE_URL}" \
+                            -e PUBLIC_SUPABASE_ANON_KEY="${env.PUBLIC_SUPABASE_ANON_KEY}" \
+                            -e SUPABASE_SERVICE_ROLE_KEY="${env.PUBLIC_SUPABASE_SERVICE_ROLE_KEY}" \
+                            -e PRIVATE_SUPABASE_SERVICE_ROLE_KEY="${env.PUBLIC_SUPABASE_SERVICE_ROLE_KEY}" \
+                            -e SMTP_HOST="${env.SMTP_HOST}" \
+                            -e SMTP_PORT="${env.SMTP_PORT}" \
+                            -e SMTP_USER="${env.SMTP_USER}" \
+                            -e SMTP_PASS="${env.SMTP_PASS}" \
+                            -e FROM_EMAIL="${env.FROM_EMAIL}" \
                             --restart unless-stopped \
                             ${DOCKER_IMAGE}:latest
                         """
@@ -207,22 +207,22 @@ pipeline {
                             // Restore previous image as latest
                             sh "docker tag ${env.PREVIOUS_IMAGE} ${DOCKER_IMAGE}:latest"
                             
-                            // Run previous container
+                            // Run previous container with environment variables
                             sh """
                                 docker run -d \
                                 --name ${CONTAINER_NAME} \
                                 -p ${PORT}:${PORT} \
                                 -e NODE_ENV=production \
                                 -e PORT=${PORT} \
-                                -e PUBLIC_SUPABASE_URL='${PUBLIC_SUPABASE_URL}' \
-                                -e PUBLIC_SUPABASE_ANON_KEY='${PUBLIC_SUPABASE_ANON_KEY}' \
-                                -e SUPABASE_SERVICE_ROLE_KEY='${SUPABASE_SERVICE_ROLE_KEY}' \
-                                -e PRIVATE_SUPABASE_SERVICE_ROLE_KEY='${SUPABASE_SERVICE_ROLE_KEY}' \
-                                -e SMTP_HOST='${SMTP_HOST}' \
-                                -e SMTP_PORT='${SMTP_PORT}' \
-                                -e SMTP_USER='${SMTP_USER}' \
-                                -e SMTP_PASS='${SMTP_PASS}' \
-                                -e FROM_EMAIL='${FROM_EMAIL}' \
+                                -e PUBLIC_SUPABASE_URL="${env.PUBLIC_SUPABASE_URL}" \
+                                -e PUBLIC_SUPABASE_ANON_KEY="${env.PUBLIC_SUPABASE_ANON_KEY}" \
+                                -e SUPABASE_SERVICE_ROLE_KEY="${env.PUBLIC_SUPABASE_SERVICE_ROLE_KEY}" \
+                                -e PRIVATE_SUPABASE_SERVICE_ROLE_KEY="${env.PUBLIC_SUPABASE_SERVICE_ROLE_KEY}" \
+                                -e SMTP_HOST="${env.SMTP_HOST}" \
+                                -e SMTP_PORT="${env.SMTP_PORT}" \
+                                -e SMTP_USER="${env.SMTP_USER}" \
+                                -e SMTP_PASS="${env.SMTP_PASS}" \
+                                -e FROM_EMAIL="${env.FROM_EMAIL}" \
                                 --restart unless-stopped \
                                 ${DOCKER_IMAGE}:latest
                             """
@@ -268,14 +268,14 @@ pipeline {
                             export NODE_ENV=production
                             export PORT=${PORT}
                             export HOSTNAME=0.0.0.0
-                            export PUBLIC_SUPABASE_URL='${PUBLIC_SUPABASE_URL}'
-                            export PUBLIC_SUPABASE_ANON_KEY='${PUBLIC_SUPABASE_ANON_KEY}'
-                            export SUPABASE_SERVICE_ROLE_KEY='${SUPABASE_SERVICE_ROLE_KEY}'
-                            export SMTP_HOST='${SMTP_HOST}'
-                            export SMTP_PORT='${SMTP_PORT}'
-                            export SMTP_USER='${SMTP_USER}'
-                            export SMTP_PASS='${SMTP_PASS}'
-                            export FROM_EMAIL='${FROM_EMAIL}'
+                            export PUBLIC_SUPABASE_URL="${env.PUBLIC_SUPABASE_URL}"
+                            export PUBLIC_SUPABASE_ANON_KEY="${env.PUBLIC_SUPABASE_ANON_KEY}"
+                            export SUPABASE_SERVICE_ROLE_KEY="${env.PUBLIC_SUPABASE_SERVICE_ROLE_KEY}"
+                            export SMTP_HOST="${env.SMTP_HOST}"
+                            export SMTP_PORT="${env.SMTP_PORT}"
+                            export SMTP_USER="${env.SMTP_USER}"
+                            export SMTP_PASS="${env.SMTP_PASS}"
+                            export FROM_EMAIL="${env.FROM_EMAIL}"
                             
                             # Run app explicitly on configured port
                             nohup node build/index.js --port ${PORT} --host 0.0.0.0 > app.log 2>&1 &
