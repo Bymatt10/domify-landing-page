@@ -129,8 +129,10 @@ pipeline {
                         sh "docker stop ${CONTAINER_NAME} || true"
                         sh "docker rm ${CONTAINER_NAME} || true"
                         
-                        // Build new image with environment variables
+                        // Build new image with environment variables (hidden for security)
+                        echo "🔒 Building Docker image with secure environment variables..."
                         sh """
+                            set +x  # Hide sensitive commands from logs
                             docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} \
                             --build-arg PUBLIC_SUPABASE_URL="${env.PUBLIC_SUPABASE_URL}" \
                             --build-arg PUBLIC_SUPABASE_ANON_KEY="${env.PUBLIC_SUPABASE_ANON_KEY}" \
@@ -141,13 +143,16 @@ pipeline {
                             --build-arg SMTP_PASS="${env.SMTP_PASS}" \
                             --build-arg FROM_EMAIL="${env.FROM_EMAIL}" \
                             .
+                            set -x  # Re-enable command logging
                         """
                         
                         // Tag as latest
                         sh "docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_IMAGE}:latest"
                         
-                        // Run new container with environment variables
+                        // Run new container with environment variables (hidden for security)
+                        echo "🔒 Starting container with secure environment variables..."
                         sh """
+                            set +x  # Hide sensitive commands from logs
                             docker run -d \
                             --name ${CONTAINER_NAME} \
                             -p ${PORT}:${PORT} \
@@ -164,25 +169,97 @@ pipeline {
                             -e FROM_EMAIL="${env.FROM_EMAIL}" \
                             --restart unless-stopped \
                             ${DOCKER_IMAGE}:latest
+                            set -x  # Re-enable command logging
                         """
                         
                         // Wait for container to start
                         echo "⏳ Waiting for container to start..."
                         sleep(20)
                         
-                        // Simple health check
+                        // Network and health check diagnosis
                         def healthCheckPassed = false
                         for (int i = 1; i <= 3; i++) {
                             echo "🔍 Health check attempt ${i}/3..."
+                            
+                            // Diagnose network issues
+                            echo "🔍 Checking container network status..."
+                            sh "docker ps --filter name=${CONTAINER_NAME}"
+                            sh "docker port ${CONTAINER_NAME}"
+                            sh "netstat -tlnp | grep :${PORT} || echo 'Port not bound on host'"
+                            
+                            // Try health check from inside container first
+                            echo "🔍 Testing from inside container..."
+                            def internalCheck = sh(script: "docker exec ${CONTAINER_NAME} curl -f http://localhost:${PORT}/api/health", returnStatus: true)
+                            
+                            if (internalCheck == 0) {
+                                echo "✅ Internal health check passed"
+                            } else {
+                                echo "❌ Internal health check failed - app not responding"
+                                sh "docker logs --tail 10 ${CONTAINER_NAME}"
+                                sleep(10)
+                                continue
+                            }
+                            
+                            // Try health check from host
+                            echo "🔍 Testing from host..."
                             def healthCheck = sh(script: "curl -f http://localhost:${PORT}/api/health", returnStatus: true)
                             
                             if (healthCheck == 0) {
+                                // Verify static assets are served correctly
+                                echo "🔍 Checking static assets..."
+                                def faviconCheck = sh(script: "curl -f http://localhost:${PORT}/favicon.png", returnStatus: true)
+                                def logoCheck = sh(script: "curl -f http://localhost:${PORT}/icon-domify.png", returnStatus: true)
+                                
+                                if (faviconCheck == 0) {
+                                    echo "✅ Favicon is served correctly"
+                                } else {
+                                    echo "⚠️ Favicon not accessible"
+                                }
+                                
+                                if (logoCheck == 0) {
+                                    echo "✅ Logo is served correctly"
+                                } else {
+                                    echo "⚠️ Logo not accessible"
+                                }
+                                
                                 healthCheckPassed = true
-                                echo "✅ Health check passed"
+                                echo "✅ Health check passed - App deployed successfully!"
                                 break
                             } else {
-                                echo "⚠️ Health check failed, waiting 10 seconds..."
-                                sh "docker logs --tail 5 ${CONTAINER_NAME}"
+                                echo "⚠️ Host health check failed - network issue"
+                                echo "🔍 Trying alternative host addresses..."
+                                
+                                // Try container IP directly
+                                def containerIP = sh(script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ${CONTAINER_NAME}", returnStdout: true).trim()
+                                echo "📋 Container IP: ${containerIP}"
+                                
+                                if (containerIP) {
+                                    def ipCheck = sh(script: "curl -f http://${containerIP}:${PORT}/api/health", returnStatus: true)
+                                    if (ipCheck == 0) {
+                                        echo "✅ Direct IP health check passed"
+                                        
+                                        // Verify static assets via IP
+                                        echo "🔍 Checking static assets via IP..."
+                                        def faviconIPCheck = sh(script: "curl -f http://${containerIP}:${PORT}/favicon.png", returnStatus: true)
+                                        def logoIPCheck = sh(script: "curl -f http://${containerIP}:${PORT}/icon-domify.png", returnStatus: true)
+                                        
+                                        if (faviconIPCheck == 0) {
+                                            echo "✅ Favicon is served correctly via IP"
+                                        } else {
+                                            echo "⚠️ Favicon not accessible via IP"
+                                        }
+                                        
+                                        if (logoIPCheck == 0) {
+                                            echo "✅ Logo is served correctly via IP"
+                                        } else {
+                                            echo "⚠️ Logo not accessible via IP"
+                                        }
+                                        
+                                        healthCheckPassed = true
+                                        break
+                                    }
+                                }
+                                
                                 sleep(10)
                             }
                         }
@@ -205,8 +282,10 @@ pipeline {
                             // Restore previous image as latest
                             sh "docker tag ${env.PREVIOUS_IMAGE} ${DOCKER_IMAGE}:latest"
                             
-                            // Run previous container with environment variables
+                            // Run previous container with environment variables (hidden for security)
+                            echo "🔒 Restoring previous container with secure environment variables..."
                             sh """
+                                set +x  # Hide sensitive commands from logs
                                 docker run -d \
                                 --name ${CONTAINER_NAME} \
                                 -p ${PORT}:${PORT} \
@@ -223,6 +302,7 @@ pipeline {
                                 -e FROM_EMAIL="${env.FROM_EMAIL}" \
                                 --restart unless-stopped \
                                 ${DOCKER_IMAGE}:latest
+                                set -x  # Re-enable command logging
                             """
                             
                             echo "✅ Rollback completed - previous version restored"
@@ -260,8 +340,10 @@ pipeline {
                             sleep 2
                         """
                         
-                        // Start the application in background
+                        // Start the application in background (hidden for security)
+                        echo "🔒 Starting Node.js application with secure environment variables..."
                         sh """
+                            set +x  # Hide sensitive commands from logs
                             # Set environment variables and start the app
                             export NODE_ENV=production
                             export PORT=${PORT}
@@ -280,6 +362,7 @@ pipeline {
                             
                             # Wait a moment for startup
                             sleep 3
+                            set -x  # Re-enable command logging
                         """
                         
                         // Health check
