@@ -37,6 +37,9 @@ RUN npm run build
 # Production stage
 FROM node:18-alpine AS production
 
+# Install curl for health checks
+RUN apk add --no-cache curl
+
 # Create app user
 RUN addgroup -g 1001 -S nodejs
 RUN adduser -S svelte -u 1001

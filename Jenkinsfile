@@ -170,19 +170,57 @@ pipeline {
                         echo "⏳ Waiting for container to start..."
                         sleep(15)
                         
-                        // Health check with retries
+                        // Health check with retries and better debugging
                         def healthCheckPassed = false
                         for (int i = 1; i <= 5; i++) {
                             echo "🔍 Health check attempt ${i}/5..."
-                            def healthCheck = sh(script: "curl -f http://localhost:${PORT} > /dev/null 2>&1", returnStatus: true)
+                            
+                            // Check if container is running
+                            def containerStatus = sh(script: "docker ps --filter name=${CONTAINER_NAME} --format '{{.Status}}'", returnStdout: true).trim()
+                            echo "📋 Container status: ${containerStatus}"
+                            
+                            // Try multiple health check methods
+                            def healthCheck = 1
+                            
+                            // Method 1: Try curl if available
+                            try {
+                                healthCheck = sh(script: "curl -f http://localhost:${PORT} > /dev/null 2>&1", returnStatus: true)
+                            } catch (Exception e) {
+                                echo "⚠️ curl not available, trying alternative methods..."
+                            }
+                            
+                            // Method 2: Try wget if curl fails
+                            if (healthCheck != 0) {
+                                try {
+                                    healthCheck = sh(script: "wget -q --spider http://localhost:${PORT} > /dev/null 2>&1", returnStatus: true)
+                                } catch (Exception e) {
+                                    echo "⚠️ wget not available, trying netcat..."
+                                }
+                            }
+                            
+                            // Method 3: Try netcat if wget fails
+                            if (healthCheck != 0) {
+                                try {
+                                    healthCheck = sh(script: "nc -z localhost ${PORT} > /dev/null 2>&1", returnStatus: true)
+                                } catch (Exception e) {
+                                    echo "⚠️ netcat not available, checking port with ss..."
+                                }
+                            }
+                            
+                            // Method 4: Check if port is listening
+                            if (healthCheck != 0) {
+                                healthCheck = sh(script: "ss -tuln | grep :${PORT} > /dev/null 2>&1", returnStatus: true)
+                            }
                             
                             if (healthCheck == 0) {
                                 healthCheckPassed = true
                                 echo "✅ Health check passed on attempt ${i}"
                                 break
                             } else {
-                                echo "⚠️ Health check failed on attempt ${i}, waiting 5 seconds..."
-                                sleep(5)
+                                echo "⚠️ Health check failed on attempt ${i}, waiting 10 seconds..."
+                                echo "📋 Container logs (last 10 lines):"
+                                sh "docker logs --tail 10 ${CONTAINER_NAME} || echo 'Could not get container logs'"
+                                sleep(10)
                             }
                         }
                         
