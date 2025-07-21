@@ -168,7 +168,7 @@ pipeline {
                         
                         // Wait for container to start and check health
                         echo "⏳ Waiting for container to start..."
-                        sleep(15)
+                        sleep(30) // Give more time for SvelteKit to initialize
                         
                         // Health check with retries and better debugging
                         def healthCheckPassed = false
@@ -182,34 +182,64 @@ pipeline {
                             // Try multiple health check methods
                             def healthCheck = 1
                             
-                            // Method 1: Try curl if available
+                            // Method 1: Check if port is listening on host
                             try {
-                                healthCheck = sh(script: "curl -f http://localhost:${PORT} > /dev/null 2>&1", returnStatus: true)
+                                def portCheck = sh(script: "ss -tuln | grep :${PORT}", returnStatus: true)
+                                if (portCheck == 0) {
+                                    echo "✅ Port ${PORT} is listening on host"
+                                } else {
+                                    echo "⚠️ Port ${PORT} not found on host"
+                                }
                             } catch (Exception e) {
-                                echo "⚠️ curl not available, trying alternative methods..."
+                                echo "⚠️ Could not check port status"
                             }
                             
-                            // Method 2: Try wget if curl fails
+                            // Method 2: Health check from inside container first
+                            try {
+                                healthCheck = sh(script: "docker exec ${CONTAINER_NAME} curl -f http://localhost:${PORT} > /dev/null 2>&1", returnStatus: true)
+                                if (healthCheck == 0) {
+                                    echo "✅ Container internal health check passed"
+                                } else {
+                                    echo "⚠️ Container internal health check failed"
+                                }
+                            } catch (Exception e) {
+                                echo "⚠️ Could not run internal health check: ${e.getMessage()}"
+                            }
+                            
+                            // Method 3: Try specific health endpoint from outside
                             if (healthCheck != 0) {
                                 try {
-                                    healthCheck = sh(script: "wget -q --spider http://localhost:${PORT} > /dev/null 2>&1", returnStatus: true)
+                                    healthCheck = sh(script: "curl -f http://localhost:${PORT}/api/health > /dev/null 2>&1", returnStatus: true)
+                                    if (healthCheck == 0) {
+                                        echo "✅ Health endpoint responded"
+                                    }
                                 } catch (Exception e) {
-                                    echo "⚠️ wget not available, trying netcat..."
+                                    echo "⚠️ Health endpoint not available"
                                 }
                             }
                             
-                            // Method 3: Try netcat if wget fails
+                            // Method 4: Try basic HTTP request with timeout
                             if (healthCheck != 0) {
                                 try {
-                                    healthCheck = sh(script: "nc -z localhost ${PORT} > /dev/null 2>&1", returnStatus: true)
+                                    healthCheck = sh(script: "timeout 10 curl -f http://localhost:${PORT} > /dev/null 2>&1", returnStatus: true)
+                                    if (healthCheck == 0) {
+                                        echo "✅ Basic HTTP request succeeded"
+                                    }
                                 } catch (Exception e) {
-                                    echo "⚠️ netcat not available, checking port with ss..."
+                                    echo "⚠️ Basic HTTP request failed"
                                 }
                             }
                             
-                            // Method 4: Check if port is listening
+                            // Method 5: Check if we can connect to port with telnet
                             if (healthCheck != 0) {
-                                healthCheck = sh(script: "ss -tuln | grep :${PORT} > /dev/null 2>&1", returnStatus: true)
+                                try {
+                                    healthCheck = sh(script: "timeout 5 bash -c '</dev/tcp/localhost/${PORT}' > /dev/null 2>&1", returnStatus: true)
+                                    if (healthCheck == 0) {
+                                        echo "✅ TCP connection successful"
+                                    }
+                                } catch (Exception e) {
+                                    echo "⚠️ TCP connection failed"
+                                }
                             }
                             
                             if (healthCheck == 0) {
