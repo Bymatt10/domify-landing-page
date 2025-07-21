@@ -1,7 +1,5 @@
 pipeline {
-    agent {
-        label 'jenkins'
-    }
+    agent any
 
     environment {
         DOCKER_IMAGE = 'domify'
@@ -421,7 +419,7 @@ EOF
 
     post {
         always {
-            node('jenkins') {
+            node {
                 script {
                     if (env.DOCKER_AVAILABLE == 'true') {
                         sh "docker image prune -f || true"
@@ -451,7 +449,7 @@ EOF
             echo "   3. Set DOMAIN environment variable in Jenkins"
         }
         failure {
-            node('jenkins') {
+            node {
                 script {
                     echo "❌ Deployment failed. Check logs for details."
                     sh "cat app.log || echo 'No log file found'"
