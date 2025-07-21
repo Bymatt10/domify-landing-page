@@ -59,11 +59,11 @@
 <nav class="bg-white shadow-sm sticky top-0 z-50 transition-all duration-200 border-b border-gray-200">
 	<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 		<div class="flex justify-between items-center py-2">
-			<a href="/" class="flex items-center no-underline gap-0" aria-label="Ir a la página principal de Domify">
+			<a href="/" class="flex items-center no-underline gap-2" aria-label="Ir a la página principal de Domify">
 				<!-- Logo Icon -->
 				<img src="/icon-domify.png" alt="Domify logo" class="w-11 h-11 rounded-lg object-contain" />
 				<!-- Brand Name -->
-				<span class="text-gray-900 text-2xl font-bold tracking-tight hover:text-primary-700 transition-colors duration-200 -ml-2">omify</span>
+				<span class="font-lexend text-gray-900 text-2xl font-bold tracking-tight hover:text-primary-700 transition-colors duration-200">omify</span>
 			</a>
 
 			<!-- Desktop: links a la derecha -->

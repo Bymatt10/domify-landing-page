@@ -217,9 +217,9 @@ pipeline {
                                 }
                                 
                                 if (logoCheck == 0) {
-                                    echo "✅ Logo is served correctly"
+                                    echo "✅ Logo/Social media image is served correctly"
                                 } else {
-                                    echo "⚠️ Logo not accessible"
+                                    echo "⚠️ Logo/Social media image not accessible"
                                 }
                                 
                                 healthCheckPassed = true
@@ -250,9 +250,9 @@ pipeline {
                                         }
                                         
                                         if (logoIPCheck == 0) {
-                                            echo "✅ Logo is served correctly via IP"
+                                            echo "✅ Logo/Social media image is served correctly via IP"
                                         } else {
-                                            echo "⚠️ Logo not accessible via IP"
+                                            echo "⚠️ Logo/Social media image not accessible via IP"
                                         }
                                         
                                         healthCheckPassed = true
