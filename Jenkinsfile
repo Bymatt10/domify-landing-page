@@ -1,5 +1,7 @@
 pipeline {
-    agent any
+    agent {
+        label 'jenkins'
+    }
 
     environment {
         DOCKER_IMAGE = 'domify'
@@ -8,15 +10,15 @@ pipeline {
         PORT = '4000'
         DOMAIN = "${env.DOMAIN ?: 'domify.app'}"
         
-        // Using Jenkins credentials for sensitive data
-        PUBLIC_SUPABASE_URL = credentials('public-supabase-url')
-        PUBLIC_SUPABASE_ANON_KEY = credentials('public-supabase-anon-key')
-        SUPABASE_SERVICE_ROLE_KEY = credentials('supabase-service-role-key')
-        SMTP_HOST = credentials('smtp-host')
-        SMTP_PORT = credentials('smtp-port')
-        SMTP_USER = credentials('smtp-user')
-        SMTP_PASS = credentials('smtp-pass')
-        FROM_EMAIL = credentials('from-email')
+        // Using environment variables (configured in Jenkins Global Properties)
+        PUBLIC_SUPABASE_URL = "${env.PUBLIC_SUPABASE_URL}"
+        PUBLIC_SUPABASE_ANON_KEY = "${env.PUBLIC_SUPABASE_ANON_KEY}"
+        SUPABASE_SERVICE_ROLE_KEY = "${env.PUBLIC_SUPABASE_SERVICE_ROLE_KEY}"
+        SMTP_HOST = "${env.SMTP_HOST}"
+        SMTP_PORT = "${env.SMTP_PORT}"
+        SMTP_USER = "${env.SMTP_USER}"
+        SMTP_PASS = "${env.SMTP_PASS}"
+        FROM_EMAIL = "${env.FROM_EMAIL}"
         
         // Keep fallbacks for non-sensitive vars
         PRIVATE_SUPABASE_SERVICE_ROLE_KEY = "${SUPABASE_SERVICE_ROLE_KEY}"
@@ -29,47 +31,47 @@ pipeline {
             }
         }
 
-        stage('Validate Secrets') {
+        stage('Validate Environment Variables') {
             steps {
                 script {
-                    echo "🔐 Validating Jenkins secrets configuration..."
+                    echo "🔐 Validating Jenkins environment variables configuration..."
                     
-                    // Validate that secrets are not empty/default values
-                    def requiredSecrets = [
+                    // Validate that environment variables are not empty
+                    def requiredVars = [
                         'PUBLIC_SUPABASE_URL': env.PUBLIC_SUPABASE_URL,
                         'PUBLIC_SUPABASE_ANON_KEY': env.PUBLIC_SUPABASE_ANON_KEY,
-                        'SUPABASE_SERVICE_ROLE_KEY': env.SUPABASE_SERVICE_ROLE_KEY,
+                        'PUBLIC_SUPABASE_SERVICE_ROLE_KEY': env.PUBLIC_SUPABASE_SERVICE_ROLE_KEY,
                         'SMTP_HOST': env.SMTP_HOST,
                         'SMTP_USER': env.SMTP_USER,
                         'SMTP_PASS': env.SMTP_PASS,
                         'FROM_EMAIL': env.FROM_EMAIL
                     ]
                     
-                    def missingSecrets = []
-                    requiredSecrets.each { name, value ->
+                    def missingVars = []
+                    requiredVars.each { name, value ->
                         if (!value || value.trim().isEmpty()) {
-                            missingSecrets.add(name)
+                            missingVars.add(name)
                         }
                     }
                     
-                    if (!missingSecrets.isEmpty()) {
-                        def errorMsg = "❌ Missing or empty Jenkins credentials: ${missingSecrets.join(', ')}\n"
-                        errorMsg += "💡 Please configure these secrets in Jenkins:\n"
-                        errorMsg += "   - Go to Manage Jenkins > Credentials\n"
-                        errorMsg += "   - Add Secret Text credentials with IDs:\n"
-                        missingSecrets.each { secret ->
-                            def credentialId = secret.toLowerCase().replace('_', '-')
-                            errorMsg += "     * ${credentialId}\n"
+                    if (!missingVars.isEmpty()) {
+                        def errorMsg = "❌ Missing or empty environment variables: ${missingVars.join(', ')}\n"
+                        errorMsg += "💡 Please configure these in Jenkins:\n"
+                        errorMsg += "   - Go to Manage Jenkins > Configure System\n"
+                        errorMsg += "   - Scroll to 'Global properties' > 'Environment variables'\n"
+                        errorMsg += "   - Add the missing variables:\n"
+                        missingVars.each { var ->
+                            errorMsg += "     * ${var}\n"
                         }
                         error(errorMsg)
                     }
                     
-                    echo "✅ All required secrets are configured"
+                    echo "✅ All required environment variables are configured"
                     
                     // Log configuration (without exposing values)
                     echo "📋 Configuration Summary:"
                     echo "   - Supabase URL: ${env.PUBLIC_SUPABASE_URL ? 'CONFIGURED' : 'MISSING'}"
-                    echo "   - Supabase Keys: ${env.PUBLIC_SUPABASE_ANON_KEY && env.SUPABASE_SERVICE_ROLE_KEY ? 'CONFIGURED' : 'MISSING'}"
+                    echo "   - Supabase Keys: ${env.PUBLIC_SUPABASE_ANON_KEY && env.PUBLIC_SUPABASE_SERVICE_ROLE_KEY ? 'CONFIGURED' : 'MISSING'}"
                     echo "   - SMTP Settings: ${env.SMTP_HOST && env.SMTP_USER ? 'CONFIGURED' : 'MISSING'}"
                     echo "   - From Email: ${env.FROM_EMAIL ? 'CONFIGURED' : 'MISSING'}"
                 }
@@ -419,7 +421,7 @@ EOF
 
     post {
         always {
-            node('any') {
+            node('jenkins') {
                 script {
                     if (env.DOCKER_AVAILABLE == 'true') {
                         sh "docker image prune -f || true"
@@ -449,7 +451,7 @@ EOF
             echo "   3. Set DOMAIN environment variable in Jenkins"
         }
         failure {
-            node('any') {
+            node('jenkins') {
                 script {
                     echo "❌ Deployment failed. Check logs for details."
                     sh "cat app.log || echo 'No log file found'"
