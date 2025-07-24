@@ -181,6 +181,12 @@ pipeline {
                             sh "docker port ${CONTAINER_NAME}"
                             sh "netstat -tlnp | grep :${PORT} || echo 'Port not bound on host'"
                             
+                            // Additional network diagnostics
+                            echo "🔍 Additional network diagnostics..."
+                            sh "docker inspect ${CONTAINER_NAME} | grep -A 10 -B 5 'PortBindings' || echo 'No port bindings found'"
+                            sh "docker inspect ${CONTAINER_NAME} | grep -A 5 -B 5 'NetworkSettings' || echo 'No network settings found'"
+                            sh "ss -tlnp | grep :${PORT} || echo 'Port not listening with ss'"
+                            
                             // Try health check from inside container first
                             echo "🔍 Testing from inside container..."
                             def internalCheck = sh(script: "docker exec ${CONTAINER_NAME} curl -f -m 10 http://localhost:${PORT}/api/health 2>/dev/null", returnStatus: true)
@@ -275,6 +281,19 @@ pipeline {
                                 // Try container IP directly
                                 def containerIP = sh(script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ${CONTAINER_NAME}", returnStdout: true).trim()
                                 echo "📋 Container IP: ${containerIP}"
+                                
+                                // Test direct IP access
+                                if (containerIP) {
+                                    echo "🔍 Testing direct IP access..."
+                                    def directIPTest = sh(script: "curl -f -m 10 http://${containerIP}:${PORT}/api/health 2>/dev/null", returnStatus: true)
+                                    if (directIPTest == 0) {
+                                        echo "✅ Direct IP access works"
+                                        def directResponse = sh(script: "curl -s http://${containerIP}:${PORT}/api/health", returnStdout: true).trim()
+                                        echo "📋 Direct IP response: ${directResponse}"
+                                    } else {
+                                        echo "❌ Direct IP access failed"
+                                    }
+                                }
                                 
                                 if (containerIP) {
                                     def ipCheck = sh(script: "curl -f -m 10 http://${containerIP}:${PORT}/api/health 2>/dev/null", returnStatus: true)
