@@ -19,10 +19,16 @@ const SERVICE_ROLE_KEY = getSupabaseServiceRoleKey();
 // Función helper para hacer queries directas con fetch
 async function directSupabaseQuery(endpoint: string, options: any = {}) {
   const url = `${SUPABASE_URL}/rest/v1/${endpoint}`;
+  
+  // Usar SERVICE_ROLE_KEY si está disponible, sino usar ANON_KEY
+  const apiKey = SERVICE_ROLE_KEY && SERVICE_ROLE_KEY !== 'fallback-service-role-key' 
+    ? SERVICE_ROLE_KEY 
+    : SUPABASE_ANON_KEY;
+  
   const response = await fetch(url, {
     headers: {
-      'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
-      'apikey': SERVICE_ROLE_KEY,
+      'Authorization': `Bearer ${apiKey}`,
+      'apikey': apiKey,
       'Content-Type': 'application/json',
       'Prefer': 'return=representation',
       ...options.headers
@@ -189,6 +195,8 @@ export const GET: RequestHandler = async ({ url }) => {
         const providersWithEmails = await Promise.all(filteredProviders.map(async (provider: any) => {
             let email = 'user@example.com';
             
+            // Solo intentar obtener el email si tenemos SERVICE_ROLE_KEY válida
+            if (SERVICE_ROLE_KEY && SERVICE_ROLE_KEY !== 'fallback-service-role-key') {
             try {
                 // Obtener el usuario desde auth.users usando el user_id
                 const authResponse = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${provider.user_id}`, {
@@ -205,6 +213,7 @@ export const GET: RequestHandler = async ({ url }) => {
                 }
             } catch (error) {
                 console.warn('Error fetching auth user email for provider:', provider.id);
+                }
             }
 
             return {
@@ -218,6 +227,7 @@ export const GET: RequestHandler = async ({ url }) => {
                 provider_type: provider.provider_type || 'individual',
                 location: provider.location,
                 phone: provider.phone,
+                portfolio: provider.portfolio || [], // Incluir portfolio real
                 users: {
                     id: provider.user_id,
                     email: email,

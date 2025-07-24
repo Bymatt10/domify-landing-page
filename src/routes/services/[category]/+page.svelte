@@ -27,6 +27,9 @@
 			image_url: string;
 			title: string;
 			description?: string;
+			media_type?: 'image' | 'video';
+			service_id?: string;
+			category_id?: string;
 		}>;
 		reviews?: Array<{
 			id: string;
@@ -206,60 +209,11 @@
 			}
 		}
 		
-		// Agregar datos de ejemplo para demostración (en implementación real vendrían de la API)
+		// Usar datos reales del proveedor (sin hardcodeo)
 		const enhancedProvider = {
 			...provider,
 			bio: provider.bio || `Soy un profesional con más de 5 años de experiencia en ${formatCategoryName(category).toLowerCase()}. Me especializo en brindar servicios de alta calidad, siempre enfocado en la satisfacción del cliente. Trabajo con materiales de primera calidad y utilizo las mejores técnicas del mercado.`,
-			portfolio: provider.portfolio || [
-				{
-					id: '1',
-					image_url: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=400&h=300&fit=crop',
-					title: 'Renovación de cocina',
-					description: 'Proyecto completo de remodelación'
-				},
-				{
-					id: '2', 
-					image_url: 'https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=400&h=300&fit=crop',
-					title: 'Instalación eléctrica',
-					description: 'Sistema eléctrico residencial'
-				},
-				{
-					id: '3',
-					image_url: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=300&fit=crop', 
-					title: 'Trabajo de plomería',
-					description: 'Reparación de tubería principal'
-				},
-				{
-					id: '4',
-					image_url: 'https://images.unsplash.com/photo-1484154218962-a197022b5858?w=400&h=300&fit=crop',
-					title: 'Limpieza profunda',
-					description: 'Servicio post-construcción'
-				},
-				{
-					id: '5',
-					image_url: 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=400&h=300&fit=crop',
-					title: 'Jardinería y paisajismo',
-					description: 'Diseño de jardín completo'
-				},
-				{
-					id: '6',
-					image_url: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=400&h=300&fit=crop',
-					title: 'Pintura exterior',
-					description: 'Fachada de casa residencial'
-				},
-				{
-					id: '7',
-					image_url: 'https://images.unsplash.com/photo-1581833971358-2c8b550f87b3?w=400&h=300&fit=crop',
-					title: 'Carpintería fina',
-					description: 'Muebles a medida'
-				},
-				{
-					id: '8',
-					image_url: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400&h=300&fit=crop',
-					title: 'Instalación de pisos',
-					description: 'Piso laminado de alta calidad'
-				}
-			],
+			portfolio: provider.portfolio || [], // Usar portfolio real de la base de datos
 			reviews: provider.reviews || [
 				{
 					id: '1',
@@ -1719,17 +1673,43 @@
 									{#each (showAllPortfolio ? selectedProvider.portfolio : selectedProvider.portfolio.slice(0, 5)) as work}
 										<div class="bg-secondary-50 rounded-lg overflow-hidden hover:shadow-md transition-shadow duration-300">
 											<div class="aspect-video overflow-hidden">
-												<img 
-													src={work.image_url} 
-													alt={work.title}
-													class="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-													loading="lazy"
-												/>
+												{#if work.media_type === 'video' && work.image_url}
+													<video 
+														src={work.image_url} 
+														controls 
+														preload="metadata"
+														class="w-full h-full object-cover"
+														loading="lazy"
+													>
+														<track kind="captions" />
+													</video>
+												{:else if work.image_url}
+													<img 
+														src={work.image_url} 
+														alt={work.title}
+														class="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+														loading="lazy"
+													/>
+												{:else}
+													<div class="w-full h-full bg-gray-200 flex items-center justify-center">
+														<svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+															<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+														</svg>
+													</div>
+												{/if}
 											</div>
 											<div class="p-3">
 												<h4 class="font-medium text-secondary-900 mb-1 text-sm">{work.title}</h4>
 												{#if work.description}
 													<p class="text-xs text-secondary-600 line-clamp-2">{work.description}</p>
+												{/if}
+												{#if work.media_type === 'video'}
+													<div class="flex items-center gap-1 mt-1">
+														<svg class="w-3 h-3 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+															<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+														</svg>
+														<span class="text-xs text-primary-600 font-medium">Video</span>
+													</div>
 												{/if}
 											</div>
 										</div>

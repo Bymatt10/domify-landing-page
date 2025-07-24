@@ -8,6 +8,8 @@
 
 	let providerProfile: any = null;
 	let portfolio: any[] = [];
+	let services: any[] = [];
+	let categories: any[] = [];
 	let loading = true;
 	let showAddModal = false;
 	let saving = false;
@@ -18,8 +20,17 @@
 	let newItem = {
 		title: '',
 		description: '',
-		image_url: ''
+		image_url: '',
+		media_type: 'image', // 'image' or 'video'
+		service_id: '', // ID del servicio asociado
+		category_id: '' // ID de la categoría asociada
 	};
+
+	// File upload state
+	let selectedFile: File | null = null;
+	let uploadProgress = 0;
+	let isUploading = false;
+	let uploadError = '';
 
 	onMount(async () => {
 		await loadData();
@@ -40,11 +51,57 @@
 			// Cargar portafolio del proveedor
 			portfolio = profile.portfolio || [];
 
+			// Cargar servicios del proveedor
+			const { data: svcs, error: svcsError } = await supabase
+				.from('services')
+				.select(`
+					*,
+					categories(*)
+				`)
+				.eq('provider_profile_id', profile.id)
+				.order('title');
+
+			if (svcsError) throw svcsError;
+			services = svcs || [];
+
+			// Cargar categorías disponibles
+			const { data: cats, error: catsError } = await supabase
+				.from('categories')
+				.select('*')
+				.order('name');
+
+			if (catsError) throw catsError;
+			categories = cats || [];
+
 		} catch (error) {
 			console.error('Error loading data:', error);
 		} finally {
 			loading = false;
 		}
+	}
+
+	async function uploadFile(file: File): Promise<string> {
+		const fileExt = file.name.split('.').pop();
+		const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+		const filePath = `providers/${user.id}/portfolio/${fileName}`;
+
+		const { data, error } = await supabase.storage
+			.from('domify')
+			.upload(filePath, file, {
+				cacheControl: '3600',
+				upsert: false
+			});
+
+		if (error) {
+			throw new Error(`Error uploading file: ${error.message}`);
+		}
+
+		// Get public URL
+		const { data: urlData } = supabase.storage
+			.from('domify')
+			.getPublicUrl(filePath);
+
+		return urlData.publicUrl;
 	}
 
 	async function addPortfolioItem() {
@@ -54,19 +111,47 @@
 		}
 
 		saving = true;
+		isUploading = false;
+		uploadProgress = 0;
+		uploadError = '';
+
 		try {
-			// Crear nuevo item del portafolio
+			let mediaUrl = newItem.image_url;
+
+			// Upload file if selected
+			if (selectedFile) {
+				isUploading = true;
+				uploadProgress = 10;
+				
+				try {
+					mediaUrl = await uploadFile(selectedFile);
+					uploadProgress = 100;
+				} catch (uploadError: any) {
+					console.error('Upload error:', uploadError);
+					const uploadErrorMessage = uploadError.message || uploadError.details || 'Error desconocido';
+					showMessage(`Error al subir el archivo: ${uploadErrorMessage}`, 'error');
+					return;
+				} finally {
+					isUploading = false;
+				}
+			}
+
+			// Create new portfolio item
 			const newPortfolioItem = {
-				id: Date.now().toString(), // ID temporal
+				id: Date.now().toString(),
 				title: newItem.title.trim(),
 				description: newItem.description.trim(),
-				image_url: newItem.image_url.trim()
+				image_url: mediaUrl,
+				media_type: newItem.media_type,
+				service_id: newItem.service_id,
+				category_id: newItem.category_id,
+				created_at: new Date().toISOString()
 			};
 
-			// Agregar al array local
+			// Add to local array
 			const updatedPortfolio = [...portfolio, newPortfolioItem];
 
-			// Actualizar en la base de datos
+			// Update in database
 			const { error } = await supabase
 				.from('provider_profiles')
 				.update({
@@ -77,17 +162,18 @@
 
 			if (error) throw error;
 
-			// Actualizar estado local
+			// Update local state
 			portfolio = updatedPortfolio;
 			
-			// Limpiar formulario y cerrar modal
-			newItem = { title: '', description: '', image_url: '' };
+			// Clear form and close modal
+			resetForm();
 			showAddModal = false;
 			
 			showMessage('Trabajo agregado exitosamente', 'success');
-		} catch (error) {
+		} catch (error: any) {
 			console.error('Error adding portfolio item:', error);
-			showMessage('Error al agregar el trabajo', 'error');
+			const errorMessage = error.message || error.details || 'Error desconocido';
+			showMessage(`Error al agregar el trabajo: ${errorMessage}`, 'error');
 		} finally {
 			saving = false;
 		}
@@ -132,14 +218,88 @@
 		}, 5000);
 	}
 
+	function resetForm() {
+		newItem = { 
+			title: '', 
+			description: '', 
+			image_url: '', 
+			media_type: 'image',
+			service_id: '',
+			category_id: ''
+		};
+		selectedFile = null;
+		uploadProgress = 0;
+		isUploading = false;
+		uploadError = '';
+	}
+
 	function openAddModal() {
 		showAddModal = true;
-		newItem = { title: '', description: '', image_url: '' };
+		resetForm();
 	}
 
 	function closeAddModal() {
 		showAddModal = false;
-		newItem = { title: '', description: '', image_url: '' };
+		resetForm();
+	}
+
+	function handleFileSelect(event: Event) {
+		const target = event.target as HTMLInputElement;
+		if (target.files && target.files[0]) {
+			const file = target.files[0];
+			const maxSize = 50 * 1024 * 1024; // 50MB
+			
+			if (file.size > maxSize) {
+				uploadError = 'El archivo es demasiado grande. Máximo 50MB.';
+				return;
+			}
+
+			// Validate file type
+			const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+			const allowedVideoTypes = ['video/mp4', 'video/webm', 'video/ogg'];
+			const allowedTypes = [...allowedImageTypes, ...allowedVideoTypes];
+
+			if (!allowedTypes.includes(file.type)) {
+				uploadError = 'Tipo de archivo no soportado. Usa imágenes (JPG, PNG, WebP) o videos (MP4, WebM, OGG).';
+				return;
+			}
+
+			selectedFile = file;
+			uploadError = '';
+			
+			// Auto-detect media type
+			if (allowedImageTypes.includes(file.type)) {
+				newItem.media_type = 'image';
+			} else {
+				newItem.media_type = 'video';
+			}
+		}
+	}
+
+	function removeSelectedFile() {
+		selectedFile = null;
+		uploadError = '';
+	}
+
+	// Función para agrupar trabajos por servicio
+	function getPortfolioByService() {
+		const grouped: Record<string, any> = {};
+		
+		portfolio.forEach(item => {
+			const serviceId = item.service_id || 'sin-servicio';
+			const serviceName = services.find(s => s.id === item.service_id)?.title || 'Sin servicio asignado';
+			
+			if (!grouped[serviceId]) {
+				grouped[serviceId] = {
+					serviceName,
+					serviceId,
+					items: []
+				};
+			}
+			grouped[serviceId].items.push(item);
+		});
+		
+		return Object.values(grouped);
 	}
 </script>
 
@@ -189,15 +349,26 @@
 						<span class="stat-number">{portfolio.filter(item => item.image_url).length}</span>
 						<span class="stat-label">Con Imágenes</span>
 					</div>
+					<div class="stat-item">
+						<span class="stat-number">{getPortfolioByService().length}</span>
+						<span class="stat-label">Servicios</span>
+					</div>
+				</div>
+
+				{#each getPortfolioByService() as serviceGroup}
+					<div class="service-portfolio-section">
+						<div class="service-header">
+							<h3 class="service-title">📋 {serviceGroup.serviceName}</h3>
+							<span class="service-count">{serviceGroup.items.length} trabajo{serviceGroup.items.length !== 1 ? 's' : ''}</span>
 				</div>
 
 				<div class="portfolio-grid">
-					{#each portfolio as item, index}
+							{#each serviceGroup.items as item, index}
 						<div class="portfolio-item">
 							<div class="portfolio-actions">
 								<button 
 									class="btn-delete" 
-									on:click={() => deletePortfolioItem(index)}
+											on:click={() => deletePortfolioItem(portfolio.indexOf(item))}
 									title="Eliminar trabajo"
 								>
 									<svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -206,10 +377,22 @@
 								</button>
 							</div>
 							{#if item.image_url}
-								<div class="portfolio-image">
-									<img src={item.image_url} alt={item.title} loading="lazy" />
-									<div class="image-overlay">
-										<span class="view-text">Ver trabajo</span>
+										<div class="portfolio-media">
+											{#if item.media_type === 'video'}
+												<video src={item.image_url} controls preload="metadata" class="portfolio-video">
+													<track kind="captions" />
+												</video>
+											{:else}
+												<img src={item.image_url} alt={item.title} loading="lazy" class="portfolio-image" />
+											{/if}
+											<div class="media-overlay">
+												<span class="view-text">
+													{#if item.media_type === 'video'}
+														Reproducir video
+													{:else}
+														Ver trabajo
+													{/if}
+												</span>
 									</div>
 								</div>
 							{:else}
@@ -217,7 +400,7 @@
 									<svg class="placeholder-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
 									</svg>
-									<span class="placeholder-text">Sin imagen</span>
+											<span class="placeholder-text">Sin medio</span>
 								</div>
 							{/if}
 							<div class="portfolio-info">
@@ -235,6 +418,8 @@
 						</div>
 					{/each}
 				</div>
+					</div>
+				{/each}
 			{:else}
 				<div class="empty-state">
 					<div class="empty-icon">
@@ -307,11 +492,128 @@
 				</div>
 
 				<div class="form-group">
+					<label for="service_id">
+						<svg class="label-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+						</svg>
+						Servicio asociado
+					</label>
+					<select id="service_id" bind:value={newItem.service_id}>
+						<option value="">Selecciona un servicio</option>
+						{#each services as service}
+							<option value={service.id}>
+								{service.title} - {service.categories?.name || 'Sin categoría'}
+							</option>
+						{/each}
+					</select>
+					<small class="form-help">Selecciona el servicio al que pertenece este trabajo</small>
+				</div>
+
+				<div class="form-group">
+					<label for="category_id">
+						<svg class="label-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+						</svg>
+						Categoría
+					</label>
+					<select id="category_id" bind:value={newItem.category_id}>
+						<option value="">Selecciona una categoría</option>
+						{#each categories as category}
+							<option value={category.id}>
+								{category.icon} {category.name}
+							</option>
+						{/each}
+					</select>
+					<small class="form-help">Selecciona la categoría principal del trabajo</small>
+				</div>
+
+				<div class="form-group">
+					<label for="media_type">
+						<svg class="label-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+						</svg>
+						Tipo de medio
+					</label>
+					<select id="media_type" bind:value={newItem.media_type}>
+						<option value="image">Imagen</option>
+						<option value="video">Video</option>
+					</select>
+				</div>
+
+				<div class="form-group">
+					<label for="file_upload">
+						<svg class="label-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+						</svg>
+						Subir archivo
+					</label>
+					
+					{#if selectedFile}
+						<div class="file-preview">
+							<div class="file-info">
+								<svg class="file-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									{#if newItem.media_type === 'image'}
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+									{:else}
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+									{/if}
+						</svg>
+								<div class="file-details">
+									<span class="file-name">{selectedFile.name}</span>
+									<span class="file-size">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</span>
+								</div>
+								<button type="button" class="btn-remove-file" on:click={removeSelectedFile}>
+									<svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+									</svg>
+								</button>
+							</div>
+						</div>
+					{:else}
+						<div class="file-upload-area" on:click={() => document.getElementById('file_input')?.click()}>
+							<svg class="upload-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+							</svg>
+							<p class="upload-text">Haz clic para seleccionar un archivo</p>
+							<p class="upload-hint">Imágenes: JPG, PNG, WebP | Videos: MP4, WebM, OGG | Máximo 50MB</p>
+						</div>
+					{/if}
+
+					<input
+						id="file_input"
+						type="file"
+						accept="image/*,video/*"
+						on:change={handleFileSelect}
+						style="display: none;"
+					/>
+
+					{#if uploadError}
+						<div class="upload-error">
+							<svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+							</svg>
+							<span>{uploadError}</span>
+						</div>
+					{/if}
+
+					{#if isUploading}
+						<div class="upload-progress">
+							<div class="progress-bar">
+								<div class="progress-fill" style="width: {uploadProgress}%"></div>
+							</div>
+							<span class="progress-text">Subiendo archivo... {uploadProgress}%</span>
+						</div>
+					{/if}
+
+					<small class="form-help">Sube una imagen o video que muestre el resultado del trabajo. El archivo se guardará en nuestro servidor seguro.</small>
+				</div>
+
+				<div class="form-group">
 					<label for="image_url">
 						<svg class="label-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
 						</svg>
-						URL de la imagen
+						URL alternativa (opcional)
 					</label>
 					<input
 						id="image_url"
@@ -319,7 +621,7 @@
 						bind:value={newItem.image_url}
 						placeholder="https://ejemplo.com/imagen.jpg"
 					/>
-					<small class="form-help">Opcional: Agrega una imagen que muestre el resultado del trabajo</small>
+					<small class="form-help">Si prefieres usar una URL externa en lugar de subir un archivo</small>
 				</div>
 
 				<div class="modal-actions">
@@ -541,26 +843,34 @@
 		height: 18px;
 	}
 
-	/* Image styles */
-	.portfolio-image {
+	/* Media styles */
+	.portfolio-media {
 		width: 100%;
 		height: 200px;
 		overflow: hidden;
 		position: relative;
 	}
 
-	.portfolio-image img {
+	.portfolio-image {
 		width: 100%;
 		height: 100%;
 		object-fit: cover;
 		transition: transform 0.3s ease;
 	}
 
-	.portfolio-item:hover .portfolio-image img {
+	.portfolio-video {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		transition: transform 0.3s ease;
+	}
+
+	.portfolio-item:hover .portfolio-image,
+	.portfolio-item:hover .portfolio-video {
 		transform: scale(1.05);
 	}
 
-	.image-overlay {
+	.media-overlay {
 		position: absolute;
 		top: 0;
 		left: 0;
@@ -574,7 +884,7 @@
 		transition: opacity 0.3s ease;
 	}
 
-	.portfolio-item:hover .image-overlay {
+	.portfolio-item:hover .media-overlay {
 		opacity: 1;
 	}
 
@@ -832,7 +1142,8 @@
 	}
 
 	.form-group input,
-	.form-group textarea {
+	.form-group textarea,
+	.form-group select {
 		width: 100%;
 		padding: 0.75rem;
 		border: 1px solid #d1d5db;
@@ -843,15 +1154,199 @@
 	}
 
 	.form-group input:hover,
-	.form-group textarea:hover {
+	.form-group textarea:hover,
+	.form-group select:hover {
 		border-color: #9ca3af;
 	}
 
 	.form-group input:focus,
-	.form-group textarea:focus {
+	.form-group textarea:focus,
+	.form-group select:focus {
 		outline: none;
 		border-color: #3b82f6;
 		box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+	}
+
+	/* File upload styles */
+	.file-upload-area {
+		border: 2px dashed #d1d5db;
+		border-radius: 0.5rem;
+		padding: 2rem;
+		text-align: center;
+		cursor: pointer;
+		transition: all 0.2s ease;
+		background: #f9fafb;
+	}
+
+	.file-upload-area:hover {
+		border-color: #3b82f6;
+		background: #eff6ff;
+	}
+
+	.upload-icon {
+		width: 48px;
+		height: 48px;
+		color: #6b7280;
+		margin: 0 auto 1rem;
+	}
+
+	.upload-text {
+		margin: 0 0 0.5rem 0;
+		color: #374151;
+		font-weight: 600;
+		font-size: 1rem;
+	}
+
+	.upload-hint {
+		margin: 0;
+		color: #6b7280;
+		font-size: 0.875rem;
+	}
+
+	/* File preview styles */
+	.file-preview {
+		border: 1px solid #d1d5db;
+		border-radius: 0.5rem;
+		padding: 1rem;
+		background: white;
+	}
+
+	.file-info {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+	}
+
+	.file-icon {
+		width: 32px;
+		height: 32px;
+		color: #3b82f6;
+		flex-shrink: 0;
+	}
+
+	.file-details {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.file-name {
+		display: block;
+		color: #374151;
+		font-weight: 600;
+		font-size: 0.875rem;
+		margin-bottom: 0.25rem;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.file-size {
+		color: #6b7280;
+		font-size: 0.75rem;
+	}
+
+	.btn-remove-file {
+		background: #fee2e2;
+		color: #dc2626;
+		border: none;
+		border-radius: 50%;
+		width: 32px;
+		height: 32px;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		transition: all 0.2s ease;
+		flex-shrink: 0;
+	}
+
+	.btn-remove-file:hover {
+		background: #fecaca;
+		transform: scale(1.1);
+	}
+
+	.btn-remove-file svg {
+		width: 16px;
+		height: 16px;
+	}
+
+	/* Upload error styles */
+	.upload-error {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.75rem;
+		background: #fee2e2;
+		color: #dc2626;
+		border-radius: 0.5rem;
+		margin-top: 0.5rem;
+		font-size: 0.875rem;
+	}
+
+	.upload-error svg {
+		width: 20px;
+		height: 20px;
+		flex-shrink: 0;
+	}
+
+	/* Service portfolio section styles */
+	.service-portfolio-section {
+		margin-bottom: 2rem;
+		border: 1px solid #e5e7eb;
+		border-radius: 0.75rem;
+		overflow: hidden;
+		background: white;
+	}
+
+	.service-header {
+		background: #f8fafc;
+		padding: 1rem 1.5rem;
+		border-bottom: 1px solid #e5e7eb;
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+	}
+
+	.service-title {
+		font-size: 1.125rem;
+		font-weight: 600;
+		color: #374151;
+		margin: 0;
+	}
+
+	.service-count {
+		background: #3b82f6;
+		color: white;
+		padding: 0.25rem 0.75rem;
+		border-radius: 1rem;
+		font-size: 0.875rem;
+		font-weight: 500;
+	}
+
+	/* Upload progress styles */
+	.upload-progress {
+		margin-top: 0.5rem;
+	}
+
+	.progress-bar {
+		width: 100%;
+		height: 8px;
+		background: #e5e7eb;
+		border-radius: 4px;
+		overflow: hidden;
+		margin-bottom: 0.5rem;
+	}
+
+	.progress-fill {
+		height: 100%;
+		background: linear-gradient(90deg, #3b82f6 0%, #1d4ed8 100%);
+		transition: width 0.3s ease;
+	}
+
+	.progress-text {
+		color: #6b7280;
+		font-size: 0.75rem;
+		font-weight: 500;
 	}
 
 	.form-help {

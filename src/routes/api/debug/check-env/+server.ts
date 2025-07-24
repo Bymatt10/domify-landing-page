@@ -1,79 +1,52 @@
 import { json } from '@sveltejs/kit';
-import type { RequestHandler } from './$types';
+import type { RequestHandler } from '@sveltejs/kit';
 import { getSupabaseUrl, getSupabaseAnonKey, getSupabaseServiceRoleKey } from '$lib/env-utils';
 
-// Get environment variables with fallbacks
-const SUPABASE_URL = getSupabaseUrl();
-const SUPABASE_ANON_KEY = getSupabaseAnonKey();
-const SERVICE_ROLE_KEY = getSupabaseServiceRoleKey();
-
-export const GET: RequestHandler = async ({ locals }) => {
-  try {
-    const results: any = {
-      timestamp: new Date().toISOString(),
-      environment_check: {
-        supabase_url: {
-          exists: !!SUPABASE_URL,
-          value: SUPABASE_URL || 'NOT SET',
-          is_localhost: SUPABASE_URL?.includes('localhost') || false
-        },
-        anon_key: {
-          exists: !!SUPABASE_ANON_KEY,
-          prefix: SUPABASE_ANON_KEY ? SUPABASE_ANON_KEY.substring(0, 20) + '...' : 'NOT SET',
-          length: SUPABASE_ANON_KEY ? SUPABASE_ANON_KEY.length : 0
-        },
-        service_role_key: {
-          exists: !!SERVICE_ROLE_KEY,
-          prefix: SERVICE_ROLE_KEY ? SERVICE_ROLE_KEY.substring(0, 20) + '...' : 'NOT SET',
-          length: SERVICE_ROLE_KEY ? SERVICE_ROLE_KEY.length : 0,
-          is_service_role: SERVICE_ROLE_KEY ? SERVICE_ROLE_KEY.includes('service_role') : false
-        }
-      }
-    };
-
-    // Test a simple query with supabaseAdmin
+export const GET: RequestHandler = async () => {
     try {
-      const { data: testData, error: testError } = await locals.supabaseAdmin
-        .from('categories')
-        .select('id, name')
-        .limit(1);
+        const supabaseUrl = getSupabaseUrl();
+        const supabaseAnonKey = getSupabaseAnonKey();
+        const supabaseServiceRoleKey = getSupabaseServiceRoleKey();
 
-      results.supabaseAdmin_test = {
-        success: !testError,
-        data: testData,
-        error: testError?.message,
-        error_code: testError?.code
-      };
-    } catch (error) {
-      results.supabaseAdmin_test = {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
-      };
-    }
+        const envStatus = {
+            supabase: {
+                url: supabaseUrl,
+                url_valid: supabaseUrl !== 'https://fallback.supabase.co',
+                anon_key: supabaseAnonKey ? `${supabaseAnonKey.substring(0, 10)}...` : 'NOT_SET',
+                anon_key_valid: supabaseAnonKey !== 'fallback-anon-key',
+                service_role_key: supabaseServiceRoleKey ? `${supabaseServiceRoleKey.substring(0, 10)}...` : 'NOT_SET',
+                service_role_key_valid: supabaseServiceRoleKey !== 'fallback-service-role-key'
+            },
+            environment: {
+                node_env: process.env.NODE_ENV || 'development',
+                is_production: process.env.NODE_ENV === 'production',
+                is_development: process.env.NODE_ENV === 'development' || !process.env.NODE_ENV
+            },
+            import_meta_env: {
+                has_public_supabase_url: !!import.meta.env.PUBLIC_SUPABASE_URL,
+                has_public_supabase_anon_key: !!import.meta.env.PUBLIC_SUPABASE_ANON_KEY,
+                has_supabase_service_role_key: !!import.meta.env.SUPABASE_SERVICE_ROLE_KEY
+            },
+            process_env: {
+                has_public_supabase_url: !!process.env.PUBLIC_SUPABASE_URL,
+                has_public_supabase_anon_key: !!process.env.PUBLIC_SUPABASE_ANON_KEY,
+                has_supabase_service_role_key: !!process.env.SUPABASE_SERVICE_ROLE_KEY
+            }
+        };
 
-    // Test auth with supabaseAdmin
-    try {
-      const { data: authData, error: authError } = await locals.supabaseAdmin.auth.admin.listUsers();
-      
-      results.auth_test = {
-        success: !authError,
-        user_count: authData?.users?.length || 0,
-        error: authError?.message
-      };
-    } catch (error) {
-      results.auth_test = {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
-      };
-    }
-
-    return json(results);
-
+        return json({
+            data: envStatus,
+            message: 'Environment variables status',
+            statusCode: 200,
+            timestamp: new Date().toISOString()
+        });
   } catch (error) {
     return json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
+            error: {
+                message: error instanceof Error ? error.message : 'Unknown error',
+                statusCode: 500,
       timestamp: new Date().toISOString()
+            }
     }, { status: 500 });
   }
 }; 

@@ -34,7 +34,6 @@ pipeline {
                 script {
                     echo "🔐 Validating Jenkins environment variables configuration..."
                     
-                    // Validate that environment variables are not empty
                     def requiredVars = [
                         'PUBLIC_SUPABASE_URL': env.PUBLIC_SUPABASE_URL,
                         'PUBLIC_SUPABASE_ANON_KEY': env.PUBLIC_SUPABASE_ANON_KEY,
@@ -65,13 +64,7 @@ pipeline {
                     }
                     
                     echo "✅ All required environment variables are configured"
-                    
-                    // Log configuration (without exposing values)
-                    echo "📋 Configuration Summary:"
-                    echo "   - Supabase URL: ${env.PUBLIC_SUPABASE_URL ? 'CONFIGURED' : 'MISSING'}"
-                    echo "   - Supabase Keys: ${env.PUBLIC_SUPABASE_ANON_KEY && env.PUBLIC_SUPABASE_SERVICE_ROLE_KEY ? 'CONFIGURED' : 'MISSING'}"
-                    echo "   - SMTP Settings: ${env.SMTP_HOST && env.SMTP_USER ? 'CONFIGURED' : 'MISSING'}"
-                    echo "   - From Email: ${env.FROM_EMAIL ? 'CONFIGURED' : 'MISSING'}"
+                  
                 }
             }
         }
@@ -88,16 +81,7 @@ pipeline {
                 script {
                     def dockerAvailable = sh(script: 'command -v docker', returnStatus: true) == 0
                     env.DOCKER_AVAILABLE = dockerAvailable.toString()
-                    
-                    if (dockerAvailable) {
-                        echo "✅ Docker is available - will use containerized deployment"
-                    } else {
-                        echo "⚠️ Docker not found - will use direct Node.js deployment"
-                        echo "💡 To use Docker, install it with:"
-                        echo "   sudo apt update && sudo apt install docker.io"
-                        echo "   sudo usermod -aG docker jenkins"
-                        echo "   sudo systemctl restart jenkins"
-                    }
+                    echo "Docker available: ${dockerAvailable}"
                 }
             }
         }

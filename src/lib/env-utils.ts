@@ -7,6 +7,11 @@ export function getSupabaseUrl(): string {
 		return import.meta.env.PUBLIC_SUPABASE_URL;
 	}
 	
+	// Try process.env as fallback
+	if (typeof process !== 'undefined' && process.env.PUBLIC_SUPABASE_URL) {
+		return process.env.PUBLIC_SUPABASE_URL;
+	}
+	
 	// Try to access the variable directly (will be replaced at build time)
 	try {
 		// @ts-ignore - This will be replaced by SvelteKit at build time
@@ -26,6 +31,11 @@ export function getSupabaseUrl(): string {
 export function getSupabaseAnonKey(): string {
 	if (import.meta.env.PUBLIC_SUPABASE_ANON_KEY) {
 		return import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
+	}
+	
+	// Try process.env as fallback
+	if (typeof process !== 'undefined' && process.env.PUBLIC_SUPABASE_ANON_KEY) {
+		return process.env.PUBLIC_SUPABASE_ANON_KEY;
 	}
 	
 	try {
