@@ -264,9 +264,11 @@ pipeline {
                                 healthCheckPassed = true
                                 echo "✅ Health check passed - App deployed successfully!"
                                 break
-                            } else {
-                                echo "⚠️ Host health check failed - network issue"
-                                echo "🔍 Trying alternative host addresses..."
+                            }
+                            
+                            // If we reach here, external health check failed but internal passed
+                            echo "⚠️ Host health check failed - network issue"
+                            echo "🔍 Trying alternative host addresses..."
                                 
                                 // Get more debug info when health check fails
                                 echo "🔍 Debug: Checking if app is listening..."
