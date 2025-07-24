@@ -264,7 +264,6 @@ pipeline {
                                 healthCheckPassed = true
                                 echo "✅ Health check passed - App deployed successfully!"
                                 break
-                            }
                             } else {
                                 echo "⚠️ Host health check failed - network issue"
                                 echo "🔍 Trying alternative host addresses..."
