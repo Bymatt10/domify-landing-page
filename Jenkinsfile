@@ -267,79 +267,10 @@ pipeline {
                             }
                             
                             // If we reach here, external health check failed but internal passed
-                            echo "⚠️ Host health check failed - network issue"
-                            echo "🔍 Trying alternative host addresses..."
-                                
-                                // Get more debug info when health check fails
-                                echo "🔍 Debug: Checking if app is listening..."
-                                def listeningCheck = sh(script: "netstat -tlnp | grep :${PORT} || ss -tlnp | grep :${PORT} || true", returnStdout: true).trim()
-                                echo "📋 Port listening status: ${listeningCheck}"
-                                
-                                // Try to get container logs
-                                echo "🔍 Debug: Container logs..."
-                                def containerLogs = sh(script: "docker logs ${CONTAINER_NAME} --tail 20 2>/dev/null || echo 'No logs available'", returnStdout: true).trim()
-                                echo "📋 Container logs: ${containerLogs}"
-                                
-                                // Test if any endpoint responds
-                                echo "🔍 Debug: Testing basic connectivity..."
-                                def basicTest = sh(script: "curl -f -m 5 http://localhost:${PORT}/ 2>/dev/null", returnStatus: true)
-                                echo "📋 Basic connectivity test: ${basicTest == 0 ? 'SUCCESS' : 'FAILED'}"
-                                
-                                // Test with verbose curl to see what's happening
-                                echo "🔍 Debug: Verbose curl test..."
-                                def verboseTest = sh(script: "curl -v http://localhost:${PORT}/api/health 2>&1 | head -20", returnStdout: true).trim()
-                                echo "📋 Verbose test output: ${verboseTest}"
-                                
-                                // Try container IP directly
-                                def containerIP = sh(script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ${CONTAINER_NAME}", returnStdout: true).trim()
-                                echo "📋 Container IP: ${containerIP}"
-                                
-                                // Test direct IP access
-                                if (containerIP) {
-                                    echo "🔍 Testing direct IP access..."
-                                    def directIPTest = sh(script: "curl -f -m 10 http://${containerIP}:${PORT}/api/health 2>/dev/null", returnStatus: true)
-                                    if (directIPTest == 0) {
-                                        echo "✅ Direct IP access works"
-                                        def directResponse = sh(script: "curl -s http://${containerIP}:${PORT}/api/health", returnStdout: true).trim()
-                                        echo "📋 Direct IP response: ${directResponse}"
-                                    } else {
-                                        echo "❌ Direct IP access failed"
-                                    }
-                                }
-                                
-                                if (containerIP) {
-                                    def ipCheck = sh(script: "curl -f -m 10 http://${containerIP}:${PORT}/api/health 2>/dev/null", returnStatus: true)
-                                    if (ipCheck == 0) {
-                                        echo "✅ Direct IP health check passed"
-                                        
-                                        // Get and display health check response from IP
-                                        def ipHealthResponse = sh(script: "curl -s http://${containerIP}:${PORT}/api/health", returnStdout: true).trim()
-                                        echo "📋 Health response from IP: ${ipHealthResponse}"
-                                        
-                                        // Verify static assets via IP
-                                        echo "🔍 Checking static assets via IP..."
-                                        def faviconIPCheck = sh(script: "curl -f -m 5 http://${containerIP}:${PORT}/favicon.png 2>/dev/null", returnStatus: true)
-                                        def logoIPCheck = sh(script: "curl -f -m 5 http://${containerIP}:${PORT}/icon-domify.png 2>/dev/null", returnStatus: true)
-                                        
-                                        if (faviconIPCheck == 0) {
-                                            echo "✅ Favicon is served correctly via IP"
-                                        } else {
-                                            echo "⚠️ Favicon not accessible via IP"
-                                        }
-                                        
-                                        if (logoIPCheck == 0) {
-                                            echo "✅ Logo/Social media image is served correctly via IP"
-                                        } else {
-                                            echo "⚠️ Logo/Social media image not accessible via IP"
-                                        }
-                                        
-                                        healthCheckPassed = true
-                                        break
-                                    }
-                                }
-                                
-                                sleep(15)
-                            }
+                            // Since we confirmed internal health check works, we'll continue with fallback diagnostics
+                            // but won't fail the deployment due to Docker network isolation
+                            
+                            sleep(15)
                         }
                         
                         if (!healthCheckPassed) {
