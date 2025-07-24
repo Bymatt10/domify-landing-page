@@ -524,43 +524,64 @@ EOF
                     sleep(5)
                     
                     // Check if the application is responding
-                    sh """
+                    script {
                         echo "🔍 Final application accessibility test..."
                         
-                        # Test localhost health endpoint
-                        if curl -f -m 10 http://localhost:${PORT}/api/health > /dev/null 2>&1; then
-                            echo "✅ Local health check passed - Application is running on port ${PORT}"
+                        if (env.DOCKER_AVAILABLE == 'true') {
+                            // For Docker deployment, use internal health check
+                            echo "🐳 Testing Docker container health..."
+                            def dockerHealthCheck = sh(script: "docker exec ${CONTAINER_NAME} curl -f -m 10 http://localhost:${PORT}/api/health 2>/dev/null", returnStatus: true)
                             
-                            # Display health status
-                            echo "📋 Health status:"
-                            curl -s http://localhost:${PORT}/api/health | head -5
+                            if (dockerHealthCheck == 0) {
+                                echo "✅ Docker container health check passed - Application is running on port ${PORT}"
+                                
+                                // Display health status
+                                echo "📋 Health status:"
+                                def healthResponse = sh(script: "docker exec ${CONTAINER_NAME} curl -s http://localhost:${PORT}/api/health", returnStdout: true).trim()
+                                echo healthResponse
+                                
+                                // Check if container is properly exposed
+                                sh "docker port ${CONTAINER_NAME}"
+                                
+                            } else {
+                                echo "❌ Docker container health check failed"
+                                sh "docker logs --tail 10 ${CONTAINER_NAME}"
+                                error("Docker container health check failed")
+                            }
+                        } else {
+                            // For Node.js deployment, use localhost
+                            echo "📦 Testing Node.js application health..."
+                            def nodeHealthCheck = sh(script: "curl -f -m 10 http://localhost:${PORT}/api/health 2>/dev/null", returnStatus: true)
                             
-                            # Test root endpoint
-                            if curl -f -m 10 http://localhost:${PORT} > /dev/null 2>&1; then
-                                echo "✅ Root endpoint also accessible"
-                            else
-                                echo "⚠️ Root endpoint check failed, but health endpoint is working"
-                            fi
-                        else
-                            echo "❌ Local health check failed"
-                            if [ -f app.log ]; then
-                                echo "📋 Recent application logs:"
-                                tail -10 app.log
-                            fi
-                            exit 1
-                        fi
+                            if (nodeHealthCheck == 0) {
+                                echo "✅ Node.js application health check passed - Application is running on port ${PORT}"
+                                
+                                // Display health status
+                                echo "📋 Health status:"
+                                def healthResponse = sh(script: "curl -s http://localhost:${PORT}/api/health", returnStdout: true).trim()
+                                echo healthResponse
+                                
+                            } else {
+                                echo "❌ Node.js application health check failed"
+                                if (fileExists('app.log')) {
+                                    echo "📋 Recent application logs:"
+                                    sh "tail -10 app.log"
+                                }
+                                error("Node.js application health check failed")
+                            }
+                        }
                         
-                        # Test domain health endpoint (if accessible)
-                        if curl -f -m 10 http://${DOMAIN}/api/health > /dev/null 2>&1; then
+                        // Test domain health endpoint (if accessible) - optional
+                        echo "🌐 Testing domain accessibility (optional)..."
+                        def domainHealthCheck = sh(script: "curl -f -m 10 http://${DOMAIN}/api/health 2>/dev/null", returnStatus: true)
+                        if (domainHealthCheck == 0) {
                             echo "✅ Domain health check passed - Application accessible at http://${DOMAIN}"
-                            
-                            # Display domain health status
-                            echo "📋 Domain health status:"
-                            curl -s http://${DOMAIN}/api/health | head -5
-                        else
+                            def domainHealthResponse = sh(script: "curl -s http://${DOMAIN}/api/health", returnStdout: true).trim()
+                            echo "📋 Domain health status: ${domainHealthResponse}"
+                        } else {
                             echo "⚠️ Domain not yet accessible. May need DNS configuration."
-                        fi
-                    """
+                        }
+                    }
                 }
             }
         }
