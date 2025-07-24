@@ -1679,7 +1679,6 @@
 														controls 
 														preload="metadata"
 														class="w-full h-full object-cover"
-														loading="lazy"
 													>
 														<track kind="captions" />
 													</video>
