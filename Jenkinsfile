@@ -212,6 +212,11 @@ pipeline {
                                 def hostHealthResponse = sh(script: "curl -s http://localhost:${PORT}/api/health", returnStdout: true).trim()
                                 echo "📋 Health response from host: ${hostHealthResponse}"
                                 
+                                // Also check app status endpoint
+                                echo "🔍 Checking app status..."
+                                def appStatusCheck = sh(script: "curl -s http://localhost:${PORT}/api/debug/app-status", returnStdout: true).trim()
+                                echo "📋 App status: ${appStatusCheck}"
+                                
                                 // Verify static assets are served correctly
                                 echo "🔍 Checking static assets..."
                                 def faviconCheck = sh(script: "curl -f -m 5 http://localhost:${PORT}/favicon.png 2>/dev/null", returnStatus: true)
@@ -235,6 +240,16 @@ pipeline {
                             } else {
                                 echo "⚠️ Host health check failed - network issue"
                                 echo "🔍 Trying alternative host addresses..."
+                                
+                                // Get more debug info when health check fails
+                                echo "🔍 Debug: Checking if app is listening..."
+                                def listeningCheck = sh(script: "netstat -tlnp | grep :${PORT} || ss -tlnp | grep :${PORT} || true", returnStdout: true).trim()
+                                echo "📋 Port listening status: ${listeningCheck}"
+                                
+                                // Try to get container logs
+                                echo "🔍 Debug: Container logs..."
+                                def containerLogs = sh(script: "docker logs ${CONTAINER_NAME} --tail 20 2>/dev/null || echo 'No logs available'", returnStdout: true).trim()
+                                echo "📋 Container logs: ${containerLogs}"
                                 
                                 // Try container IP directly
                                 def containerIP = sh(script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ${CONTAINER_NAME}", returnStdout: true).trim()
