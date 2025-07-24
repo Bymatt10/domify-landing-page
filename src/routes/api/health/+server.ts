@@ -37,7 +37,7 @@ import type { RequestHandler } from '@sveltejs/kit';
  */
 export const GET: RequestHandler = async ({ locals }) => {
 	try {
-		// Basic health check data
+		// Simplified health check data
 		const healthData = {
 			status: 'ok',
 			timestamp: new Date().toISOString(),
@@ -45,30 +45,12 @@ export const GET: RequestHandler = async ({ locals }) => {
 			message: 'Domify API is running!',
 			environment: process.env.NODE_ENV || 'development',
 			uptime: process.uptime(),
-			services: {
-				database: 'unknown',
-				auth: 'unknown'
-			}
+			port: process.env.PORT || 'not set',
+			host: process.env.HOST || 'not set'
 		};
 
-		// Test database connection
-		try {
-			const { data, error } = await locals.supabase
-				.from('categories')
-				.select('count(*)', { count: 'exact', head: true });
-			
-			healthData.services.database = error ? 'error' : 'ok';
-		} catch (dbError) {
-			healthData.services.database = 'error';
-		}
-
-		// Test auth service
-		try {
-			const { data: { user }, error } = await locals.supabase.auth.getUser();
-			healthData.services.auth = error ? 'error' : 'ok';
-		} catch (authError) {
-			healthData.services.auth = 'error';
-		}
+		// Skip database and auth tests for now to isolate the issue
+		console.log('Health check called successfully');
 
 		return json(healthData);
 	} catch (error) {

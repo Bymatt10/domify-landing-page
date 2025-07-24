@@ -205,6 +205,17 @@ pipeline {
                             
                             // Try health check from host
                             echo "🔍 Testing from host..."
+                            
+                            // First test simple endpoint
+                            echo "🔍 Testing simple endpoint..."
+                            def simpleTest = sh(script: "curl -f -m 10 http://localhost:${PORT}/api/debug/simple-test 2>/dev/null", returnStatus: true)
+                            if (simpleTest == 0) {
+                                def simpleResponse = sh(script: "curl -s http://localhost:${PORT}/api/debug/simple-test", returnStdout: true).trim()
+                                echo "✅ Simple endpoint working: ${simpleResponse}"
+                            } else {
+                                echo "❌ Simple endpoint failed"
+                            }
+                            
                             def healthCheck = sh(script: "curl -f -m 10 http://localhost:${PORT}/api/health 2>/dev/null", returnStatus: true)
                             
                             if (healthCheck == 0) {
@@ -250,6 +261,16 @@ pipeline {
                                 echo "🔍 Debug: Container logs..."
                                 def containerLogs = sh(script: "docker logs ${CONTAINER_NAME} --tail 20 2>/dev/null || echo 'No logs available'", returnStdout: true).trim()
                                 echo "📋 Container logs: ${containerLogs}"
+                                
+                                // Test if any endpoint responds
+                                echo "🔍 Debug: Testing basic connectivity..."
+                                def basicTest = sh(script: "curl -f -m 5 http://localhost:${PORT}/ 2>/dev/null", returnStatus: true)
+                                echo "📋 Basic connectivity test: ${basicTest == 0 ? 'SUCCESS' : 'FAILED'}"
+                                
+                                // Test with verbose curl to see what's happening
+                                echo "🔍 Debug: Verbose curl test..."
+                                def verboseTest = sh(script: "curl -v http://localhost:${PORT}/api/health 2>&1 | head -20", returnStdout: true).trim()
+                                echo "📋 Verbose test output: ${verboseTest}"
                                 
                                 // Try container IP directly
                                 def containerIP = sh(script: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ${CONTAINER_NAME}", returnStdout: true).trim()
