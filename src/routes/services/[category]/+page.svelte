@@ -137,7 +137,8 @@
 		error = null;
 		
 		try {
-			const url = `/api/providers?category=${encodeURIComponent(category)}`;
+			const cacheBuster = Date.now();
+			const url = `/api/providers?category=${encodeURIComponent(category)}&v=${cacheBuster}`;
 			const response = await fetch(url);
 			const result = await response.json();
 
@@ -567,7 +568,8 @@
 	// 3. Fetch all services for the category at once
 	async function fetchCategoryServices() {
 		try {
-			const url = `/api/services?category=${encodeURIComponent(category)}`;
+			const cacheBuster = Date.now();
+			const url = `/api/services?category=${encodeURIComponent(category)}&v=${cacheBuster}`;
 			const response = await fetch(url);
 			const result = await response.json();
 			if (response.ok && result.data && result.data.services) {
@@ -597,12 +599,16 @@
 	}
 
 	onMount(async () => {
+		// Add cache busting parameter to force fresh data
+		const cacheBuster = Date.now();
+		console.log('🔄 Loading with cache buster:', cacheBuster);
+		
 		fetchProviders();
 		loadCategoryServices();
 		
 		// Verificar si el usuario está autenticado y obtener información
 		try {
-			const response = await fetch('/api/me');
+			const response = await fetch(`/api/me?v=${cacheBuster}`);
 			if (response.ok) {
 				const userData = await response.json();
 				isAuthenticated = true;
