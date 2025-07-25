@@ -28,7 +28,7 @@ export const GET: RequestHandler = async () => {
 		config: {
 			supabase_url: process.env.PUBLIC_SUPABASE_URL ? 'configured' : 'missing',
 			supabase_anon_key: process.env.PUBLIC_SUPABASE_ANON_KEY ? 'configured' : 'missing',
-			supabase_service_key: process.env.PUBLIC_SUPABASE_SERVICE_ROLE_KEY ? 'configured' : 'missing'
+			supabase_service_key: (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.PRIVATE_SUPABASE_SERVICE_ROLE_KEY) ? 'configured' : 'missing'
 		},
 		
 		// Recent changes
