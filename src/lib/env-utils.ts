@@ -54,21 +54,27 @@ export function getSupabaseAnonKey(): string {
 }
 
 export function getSupabaseServiceRoleKey(): string {
-	// Try import.meta.env first (Vite way) - check both possible names
+	// Try import.meta.env first (Vite way) - check all possible names
 	if (import.meta.env.SUPABASE_SERVICE_ROLE_KEY) {
 		return import.meta.env.SUPABASE_SERVICE_ROLE_KEY;
 	}
 	if (import.meta.env.PRIVATE_SUPABASE_SERVICE_ROLE_KEY) {
 		return import.meta.env.PRIVATE_SUPABASE_SERVICE_ROLE_KEY;
 	}
+	if (import.meta.env.PUBLIC_SUPABASE_SERVICE_ROLE_KEY) {
+		return import.meta.env.PUBLIC_SUPABASE_SERVICE_ROLE_KEY;
+	}
 	
-	// Try process.env as fallback - check both possible names
+	// Try process.env as fallback - check all possible names
 	if (typeof process !== 'undefined') {
 		if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
 			return process.env.SUPABASE_SERVICE_ROLE_KEY;
 		}
 		if (process.env.PRIVATE_SUPABASE_SERVICE_ROLE_KEY) {
 			return process.env.PRIVATE_SUPABASE_SERVICE_ROLE_KEY;
+		}
+		if (process.env.PUBLIC_SUPABASE_SERVICE_ROLE_KEY) {
+			return process.env.PUBLIC_SUPABASE_SERVICE_ROLE_KEY;
 		}
 	}
 	
@@ -83,6 +89,11 @@ export function getSupabaseServiceRoleKey(): string {
 		if (typeof PRIVATE_SUPABASE_SERVICE_ROLE_KEY !== 'undefined' && PRIVATE_SUPABASE_SERVICE_ROLE_KEY) {
 			// @ts-ignore
 			return PRIVATE_SUPABASE_SERVICE_ROLE_KEY;
+		}
+		// @ts-ignore - Try the public version too
+		if (typeof PUBLIC_SUPABASE_SERVICE_ROLE_KEY !== 'undefined' && PUBLIC_SUPABASE_SERVICE_ROLE_KEY) {
+			// @ts-ignore
+			return PUBLIC_SUPABASE_SERVICE_ROLE_KEY;
 		}
 	} catch (e) {
 		// Ignore errors
