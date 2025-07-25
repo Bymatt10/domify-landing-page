@@ -58,16 +58,15 @@ export const GET: RequestHandler = async ({ url }) => {
 							.select(`
 								id,
 								business_name,
-								description,
+								bio,
 								hourly_rate,
-								rating,
-								photo_url,
+								average_rating,
+								portfolio,
 								location,
 								phone,
 								total_reviews,
 								provider_type,
 								user_id,
-								portfolio,
 								settings
 							`)
 							.in('id', providerIds)
