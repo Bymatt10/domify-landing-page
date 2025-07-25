@@ -22,6 +22,19 @@
 		};
 		provider_categories?: any[];
 		bio?: string; // Biografía personal
+		settings?: {
+			business?: {
+				workingHours?: {
+					[key: string]: {
+						enabled: boolean;
+						start: string;
+						end: string;
+					};
+				};
+				timezone?: string;
+				currency?: string;
+			};
+		};
 		portfolio?: Array<{
 			id: string;
 			image_url: string;
@@ -179,17 +192,20 @@
 		applyFilters();
 	}
 
-	async function openProfileModal(provider: Provider) {
-		// Resetear estado de contacto para el nuevo proveedor
-		hasContactedProvider = false;
-		showReviewForm = false;
-		newReview = { rating: 5, comment: '' };
-		
+	async function openProfileModal(provider: any) {
+		// Si el provider no tiene settings, haz un fetch para traerlo completo
+		if (!provider.settings) {
+			const res = await fetch(`/api/providers/${provider.id}`);
+			const data = await res.json();
+			if (data && data.success && data.provider) {
+				provider = { ...provider, ...data.provider };
+			}
+		}
+
 		// Cargar reseñas reales del proveedor
 		try {
 			const response = await fetch(`/api/reviews?provider_id=${provider.id}`);
 			const result = await response.json();
-			
 			if (response.ok && result.data?.reviews) {
 				// Formatear las reseñas para mostrar
 				const formattedReviews = result.data.reviews.map((review: any) => ({
@@ -203,48 +219,18 @@
 		} catch (error) {
 			console.error('Error loading reviews:', error);
 			provider.reviews = [];
-			// Mostrar mensaje de error si es un problema de base de datos
-			if (error instanceof Error && error.message.includes('relationship')) {
-				console.warn('La tabla reviews necesita ser actualizada. Ejecuta los comandos SQL en /api/debug/fix-reviews-table');
-			}
 		}
-		
+
 		// Usar datos reales del proveedor (sin hardcodeo)
 		const enhancedProvider = {
 			...provider,
 			bio: provider.bio || `Soy un profesional con más de 5 años de experiencia en ${formatCategoryName(category).toLowerCase()}. Me especializo en brindar servicios de alta calidad, siempre enfocado en la satisfacción del cliente. Trabajo con materiales de primera calidad y utilizo las mejores técnicas del mercado.`,
-			portfolio: provider.portfolio || [], // Usar portfolio real de la base de datos
-			reviews: provider.reviews || [
-				{
-					id: '1',
-					rating: 5,
-					comment: 'Excelente trabajo, muy profesional y puntual. Recomiendo 100%.',
-					reviewer_name: 'María González',
-					created_at: '2024-01-15T10:30:00Z',
-					can_review: false
-				},
-				{
-					id: '2',
-					rating: 4,
-					comment: 'Buen servicio, llegó a tiempo y completó el trabajo como esperaba.',
-					reviewer_name: 'Carlos Mendoza',
-					created_at: '2024-01-10T14:20:00Z',
-					can_review: false
-				},
-				{
-					id: '3',
-					rating: 5,
-					comment: 'Superó mis expectativas. Trabajo de muy alta calidad y precio justo.',
-					reviewer_name: 'Ana Rodríguez',
-					created_at: '2024-01-05T16:45:00Z',
-					can_review: false
-				}
-			]
+			portfolio: provider.portfolio || [],
+			reviews: provider.reviews || []
 		};
-		
+
 		selectedProvider = enhancedProvider;
 		showProfileModal = true;
-		// Prevenir scroll del body cuando el modal está abierto
 		if (typeof window !== 'undefined') {
 			document.body.style.overflow = 'hidden';
 		}
@@ -467,6 +453,95 @@
 		};
 	}
 
+	function formatWorkingHours(settings: any) {
+		if (!settings?.business?.workingHours) {
+			return null;
+		}
+
+		const workingHours = settings.business.workingHours;
+		const dayNames: Record<string, string> = {
+			monday: 'Lunes',
+			tuesday: 'Martes',
+			wednesday: 'Miércoles',
+			thursday: 'Jueves',
+			friday: 'Viernes',
+			saturday: 'Sábado',
+			sunday: 'Domingo'
+		};
+
+		const enabledDays = Object.entries(workingHours)
+			.filter(([_, day]) => (day as any).enabled)
+			.map(([day, dayData]) => ({
+				name: dayNames[day] || day,
+				start: (dayData as any).start,
+				end: (dayData as any).end
+			}));
+
+		if (enabledDays.length === 0) {
+			return null;
+		}
+
+		// Agrupar días por horarios
+		const groups: Array<{days: string[], start: string, end: string}> = [];
+		
+		enabledDays.forEach(day => {
+			const existingGroup = groups.find(g => g.start === day.start && g.end === day.end);
+			if (existingGroup) {
+				existingGroup.days.push(day.name);
+			} else {
+				groups.push({
+					days: [day.name],
+					start: day.start,
+					end: day.end
+				});
+			}
+		});
+
+		// Formatear grupos de forma resumida
+		return groups.map(group => {
+			if (group.days.length === 1) {
+				return `${group.days[0]} de ${group.start} a ${group.end}`;
+			} else {
+				// Ordenar días para crear rangos
+				const dayOrder = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+				const sortedDays = group.days.sort((a, b) => 
+					dayOrder.indexOf(a) - dayOrder.indexOf(b)
+				);
+				
+				// Crear rangos consecutivos
+				const ranges: string[] = [];
+				let start = sortedDays[0];
+				let end = sortedDays[0];
+				
+				for (let i = 1; i < sortedDays.length; i++) {
+					const currentDay = sortedDays[i];
+					const currentIndex = dayOrder.indexOf(currentDay);
+					const endIndex = dayOrder.indexOf(end);
+					
+					if (currentIndex === endIndex + 1) {
+						end = currentDay;
+					} else {
+						if (start === end) {
+							ranges.push(start);
+						} else {
+							ranges.push(`${start} a ${end}`);
+						}
+						start = currentDay;
+						end = currentDay;
+					}
+				}
+				
+				if (start === end) {
+					ranges.push(start);
+				} else {
+					ranges.push(`${start} a ${end}`);
+				}
+				
+				return `${ranges.join(', ')} de ${group.start} a ${group.end}`;
+			}
+		}).join(', ');
+	}
+
 	// Sistema de comentarios
 	let showReviewForm = false;
 	let newReview = {
@@ -489,29 +564,36 @@
 	// 2. Add a reactive variable to store provider services
 	let providerServicesMap: Record<string, any[]> = {};
 
-	// 3. Fetch services for each provider after fetching providers
-	async function fetchProviderServices(providerId: string) {
+	// 3. Fetch all services for the category at once
+	async function fetchCategoryServices() {
 		try {
-			const url = `/api/services?provider_profile_id=${providerId}`;
+			const url = `/api/services?category=${encodeURIComponent(category)}`;
 			const response = await fetch(url);
 			const result = await response.json();
 			if (response.ok && result.data && result.data.services) {
-				providerServicesMap[providerId] = result.data.services;
+				// Group services by provider
+				const servicesByProvider: Record<string, any[]> = {};
+				result.data.services.forEach((service: any) => {
+					const providerId = service.provider_profile_id;
+					if (!servicesByProvider[providerId]) {
+						servicesByProvider[providerId] = [];
+					}
+					servicesByProvider[providerId].push(service);
+				});
+				providerServicesMap = servicesByProvider;
 			} else {
-				providerServicesMap[providerId] = [];
+				providerServicesMap = {};
 			}
 		} catch (e) {
-			providerServicesMap[providerId] = [];
+			providerServicesMap = {};
 		}
 	}
 
-	// 4. After fetching providers, fetch their services
-	$: if (!loading && providers.length > 0) {
-		providers.forEach((provider) => {
-			if (!providerServicesMap[provider.id]) {
-				fetchProviderServices(provider.id);
-			}
-		});
+	// 4. After fetching providers, fetch their services - only once
+	let servicesFetched = false;
+	$: if (!loading && providers.length > 0 && !servicesFetched) {
+		servicesFetched = true;
+		fetchCategoryServices();
 	}
 
 	onMount(async () => {
@@ -529,6 +611,11 @@
 		} catch (error) {
 			console.error('Error checking authentication:', error);
 		}
+		
+		// Mark initial load as complete after a short delay
+		setTimeout(() => {
+			initialLoad = false;
+		}, 100);
 	});
 
 	function loadCategoryServices() {
@@ -540,6 +627,13 @@
 	onDestroy(() => {
 		if (typeof window !== 'undefined') {
 			document.body.style.overflow = 'auto';
+		}
+		// Clear any pending timeouts
+		if (filterTimeout) {
+			clearTimeout(filterTimeout);
+		}
+		if (searchTimeout) {
+			clearTimeout(searchTimeout);
 		}
 	});
 
@@ -562,24 +656,14 @@
 		}
 	}
 
-	$: if (typeof window !== 'undefined' && priceRange) {
-		applyFilters();
-	}
-
-	$: if (typeof window !== 'undefined' && selectedProviderType) {
-		applyFilters();
-	}
-
-	$: if (typeof window !== 'undefined' && selectedDepartment) {
-		applyFilters();
-	}
-
-	$: if (typeof window !== 'undefined' && selectedCity) {
-		applyFilters();
-	}
-
-	$: if (typeof window !== 'undefined' && selectedTime) {
-		applyFilters();
+	// Debounced filter application to prevent multiple API calls
+	let filterTimeout: any;
+	let initialLoad = true;
+	$: if (typeof window !== 'undefined' && !initialLoad && (priceRange || selectedProviderType || selectedDepartment || selectedCity || selectedTime)) {
+		clearTimeout(filterTimeout);
+		filterTimeout = setTimeout(() => {
+			applyFilters();
+		}, 300); // 300ms debounce
 	}
 
 	function togglePortfolio() {
@@ -677,10 +761,15 @@
 		showSearchResults = false;
 	}
 
-	// Reactive statement para buscar automáticamente
+	// Debounced search to prevent multiple API calls
+	let searchTimeout: any;
 	$: if (searchQuery.length > 2) {
-		performSearch();
+		clearTimeout(searchTimeout);
+		searchTimeout = setTimeout(() => {
+			performSearch();
+		}, 300); // 300ms debounce
 	} else if (searchQuery.length === 0) {
+		clearTimeout(searchTimeout);
 		searchResults = [];
 		showSearchResults = false;
 	}
@@ -1127,13 +1216,24 @@
 												</div>
 
 												<!-- Ubicación -->
-												<div class="flex items-center gap-1 text-sm text-secondary-600 mb-3">
+												<div class="flex items-center gap-1 text-sm text-secondary-600 mb-2">
 													<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
 														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
 													</svg>
 													{provider.location || 'Ubicación no especificada'}
 												</div>
+
+												<!-- Horarios de Atención -->
+												{#if formatWorkingHours(provider.settings)}
+													<div class="flex items-center gap-1 text-sm text-secondary-600 mb-3">
+														<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+															<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+														</svg>
+														<span class="font-medium text-primary-600">Horarios:</span>
+														{formatWorkingHours(provider.settings)}
+													</div>
+												{/if}
 											</div>
 
 											<!-- Precio -->
@@ -1606,13 +1706,26 @@
 								</div>
 								
 								<!-- Ubicación -->
-								<div class="flex items-center gap-2 text-secondary-600 mb-6">
+								<div class="flex items-center gap-2 text-secondary-600 mb-4">
 									<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
 										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
 									</svg>
 									<span class="text-lg">{selectedProvider.location || 'Ubicación no especificada'}</span>
 								</div>
+
+								<!-- Horarios de Atención -->
+								{#if formatWorkingHours(selectedProvider.settings)}
+									<div class="flex items-center gap-2 text-secondary-600 mb-6">
+										<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+										</svg>
+										<div>
+											<span class="text-lg font-medium text-primary-600">Horarios de Atención:</span>
+											<span class="text-lg ml-2">{formatWorkingHours(selectedProvider.settings)}</span>
+										</div>
+									</div>
+								{/if}
 								
 								<!-- Biografía -->
 								{#if selectedProvider.bio}
@@ -1698,6 +1811,7 @@
 												{/if}
 											</div>
 											<div class="p-3">
+												
 												<h4 class="font-medium text-secondary-900 mb-1 text-sm">{work.title}</h4>
 												{#if work.description}
 													<p class="text-xs text-secondary-600 line-clamp-2">{work.description}</p>
