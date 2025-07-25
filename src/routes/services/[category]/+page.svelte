@@ -3,6 +3,9 @@
 	import { onMount, onDestroy } from 'svelte';
 	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
 	import { getTemplatesByCategoryName, type ServiceTemplate } from '$lib/service-templates';
+	import type { PageData } from './$types';
+
+	export let data: PageData;
 
 	type Provider = {
 		id: string;
@@ -57,8 +60,11 @@
 	};
 
 	let category = $page.params.category;
-	let providers: Provider[] = [];
-	let loading = true;
+	let providers: Provider[] = (data.providers || []).map(p => ({
+		...p,
+		users: Array.isArray(p.users) ? p.users[0] : p.users
+	}));
+	let loading = !data.preloaded;
 	let error: string | null = null;
 	let showFiltersModal = false;
 	let showProfileModal = false;
@@ -603,7 +609,10 @@
 		const cacheBuster = Date.now();
 		console.log('🔄 Loading with cache buster:', cacheBuster);
 		
-		fetchProviders();
+		// Only fetch if not preloaded from server
+		if (!data.preloaded) {
+			fetchProviders();
+		}
 		loadCategoryServices();
 		
 		// Verificar si el usuario está autenticado y obtener información
