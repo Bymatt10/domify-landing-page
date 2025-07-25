@@ -62,7 +62,10 @@
 	let category = $page.params.category;
 	let providers: Provider[] = (data.providers || []).map(p => ({
 		...p,
-		users: Array.isArray(p.users) ? p.users[0] : p.users
+		description: p.bio || p.description || 'Sin descripción',
+		rating: p.average_rating || p.rating || 0,
+		photo_url: p.photo_url || '/img/cleaning.png',
+		users: p.users || { id: p.user_id, email: '', role: 'provider' }
 	}));
 	let loading = !data.preloaded;
 	let error: string | null = null;
