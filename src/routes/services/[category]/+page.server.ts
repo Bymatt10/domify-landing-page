@@ -10,40 +10,60 @@ export const load: PageServerLoad = async ({ params }) => {
 	}
 
 	try {
-		// Cargar proveedores de la categoría
-		const { data: providers, error: providersError } = await supabaseAdmin
-			.from('provider_profiles')
-			.select(`
-				id,
-				business_name,
-				description,
-				hourly_rate,
-				rating,
-				photo_url,
-				location,
-				phone,
-				total_reviews,
-				provider_type,
-				users (
-					id,
-					email,
-					role
-				),
-				provider_categories (
-					category_id,
-					categories (
-						id,
-						name,
-						slug
-					)
-				)
-			`)
-			.eq('provider_categories.categories.slug', category)
-			.order('rating', { ascending: false });
+		// Primero obtener la categoría
+		const { data: categoryInfo, error: categoryError } = await supabaseAdmin
+			.from('categories')
+			.select('id, name, description, icon, slug')
+			.eq('slug', category)
+			.single();
 
-		if (providersError) {
-			console.error('Error loading providers:', providersError);
+		if (categoryError) {
+			console.error('Error loading category:', categoryError);
+			throw error(404, 'Categoría no encontrada');
+		}
+
+		// Obtener proveedores que pertenecen a esta categoría
+		const { data: providerCategories, error: pcError } = await supabaseAdmin
+			.from('provider_categories')
+			.select('provider_profile_id')
+			.eq('category_id', categoryInfo.id);
+
+		if (pcError) {
+			console.error('Error loading provider categories:', pcError);
 			throw error(500, 'Error al cargar proveedores');
+		}
+
+		let providers: any[] = [];
+		if (providerCategories && providerCategories.length > 0) {
+			const providerIds = providerCategories.map(pc => pc.provider_profile_id);
+			
+			// Cargar proveedores
+			const { data: providersData, error: providersError } = await supabaseAdmin
+				.from('provider_profiles')
+				.select(`
+					id,
+					business_name,
+					bio,
+					hourly_rate,
+					average_rating,
+					portfolio,
+					location,
+					phone,
+					total_reviews,
+					provider_type,
+					user_id,
+					settings
+				`)
+				.in('id', providerIds)
+				.eq('is_active', true)
+				.order('average_rating', { ascending: false });
+
+			if (providersError) {
+				console.error('Error loading providers:', providersError);
+				throw error(500, 'Error al cargar proveedores');
+			}
+
+			providers = providersData || [];
 		}
 
 		// Cargar servicios de la categoría
@@ -60,23 +80,12 @@ export const load: PageServerLoad = async ({ params }) => {
 					business_name
 				)
 			`)
-			.eq('categories.slug', category)
+			.eq('category_id', categoryInfo.id)
 			.order('created_at', { ascending: false });
 
 		if (servicesError) {
 			console.error('Error loading services:', servicesError);
 			// No lanzar error aquí, solo log
-		}
-
-		// Cargar información de la categoría
-		const { data: categoryInfo, error: categoryError } = await supabaseAdmin
-			.from('categories')
-			.select('id, name, description, icon, slug')
-			.eq('slug', category)
-			.single();
-
-		if (categoryError) {
-			console.error('Error loading category:', categoryError);
 		}
 
 		return {
