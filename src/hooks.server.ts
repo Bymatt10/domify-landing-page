@@ -3,12 +3,18 @@ import { createClient } from '@supabase/supabase-js';
 import type { Handle } from '@sveltejs/kit'
 import { ExceptionHandler } from '$lib/exceptions';
 import { getSupabaseUrl, getSupabaseAnonKey, getSupabaseServiceRoleKey } from '$lib/env-utils';
+import { rateLimitHandle } from '$lib/rate-limit-middleware';
 
 // Get environment variables with fallbacks
 const supabaseUrl = getSupabaseUrl();
 const supabaseAnonKey = getSupabaseAnonKey();
 
 export const handle: Handle = async ({ event, resolve }) => {
+	// Aplicar rate limiting primero
+	const rateLimitResponse = await rateLimitHandle({ event, resolve });
+	if (rateLimitResponse instanceof Response) {
+		return rateLimitResponse;
+	}
 	/**
 	 * Creates a Supabase client specific to this server request.
 	 *

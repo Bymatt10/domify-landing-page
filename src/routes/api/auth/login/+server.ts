@@ -8,6 +8,7 @@ import {
     validateEmail,
     handleAuthError
 } from '$lib/exceptions';
+import { applyRateLimit } from '$lib/rate-limit-middleware';
 
 /**
  * @swagger
@@ -70,6 +71,21 @@ import {
  */
 export const POST: RequestHandler = async ({ request, locals }) => {
     try {
+        // Aplicar rate limiting específico para login
+        const rateLimitResult = await applyRateLimit(request, 'auth');
+        if (!rateLimitResult.success) {
+            return json({
+                error: 'Rate limit exceeded',
+                message: 'Too many login attempts. Please try again later.',
+                retryAfter: rateLimitResult.info?.retryAfter
+            }, { 
+                status: 429,
+                headers: {
+                    'Retry-After': rateLimitResult.info?.retryAfter?.toString() || '900'
+                }
+            });
+        }
+
         const { email, password } = await request.json();
 
         // Validate required fields

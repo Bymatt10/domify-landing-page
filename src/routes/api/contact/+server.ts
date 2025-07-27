@@ -1,9 +1,25 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import nodemailer from 'nodemailer';
+import { applyRateLimit } from '$lib/rate-limit-middleware';
 
 export const POST: RequestHandler = async ({ request }) => {
 	try {
+		// Aplicar rate limiting para formularios
+		const rateLimitResult = await applyRateLimit(request, 'forms');
+		if (!rateLimitResult.success) {
+			return json({
+				error: 'Rate limit exceeded',
+				message: 'Too many contact form submissions. Please try again later.',
+				retryAfter: rateLimitResult.info?.retryAfter
+			}, { 
+				status: 429,
+				headers: {
+					'Retry-After': rateLimitResult.info?.retryAfter?.toString() || '300'
+				}
+			});
+		}
+
 		const { name, email, subject, message, user_id } = await request.json();
 
 		// Validaciones
