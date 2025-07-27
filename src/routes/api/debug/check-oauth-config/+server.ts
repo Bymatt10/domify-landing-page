@@ -37,8 +37,7 @@ export const GET: RequestHandler = async ({ locals: { supabase } }) => {
     // Verificar si la tabla customers existe y está accesible
     const { data: customersCheck, error: customersError } = await supabase
       .from('customers')
-      .select('count(*)')
-      .limit(1);
+      .select('*', { count: 'exact', head: true });
     
     console.log('Acceso a tabla customers:', customersError ? 'ERROR' : 'OK');
     if (customersError) {
