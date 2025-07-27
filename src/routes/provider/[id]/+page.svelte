@@ -1,13 +1,15 @@
 <script lang="ts">
 import { page } from '$app/stores';
 import { onMount } from 'svelte';
+import { generateProviderJSONLD, generateProviderMetaTags } from '$lib/seo-utils';
 
-let providerId = '';
-let provider: any = null;
-let loading = true;
+export let data: any;
+let { provider, categories, services, reviews, averageRating, seoData } = data;
+
+let loading = false;
 let error = '';
 
-// Mock para fotos de trabajo y reviews
+// Mock para fotos de trabajo (temporal)
 let workPhotos: string[] = [
   '/img/cleaning.png',
   '/img/gardening.png',
@@ -15,35 +17,72 @@ let workPhotos: string[] = [
   '/img/mounting.png',
   '/img/moving.png',
 ];
-let reviews = [
-  { name: 'Kellie D.', rating: 5, comment: 'Excelente servicio, muy puntual y profesional.', date: '2024-05-30', category: 'CLEANING' },
-  { name: 'John S.', rating: 4.8, comment: 'Muy buena experiencia, la recomiendo.', date: '2024-05-15', category: 'CLEANING' },
-];
 
-onMount(async () => {
-  providerId = $page.params.id;
-  loading = true;
-  error = '';
-  try {
-    // Aquí deberías hacer fetch real a tu API
-    // Por ahora, mock:
-    provider = {
-      id: providerId,
-      business_name: 'Zaidee P.',
-      photo_url: '/img/cleaning.png',
-      rating: 4.7,
-      hourly_rate: 58.84,
-      total_reviews: 197,
-      description: 'Responsible, and punctual. I have the tools and cleaning supplies. 2 hours minimum. Oven and refrigerator additional fee: $50, The balcony area has It is not included in the normal cleaning, you can find me also in DEEP CLEANING and if you need.',
-      skills: 'Responsible, punctual, deep cleaning, supplies included',
-      badges: ['ELITE', '2 HOUR MINIMUM'],
-    };
-  } catch (e) {
+onMount(() => {
+  // Los datos ya vienen del servidor
+  if (!provider) {
     error = 'No se pudo cargar la información del proveedor.';
-  } finally {
-    loading = false;
   }
 });
+
+// Generar metadatos SEO
+$: metaTags = provider ? generateProviderMetaTags({
+  name: provider.business_name,
+  business_name: provider.business_name,
+  bio: provider.bio,
+  location: provider.location,
+  hourly_rate: provider.hourly_rate,
+  average_rating: averageRating,
+  review_count: reviews?.length || 0,
+  categories: categories || [],
+  services: services?.map((s: any) => s.title) || [],
+  is_verified: provider.is_verified,
+  is_elite: provider.is_elite,
+  portfolio: provider.portfolio
+}, provider.id) : null;
+
+$: jsonLd = provider ? generateProviderJSONLD({
+  name: provider.business_name,
+  business_name: provider.business_name,
+  bio: provider.bio,
+  location: provider.location,
+  hourly_rate: provider.hourly_rate,
+  average_rating: averageRating,
+  review_count: reviews?.length || 0,
+  categories: categories || [],
+  services: services?.map((s: any) => s.title) || [],
+  is_verified: provider.is_verified,
+  is_elite: provider.is_elite,
+  portfolio: provider.portfolio
+}, provider.id) : null;
+</script>
+
+<svelte:head>
+  {#if metaTags}
+    <title>{metaTags.title}</title>
+    <meta name="description" content={metaTags.description} />
+    <meta name="keywords" content={metaTags.keywords} />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content={metaTags.og.type} />
+    <meta property="og:url" content={metaTags.og.url} />
+    <meta property="og:title" content={metaTags.og.title} />
+    <meta property="og:description" content={metaTags.og.description} />
+    <meta property="og:image" content={metaTags.og.image} />
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content={metaTags.twitter.card} />
+    <meta property="twitter:url" content={metaTags.twitter.url} />
+    <meta property="twitter:title" content={metaTags.twitter.title} />
+    <meta property="twitter:description" content={metaTags.twitter.description} />
+    <meta property="twitter:image" content={metaTags.twitter.image} />
+    
+    <!-- Schema.org structured data -->
+    <script type="application/ld+json">
+      {JSON.stringify(jsonLd)}
+    </script>
+  {/if}
+</svelte:head>
 
 function whatsapp(phone: string) {
   const cleanPhone = phone.replace(/[^0-9+]/g, '');

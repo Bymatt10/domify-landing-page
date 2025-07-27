@@ -3,6 +3,51 @@
 	import { goto } from '$app/navigation';
 	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
 
+</script>
+
+<svelte:head>
+	<title>Servicios Profesionales en Nicaragua | Domify - Encuentra Proveedores Confiables</title>
+	<meta name="description" content="Encuentra servicios profesionales en Nicaragua: limpieza, jardinería, ensamblaje, plomería, electricidad y más. Contrata proveedores verificados con tarifas transparentes." />
+	<meta name="keywords" content="servicios Nicaragua, limpieza, jardinería, ensamblaje, plomería, electricidad, construcción, pintura, domify, proveedores" />
+	
+	<!-- Open Graph / Facebook -->
+	<meta property="og:type" content="website" />
+	<meta property="og:url" content="https://domify.app/services" />
+	<meta property="og:title" content="Servicios Profesionales en Nicaragua | Domify" />
+	<meta property="og:description" content="Encuentra servicios profesionales en Nicaragua: limpieza, jardinería, ensamblaje, plomería, electricidad y más." />
+	<meta property="og:image" content="https://domify.app/img/domify-services.jpg" />
+	
+	<!-- Twitter -->
+	<meta property="twitter:card" content="summary_large_image" />
+	<meta property="twitter:url" content="https://domify.app/services" />
+	<meta property="twitter:title" content="Servicios Profesionales en Nicaragua | Domify" />
+	<meta property="twitter:description" content="Encuentra servicios profesionales en Nicaragua: limpieza, jardinería, ensamblaje, plomería, electricidad y más." />
+	<meta property="twitter:image" content="https://domify.app/img/domify-services.jpg" />
+	
+	<!-- Schema.org structured data -->
+	<script type="application/ld+json">
+		{JSON.stringify({
+			"@context": "https://schema.org",
+			"@type": "WebSite",
+			"name": "Domify - Servicios Profesionales",
+			"description": "Plataforma para encontrar servicios profesionales en Nicaragua",
+			"url": "https://domify.app/services",
+			"potentialAction": {
+				"@type": "SearchAction",
+				"target": "https://domify.app/services?search={search_term_string}",
+				"query-input": "required name=search_term_string"
+			},
+			"offers": {
+				"@type": "AggregateOffer",
+				"priceCurrency": "NIO",
+				"availability": "https://schema.org/InStock",
+				"description": "Servicios profesionales en Nicaragua"
+			}
+		})}
+	</script>
+</svelte:head>
+
+<script lang="ts">
 	type Category = {
 		id: number;
 		name: string;
