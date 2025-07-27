@@ -123,105 +123,100 @@
 		console.log('✅ Using partial matches:', partialMatches.length);
 	}
 
-	// Función para manejar cambios en la búsqueda
-	function handleSearchChange() {
-		console.log('🔍 Search query changed:', searchQuery);
-		filterCategories();
+	// Función para limpiar búsqueda
+	function clearSearch() {
+		console.log('🧹 Clearing search');
+		searchQuery = '';
+		filteredCategories = categories;
+		console.log('✅ Search cleared, showing all categories:', filteredCategories.length);
 	}
 
-	// Función para navegar a una categoría
-	function navigateToCategory(categorySlug: string) {
-		console.log('🚀 Navigating to category:', categorySlug);
-		goto(`/services/${categorySlug}`);
+	// Función para manejar la búsqueda al presionar Enter
+	function handleSearch() {
+		console.log('🎯 handleSearch called with query:', searchQuery);
+		console.log('📊 Current filtered categories:', filteredCategories.length);
+		
+		if (!searchQuery.trim()) {
+			console.log('🔄 Empty query, scrolling to all services');
+			// Si no hay búsqueda, hacer scroll a todos los servicios
+			const resultsSection = document.querySelector('#results-section');
+			if (resultsSection) {
+				resultsSection.scrollIntoView({ 
+					behavior: 'smooth',
+					block: 'start'
+				});
+			}
+			return;
+		}
+		
+		// Si solo hay un resultado, navegar directamente a él
+		if (filteredCategories.length === 1) {
+			handleCategoryClick(filteredCategories[0].slug);
+			return;
+		}
+		
+		// Si hay múltiples resultados, hacer scroll hasta la sección de resultados
+		if (filteredCategories.length > 0) {
+			const resultsSection = document.querySelector('#results-section');
+			if (resultsSection) {
+				resultsSection.scrollIntoView({ 
+					behavior: 'smooth',
+					block: 'start'
+				});
+			}
+		}
+		// Si no hay resultados, también hacer scroll para mostrar el mensaje "no encontrado"
+		else {
+			const resultsSection = document.querySelector('#results-section');
+			if (resultsSection) {
+				resultsSection.scrollIntoView({ 
+					behavior: 'smooth',
+					block: 'start'
+				});
+			}
+		}
+	}
+
+	// Función para manejar tecla Enter
+	function handleKeydown(event: KeyboardEvent) {
+		console.log('⌨️ Key pressed:', event.key);
+		if (event.key === 'Enter') {
+			console.log('🎯 Enter key detected, calling handleSearch');
+			event.preventDefault();
+			handleSearch();
+		}
 	}
 
 	onMount(async () => {
-		console.log('🚀 Services page mounted');
-		loading = true;
-		error = null;
-
+		console.log('🚀 Component mounting, loading categories...');
 		try {
-			// Mock data para categorías (reemplazar con fetch real)
-			categories = [
-				{
-					id: 1,
-					name: 'Limpieza',
-					description: 'Servicios de limpieza profesional para hogares y oficinas',
-					icon: '🧹',
-					slug: 'limpieza'
-				},
-				{
-					id: 2,
-					name: 'Jardinería',
-					description: 'Cuidado y mantenimiento de jardines y áreas verdes',
-					icon: '🌿',
-					slug: 'jardineria'
-				},
-				{
-					id: 3,
-					name: 'Ensamblaje',
-					description: 'Ensamblaje de muebles y equipos electrónicos',
-					icon: '🔧',
-					slug: 'ensamblaje'
-				},
-				{
-					id: 4,
-					name: 'Montaje',
-					description: 'Instalación de TV, estantes, cuadros y más',
-					icon: '📺',
-					slug: 'montaje'
-				},
-				{
-					id: 5,
-					name: 'Mudanza',
-					description: 'Servicios de mudanza y traslados seguros',
-					icon: '📦',
-					slug: 'mudanza'
-				},
-				{
-					id: 6,
-					name: 'Plomería',
-					description: 'Reparaciones e instalaciones de plomería',
-					icon: '🚰',
-					slug: 'plomeria'
-				},
-				{
-					id: 7,
-					name: 'Electricidad',
-					description: 'Servicios eléctricos profesionales',
-					icon: '⚡',
-					slug: 'electricidad'
-				},
-				{
-					id: 8,
-					name: 'Construcción',
-					description: 'Obras pequeñas y medianas',
-					icon: '🏗️',
-					slug: 'construccion'
-				},
-				{
-					id: 9,
-					name: 'Pintura',
-					description: 'Servicios de pintura interior y exterior',
-					icon: '🎨',
-					slug: 'pintura'
-				}
-			];
-
+			const res = await fetch('/api/categories');
+			console.log('📡 API response status:', res.status, res.ok);
+			if (!res.ok) {
+				throw new Error('No se pudieron cargar las categorías de servicios.');
+			}
+			const responseData = await res.json();
+			console.log('📦 Raw API response:', responseData);
+			categories = responseData.data.categories;
 			filteredCategories = categories;
-			console.log('✅ Categories loaded:', categories.length);
-
-		} catch (err) {
-			console.error('❌ Error loading categories:', err);
-			error = 'Error al cargar las categorías de servicios';
+			console.log('✅ Categories loaded successfully:', categories.length);
+			console.log('📋 First few categories:', categories.slice(0, 3));
+		} catch (e: any) {
+			error = e.message;
+			console.error('❌ Error fetching categories:', e);
 		} finally {
 			loading = false;
+			console.log('🏁 Loading completed, loading state:', loading);
 		}
 	});
 
+	function handleCategoryClick(slug: string) {
+		goto(`/services/${slug}`);
+	}
+
 	// Reactive statement para filtrar cuando cambie la búsqueda
 	$: if (searchQuery !== undefined) {
-		handleSearchChange();
+		filterCategories();
 	}
 </script>
 
@@ -267,274 +262,173 @@
 	</script>
 </svelte:head>
 
-<div class="services-container">
-	<!-- Header Section -->
-	<div class="services-header">
-		<div class="header-content">
-			<h1 class="main-title">Servicios Profesionales</h1>
-			<p class="subtitle">Encuentra profesionales verificados para todos tus proyectos en Nicaragua</p>
-			
-			<!-- Search Bar -->
-			<div class="search-container">
-				<div class="search-box">
-					<svg class="search-icon" width="20" height="20" viewBox="0 0 24 24">
-						<path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke="currentColor" stroke-width="2" fill="none"/>
-					</svg>
-					<input 
-						type="text" 
-						placeholder="Buscar servicios..." 
-						bind:value={searchQuery}
-						class="search-input"
-					/>
+<div class="min-h-screen bg-gradient-to-br from-secondary-50 to-primary-50">
+	<!-- Hero Section -->
+	<section class="relative overflow-hidden bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800">
+		<!-- Background Pattern -->
+		<div class="absolute inset-0 opacity-10">
+			<div class="absolute inset-0" style="background-image: radial-gradient(circle at 25% 25%, white 2px, transparent 2px), radial-gradient(circle at 75% 75%, white 2px, transparent 2px); background-size: 50px 50px;"></div>
+		</div>
+		
+		<div class="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32">
+			<div class="text-center max-w-4xl mx-auto">
+				<h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
+					Encuentra el profesional
+					<span class="block text-primary-200">perfecto para tu proyecto</span>
+				</h1>
+				<p class="text-xl sm:text-2xl text-primary-100 mb-8 max-w-2xl mx-auto">
+					Conectamos clientes con profesionales verificados y confiables en Nicaragua
+				</p>
+				
+				<!-- Search Bar -->
+				<div class="max-w-2xl mx-auto mb-8">
+					<div class="relative">
+						<div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+							<svg class="h-6 w-6 text-secondary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+							</svg>
+						</div>
+						<input
+							type="text"
+							bind:value={searchQuery}
+							on:keydown={handleKeydown}
+							placeholder="Buscar servicios: limpieza, plomería, electricidad..."
+							class="w-full pl-12 pr-4 py-4 text-lg bg-white rounded-2xl shadow-lg border-0 focus:ring-4 focus:ring-primary-300 focus:outline-none transition-all duration-200"
+						/>
+						<button
+							on:click={handleSearch}
+							class="absolute inset-y-0 right-0 px-6 flex items-center bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-r-2xl transition-colors duration-200"
+						>
+							Buscar
+						</button>
+					</div>
+				</div>
+				
+				<!-- Quick Stats -->
+				<div class="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-3xl mx-auto">
+					<div class="text-center">
+						<div class="text-3xl font-bold text-white mb-2">500+</div>
+						<div class="text-primary-200">Profesionales</div>
+					</div>
+					<div class="text-center">
+						<div class="text-3xl font-bold text-white mb-2">10+</div>
+						<div class="text-primary-200">Categorías</div>
+					</div>
+					<div class="text-center">
+						<div class="text-3xl font-bold text-white mb-2">1000+</div>
+						<div class="text-primary-200">Proyectos</div>
+					</div>
 				</div>
 			</div>
 		</div>
-	</div>
+	</section>
 
-	<!-- Loading State -->
-	{#if loading}
-		<div class="loading-container">
-			<LoadingSpinner />
-			<p>Cargando servicios...</p>
-		</div>
-	{:else if error}
-		<div class="error-container">
-			<p class="error-message">{error}</p>
-			<button class="retry-button" on:click={() => window.location.reload()}>
-				Reintentar
-			</button>
-		</div>
-	{:else}
-		<!-- Services Grid -->
-		<div class="services-grid">
-			{#each filteredCategories as category}
-				<div class="service-card" on:click={() => navigateToCategory(category.slug)}>
-					<div class="service-icon">
-						<span class="icon-emoji">{category.icon}</span>
-					</div>
-					<div class="service-content">
-						<h3 class="service-title">{category.name}</h3>
-						<p class="service-description">{category.description}</p>
-					</div>
-					<div class="service-arrow">
-						<svg width="20" height="20" viewBox="0 0 24 24">
-							<path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" fill="none"/>
-						</svg>
-					</div>
-				</div>
-			{/each}
-		</div>
-
-		<!-- No Results -->
-		{#if filteredCategories.length === 0 && searchQuery.trim()}
-			<div class="no-results">
-				<p>No se encontraron servicios que coincidan con "{searchQuery}"</p>
-				<button class="clear-search" on:click={() => searchQuery = ''}>
-					Limpiar búsqueda
-				</button>
+	<!-- Services Section -->
+	<section id="results-section" class="py-16 lg:py-24">
+		<div class="container mx-auto px-4 sm:px-6 lg:px-8">
+			<!-- Section Header -->
+			<div class="text-center mb-12 lg:mb-16">
+				<h2 class="text-3xl sm:text-4xl lg:text-5xl font-bold text-secondary-900 mb-4">
+					Servicios Disponibles
+				</h2>
+				<p class="text-lg text-secondary-600 max-w-2xl mx-auto">
+					Explora nuestras categorías de servicios y encuentra el profesional que necesitas
+				</p>
 			</div>
-		{/if}
-	{/if}
-</div>
 
-<style>
-	.services-container {
-		min-height: 100vh;
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-		padding: 2rem 1rem;
-	}
+			<!-- Loading State -->
+			{#if loading}
+				<div class="flex flex-col items-center justify-center py-16">
+					<LoadingSpinner />
+					<p class="mt-4 text-secondary-600">Cargando servicios...</p>
+				</div>
+			{:else if error}
+				<div class="text-center py-16">
+					<div class="text-red-500 text-lg mb-4">{error}</div>
+					<button 
+						on:click={() => window.location.reload()} 
+						class="bg-primary-600 hover:bg-primary-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors duration-200"
+					>
+						Reintentar
+					</button>
+				</div>
+			{:else}
+				<!-- Services Grid -->
+				<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+					{#each filteredCategories as category}
+						{@const iconData = getCategoryIcon(category.name)}
+						<button 
+							class="group bg-white rounded-2xl p-6 lg:p-8 shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer border border-secondary-100 hover:border-primary-200 text-left w-full"
+							on:click={() => handleCategoryClick(category.slug)}
+							on:keydown={(e) => e.key === 'Enter' && handleCategoryClick(category.slug)}
+							aria-label="Ver servicios de {category.name}"
+						>
+							<!-- Icon -->
+							<div class="flex items-center justify-center w-16 h-16 rounded-xl {iconData.bgColor} mb-6 group-hover:scale-110 transition-transform duration-300">
+								<svg class="w-8 h-8 {iconData.color}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d={iconData.icon} />
+								</svg>
+							</div>
+							
+							<!-- Content -->
+							<div class="text-center">
+								<h3 class="text-xl font-bold text-secondary-900 mb-3 group-hover:text-primary-600 transition-colors duration-200">
+									{category.name}
+								</h3>
+								<p class="text-secondary-600 mb-6 leading-relaxed">
+									{category.description}
+								</p>
+								
+								<!-- Arrow -->
+								<div class="flex justify-center">
+									<div class="w-10 h-10 rounded-full bg-primary-100 group-hover:bg-primary-200 flex items-center justify-center transition-colors duration-200">
+										<svg class="w-5 h-5 text-primary-600 group-hover:translate-x-1 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+										</svg>
+									</div>
+								</div>
+							</div>
+						</button>
+					{/each}
+				</div>
 
-	.services-header {
-		text-align: center;
-		margin-bottom: 3rem;
-	}
+				<!-- No Results -->
+				{#if filteredCategories.length === 0 && searchQuery.trim()}
+					<div class="text-center py-16">
+						<div class="text-secondary-400 text-6xl mb-4">🔍</div>
+						<h3 class="text-2xl font-bold text-secondary-900 mb-4">
+							No se encontraron servicios
+						</h3>
+						<p class="text-secondary-600 mb-6">
+							No encontramos servicios que coincidan con "{searchQuery}"
+						</p>
+						<button 
+							on:click={clearSearch}
+							class="bg-primary-600 hover:bg-primary-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors duration-200"
+						>
+							Ver todos los servicios
+						</button>
+					</div>
+				{/if}
+			{/if}
+		</div>
+	</section>
 
-	.header-content {
-		max-width: 800px;
-		margin: 0 auto;
-	}
-
-	.main-title {
-		font-size: 3rem;
-		font-weight: 700;
-		color: white;
-		margin-bottom: 1rem;
-		text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-	}
-
-	.subtitle {
-		font-size: 1.25rem;
-		color: rgba(255,255,255,0.9);
-		margin-bottom: 2rem;
-	}
-
-	.search-container {
-		max-width: 500px;
-		margin: 0 auto;
-	}
-
-	.search-box {
-		position: relative;
-		background: white;
-		border-radius: 50px;
-		padding: 0.75rem 1.5rem;
-		box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-		display: flex;
-		align-items: center;
-	}
-
-	.search-icon {
-		color: #6b7280;
-		margin-right: 0.75rem;
-	}
-
-	.search-input {
-		flex: 1;
-		border: none;
-		outline: none;
-		font-size: 1rem;
-		background: transparent;
-	}
-
-	.search-input::placeholder {
-		color: #9ca3af;
-	}
-
-	.services-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-		gap: 1.5rem;
-		max-width: 1200px;
-		margin: 0 auto;
-	}
-
-	.service-card {
-		background: white;
-		border-radius: 16px;
-		padding: 2rem;
-		box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-		transition: all 0.3s ease;
-		cursor: pointer;
-		display: flex;
-		align-items: center;
-		gap: 1rem;
-	}
-
-	.service-card:hover {
-		transform: translateY(-4px);
-		box-shadow: 0 8px 30px rgba(0,0,0,0.15);
-	}
-
-	.service-icon {
-		flex-shrink: 0;
-		width: 60px;
-		height: 60px;
-		border-radius: 12px;
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
-
-	.icon-emoji {
-		font-size: 2rem;
-	}
-
-	.service-content {
-		flex: 1;
-	}
-
-	.service-title {
-		font-size: 1.25rem;
-		font-weight: 600;
-		color: #1f2937;
-		margin-bottom: 0.5rem;
-	}
-
-	.service-description {
-		color: #6b7280;
-		line-height: 1.5;
-	}
-
-	.service-arrow {
-		color: #9ca3af;
-		transition: transform 0.3s ease;
-	}
-
-	.service-card:hover .service-arrow {
-		transform: translateX(4px);
-	}
-
-	.loading-container {
-		text-align: center;
-		padding: 4rem 2rem;
-		color: white;
-	}
-
-	.error-container {
-		text-align: center;
-		padding: 4rem 2rem;
-		color: white;
-	}
-
-	.error-message {
-		font-size: 1.125rem;
-		margin-bottom: 1rem;
-	}
-
-	.retry-button {
-		background: white;
-		color: #667eea;
-		border: none;
-		padding: 0.75rem 1.5rem;
-		border-radius: 8px;
-		font-weight: 600;
-		cursor: pointer;
-		transition: all 0.3s ease;
-	}
-
-	.retry-button:hover {
-		background: #f3f4f6;
-	}
-
-	.no-results {
-		text-align: center;
-		padding: 4rem 2rem;
-		color: white;
-	}
-
-	.clear-search {
-		background: white;
-		color: #667eea;
-		border: none;
-		padding: 0.75rem 1.5rem;
-		border-radius: 8px;
-		font-weight: 600;
-		cursor: pointer;
-		margin-top: 1rem;
-		transition: all 0.3s ease;
-	}
-
-	.clear-search:hover {
-		background: #f3f4f6;
-	}
-
-	@media (max-width: 768px) {
-		.main-title {
-			font-size: 2rem;
-		}
-
-		.subtitle {
-			font-size: 1rem;
-		}
-
-		.services-grid {
-			grid-template-columns: 1fr;
-			padding: 0 1rem;
-		}
-
-		.service-card {
-			padding: 1.5rem;
-		}
-	}
-</style> 
+	<!-- CTA Section -->
+	<section class="bg-gradient-to-r from-primary-600 to-primary-700 py-16 lg:py-20">
+		<div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+			<h2 class="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-6">
+				¿Eres un profesional?
+			</h2>
+			<p class="text-xl text-primary-100 mb-8 max-w-2xl mx-auto">
+				Únete a nuestra plataforma y comienza a recibir clientes
+			</p>
+			<a 
+				href="/become-provider"
+				class="inline-flex items-center justify-center px-8 py-4 bg-white text-primary-600 font-semibold rounded-xl hover:bg-primary-50 transition-colors duration-200 shadow-lg hover:shadow-xl"
+			>
+				Registrarse como Proveedor
+			</a>
+		</div>
+	</section>
+</div> 

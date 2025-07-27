@@ -4,7 +4,7 @@ import type { RequestHandler } from './$types';
 export const GET: RequestHandler = async ({ locals }) => {
   try {
     // Verificar autenticación
-    const session = await locals.getSession();
+    const { data: { session } } = await locals.supabase.auth.getSession();
     if (!session) {
       return json({ error: 'No autorizado' }, { status: 401 });
     }

@@ -449,9 +449,9 @@
 								<div class="space-y-6">
 									<!-- Tipo de Proveedor -->
 									<div>
-										<label class="block text-sm font-semibold text-secondary-900 mb-3">
+										<div class="block text-sm font-semibold text-secondary-900 mb-3">
 											Tipo de Proveedor *
-										</label>
+										</div>
 										<div class="grid md:grid-cols-2 gap-4">
 											<label class="relative">
 												<input

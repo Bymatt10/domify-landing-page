@@ -65,18 +65,35 @@
 			loading = true;
 			error = '';
 
+			console.log('🔄 Iniciando login con Google...');
+
 			const { data, error: googleError } = await supabase.auth.signInWithOAuth({
 				provider: 'google',
 				options: {
-					redirectTo: 'https://domify.app/auth/callback'
+					redirectTo: 'https://domify.app/auth/callback',
+					queryParams: {
+						access_type: 'offline',
+						prompt: 'consent'
+					}
 				}
 			});
 
+			console.log('📡 Respuesta de Google OAuth:', {
+				hasData: !!data,
+				hasError: !!googleError,
+				errorMessage: googleError?.message || 'NO ERROR'
+			});
+
 			if (googleError) {
-				error = googleError.message;
+				console.error('❌ Error en login de Google:', googleError);
+				error = googleError.message || 'Error al conectar con Google';
+			} else if (data) {
+				console.log('✅ Login de Google iniciado correctamente');
+				// El usuario será redirigido automáticamente
 			}
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Error inesperado';
+			console.error('💥 Excepción en login de Google:', e);
+			error = e instanceof Error ? e.message : 'Error inesperado al conectar con Google';
 		} finally {
 			loading = false;
 		}
@@ -86,17 +103,36 @@
 		try {
 			loading = true;
 			error = '';
+			
+			console.log('🔄 Iniciando login con Facebook...');
+			
 			const { data, error: fbError } = await supabase.auth.signInWithOAuth({
 				provider: 'facebook',
 				options: {
-					redirectTo: 'https://domify.app/auth/callback'
+					redirectTo: 'https://domify.app/auth/callback',
+					queryParams: {
+						access_type: 'offline',
+						prompt: 'consent'
+					}
 				}
 			});
+			
+			console.log('📡 Respuesta de Facebook OAuth:', {
+				hasData: !!data,
+				hasError: !!fbError,
+				errorMessage: fbError?.message || 'NO ERROR'
+			});
+			
 			if (fbError) {
-				error = fbError.message;
+				console.error('❌ Error en login de Facebook:', fbError);
+				error = fbError.message || 'Error al conectar con Facebook';
+			} else if (data) {
+				console.log('✅ Login de Facebook iniciado correctamente');
+				// El usuario será redirigido automáticamente
 			}
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Error inesperado';
+			console.error('💥 Excepción en login de Facebook:', e);
+			error = e instanceof Error ? e.message : 'Error inesperado al conectar con Facebook';
 		} finally {
 			loading = false;
 		}

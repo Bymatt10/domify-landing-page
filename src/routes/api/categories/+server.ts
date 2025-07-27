@@ -68,6 +68,11 @@ export const GET: RequestHandler = async ({ url, locals }) => {
         const limit = parseInt(url.searchParams.get('limit') || '50');
         const offset = parseInt(url.searchParams.get('offset') || '0');
 
+        // Verificar que locals.supabase esté disponible
+        if (!locals.supabase) {
+            throw new Error('Supabase client not available');
+        }
+
         const { data: categories, error, count } = await locals.supabase
             .from('categories')
             .select('*')

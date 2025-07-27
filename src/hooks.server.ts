@@ -10,11 +10,6 @@ const supabaseUrl = getSupabaseUrl();
 const supabaseAnonKey = getSupabaseAnonKey();
 
 export const handle: Handle = async ({ event, resolve }) => {
-	// Aplicar rate limiting primero
-	const rateLimitResponse = await rateLimitHandle({ event, resolve });
-	if (rateLimitResponse instanceof Response) {
-		return rateLimitResponse;
-	}
 	/**
 	 * Creates a Supabase client specific to this server request.
 	 *
@@ -102,6 +97,12 @@ export const handle: Handle = async ({ event, resolve }) => {
 		}
 		return user;
 	};
+
+	// Aplicar rate limiting después de inicializar Supabase
+	const rateLimitResponse = await rateLimitHandle({ event, resolve });
+	if (rateLimitResponse instanceof Response) {
+		return rateLimitResponse;
+	}
 
 	// Verificar si el usuario necesita cambiar contraseña (excepto en rutas específicas)
 	const isPasswordChangeRoute = event.url.pathname.startsWith('/auth/change-password');

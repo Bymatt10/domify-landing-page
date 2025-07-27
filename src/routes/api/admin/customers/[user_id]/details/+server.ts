@@ -32,7 +32,7 @@ async function directSupabaseQuery(endpoint: string, options: any = {}) {
 export const GET: RequestHandler = async ({ params, locals, fetch }) => {
 	try {
 		// Verificar autenticación y rol de admin
-		const session = await locals.getSession();
+		const { data: { session } } = await locals.supabase.auth.getSession();
 		if (!session) {
 			return json({ error: 'No autorizado' }, { status: 401 });
 		}

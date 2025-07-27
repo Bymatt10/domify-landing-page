@@ -83,6 +83,46 @@ export const categorySEOConfig: Record<string, CategorySEO> = {
     description: 'Servicios de pintura profesional en Nicaragua. Pintura interior, exterior y acabados especiales con materiales de calidad.',
     keywords: ['pintura Nicaragua', 'pintura interior', 'pintura exterior', 'acabados', 'domify'],
     image: '/img/painting.png'
+  },
+  'cerrajeria': {
+    name: 'Cerrajería',
+    slug: 'cerrajeria',
+    title: 'Servicios de Cerrajería en Nicaragua | Domify - Apertura y Reparación',
+    description: 'Servicios de cerrajería profesional en Nicaragua. Apertura de cerraduras, cambio de llaves y reparación con técnicos especializados.',
+    keywords: ['cerrajería Nicaragua', 'apertura cerraduras', 'cambio llaves', 'reparación cerraduras', 'domify'],
+    image: '/img/locksmith.png'
+  },
+  'electricistas': {
+    name: 'Electricistas',
+    slug: 'electricistas',
+    title: 'Servicios de Electricistas en Nicaragua | Domify - Instalaciones Eléctricas',
+    description: 'Servicios de electricistas profesionales en Nicaragua. Instalaciones, reparaciones y mantenimiento eléctrico residencial y comercial.',
+    keywords: ['electricistas Nicaragua', 'instalaciones eléctricas', 'reparaciones eléctricas', 'mantenimiento eléctrico', 'domify'],
+    image: '/img/electrical.png'
+  },
+  'fontaneros': {
+    name: 'Fontaneros',
+    slug: 'fontaneros',
+    title: 'Servicios de Fontaneros en Nicaragua | Domify - Plomería Profesional',
+    description: 'Servicios de fontaneros profesionales en Nicaragua. Reparación e instalación de sistemas de fontanería y tuberías.',
+    keywords: ['fontaneros Nicaragua', 'plomería', 'fontanería', 'tuberías', 'reparaciones', 'domify'],
+    image: '/img/plumbing.png'
+  },
+  'albanileria': {
+    name: 'Albañilería',
+    slug: 'albanileria',
+    title: 'Servicios de Albañilería en Nicaragua | Domify - Construcción Profesional',
+    description: 'Servicios de albañilería profesional en Nicaragua. Construcción, remodelación y acabados en general.',
+    keywords: ['albañilería Nicaragua', 'construcción', 'remodelación', 'acabados', 'obras', 'domify'],
+    image: '/img/construction.png'
+  },
+  'carpinteria': {
+    name: 'Carpintería',
+    slug: 'carpinteria',
+    title: 'Servicios de Carpintería en Nicaragua | Domify - Muebles y Reparaciones',
+    description: 'Servicios de carpintería profesional en Nicaragua. Fabricación y reparación de muebles de madera.',
+    keywords: ['carpintería Nicaragua', 'muebles', 'reparación muebles', 'madera', 'fabricación', 'domify'],
+    image: '/img/carpentry.png'
   }
 };
 
