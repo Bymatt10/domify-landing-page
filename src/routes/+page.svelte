@@ -337,7 +337,7 @@
 	}
 	
 	/* Smooth scroll behavior */
-	html {
+	:global(html) {
 		scroll-behavior: smooth;
 	}
 	
