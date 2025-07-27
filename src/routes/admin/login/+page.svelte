@@ -65,7 +65,7 @@
 				provider: 'google',
 				
 				options: {
-					redirectTo: `${window.location.origin}/auth/callback?next=/admin`
+					redirectTo: 'https://domify.app/auth/callback?next=/admin'
 				}
 			});
 

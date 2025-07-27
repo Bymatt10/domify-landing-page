@@ -47,7 +47,7 @@
 		{ href: '/provider/services', label: 'Mis Servicios', icon: '🛠️' },
 		{ href: '/provider/bookings', label: 'Reservas', icon: '📅' },
 		{ href: '/provider/portfolio', label: 'Portafolio', icon: '🖼️' },
-		{ href: '/provider/documents', label: 'Documentos', icon: '📋' },
+
 		{ href: '/provider/earnings', label: 'Ganancias', icon: '💰' },
 		{ href: '/provider/settings', label: 'Configuración', icon: '⚙️' }
 	];

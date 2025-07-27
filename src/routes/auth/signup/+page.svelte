@@ -112,7 +112,7 @@
 			const { data, error: googleError } = await supabase.auth.signInWithOAuth({
 				provider: 'google',
 				options: {
-					redirectTo: `${window.location.origin}/auth/callback`,
+					redirectTo: 'https://domify.app/auth/callback',
 					queryParams: {
 						access_type: 'offline',
 						prompt: 'consent',
@@ -142,7 +142,7 @@
 			const { data, error: fbError } = await supabase.auth.signInWithOAuth({
 				provider: 'facebook',
 				options: {
-					redirectTo: `${window.location.origin}/auth/callback`
+					redirectTo: 'https://domify.app/auth/callback'
 				}
 			});
 			if (fbError) {

@@ -19,7 +19,7 @@
     }
     // Lógica: solo email por ahora
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(identifier, {
-      redirectTo: `${window.location.origin}/auth/verify-otp`
+      redirectTo: 'https://domify.app/auth/verify-otp'
     });
     if (resetError) {
       error = resetError.message;

@@ -13,7 +13,7 @@ const menuItems = [
   { label: 'Mis Servicios', href: '/provider/services', icon: 'services' },
   { label: 'Reservas', href: '/provider/bookings', icon: 'calendar' },
   { label: 'Portafolio', href: '/provider/portfolio', icon: 'portfolio' },
-  { label: 'Documentos', href: '/provider/documents', icon: 'document' },
+
   { label: 'Ganancias', href: '/provider/earnings', icon: 'earnings' },
   { label: 'Configuración', href: '/provider/settings', icon: 'settings' }
 ];

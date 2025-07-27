@@ -1,4 +1,6 @@
 import { json } from '@sveltejs/kit';
+import { createClient } from '@supabase/supabase-js';
+import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/public';
 
 import type { RequestHandler } from '@sveltejs/kit';
 import { 
@@ -49,41 +51,64 @@ import {
  *       500:
  *         description: Internal server error
  */
-export const GET: RequestHandler = async ({ params, locals }) => {
-    try {
-        if (!params.id) {
-            throw new ValidationException('Provider ID is required');
-        }
+export async function GET({ params }) {
+	try {
+		const id = params.id;
+		
+		if (!id) {
+			return json({ error: 'Provider ID is required' }, { status: 400 });
+		}
 
-        const { data: provider, error } = await locals.supabase
-            .from('provider_profiles')
-            .select(`
-                *,
-                users!inner(id, email, role),
-                provider_categories!inner(
-                    category_id,
-                    categories!inner(*)
-                )
-            `)
-            .eq('id', params.id)
-            .is('deleted_at', null)
-            .single();
+		const supabase = createClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY);
 
-        if (error || !provider) {
-            throw new NotFoundException('Provider');
-        }
+		// Obtener el proveedor con todos sus datos
+		const { data: provider, error } = await supabase
+			.from('provider_profiles')
+			.select('*')
+			.eq('id', id)
+			.single();
 
-        const successResponse = ExceptionHandler.createSuccessResponse(
-            provider,
-            'Provider retrieved successfully'
-        );
+		if (error) {
+			console.error('Error fetching provider:', error);
+			return json({ error: 'Provider not found' }, { status: 404 });
+		}
 
-        return json(successResponse);
-    } catch (error) {
-        const errorResponse = ExceptionHandler.handle(error);
-        return json(errorResponse, { status: errorResponse.error.statusCode });
-    }
-};
+		if (!provider) {
+			return json({ error: 'Provider not found' }, { status: 404 });
+		}
+
+		// Formatear los datos del proveedor
+		const formattedProvider = {
+			id: provider.id,
+			business_name: provider.business_name,
+			description: provider.description,
+			hourly_rate: provider.hourly_rate,
+			rating: provider.rating || 0,
+			photo_url: provider.photo_url,
+			location: provider.location,
+			phone: provider.phone,
+			total_reviews: provider.total_reviews || 0,
+			provider_type: provider.provider_type,
+			bio: provider.bio,
+			settings: provider.settings,
+			portfolio: provider.portfolio || [],
+			users: provider.users,
+			provider_categories: provider.provider_categories
+		};
+
+		return json({
+			success: true,
+			provider: formattedProvider
+		});
+
+	} catch (error) {
+		console.error('Error in provider API:', error);
+		return json({
+			success: false,
+			error: error instanceof Error ? error.message : 'Unknown error'
+		}, { status: 500 });
+	}
+}
 
 /**
  * @swagger

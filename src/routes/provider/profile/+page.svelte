@@ -33,7 +33,7 @@
 			sunday: { start: '08:00', end: '14:00', available: false }
 		},
 		service_areas: [] as string[],
-		documents: [] as any[],
+
 		portfolio: [] as any[]
 	};
 
@@ -82,7 +82,7 @@
 				provider_type: profile.provider_type || 'individual',
 				working_hours: profile.working_hours || formData.working_hours,
 				service_areas: profile.service_areas || [],
-				documents: profile.documents || [],
+
 				portfolio: profile.portfolio || []
 			};
 
@@ -112,7 +112,7 @@
 					provider_type: formData.provider_type,
 					working_hours: formData.working_hours,
 					service_areas: formData.service_areas,
-					documents: formData.documents,
+
 					portfolio: formData.portfolio,
 					updated_at: new Date().toISOString()
 				})
@@ -174,13 +174,7 @@
 		formData.service_areas = formData.service_areas.filter((_: any, i: number) => i !== index);
 	}
 
-	function addDocument() {
-		formData.documents = [...formData.documents, { name: '', url: '', type: '' }];
-	}
 
-	function removeDocument(index: number) {
-		formData.documents = formData.documents.filter((_: any, i: number) => i !== index);
-	}
 
 	function addPortfolioItem() {
 		formData.portfolio = [...formData.portfolio, { title: '', description: '', image_url: '' }];
@@ -439,50 +433,7 @@
 				</div>
 			</section>
 
-			<!-- Documentación -->
-			<section class="form-section">
-				<h2>
-					<span class="section-icon">📄</span>
-					Documentación
-				</h2>
-				<p class="section-description">Agrega certificaciones, licencias y documentos importantes</p>
-				
-				<div class="documents">
-					{#each formData.documents as doc, index}
-						<div class="document-input">
-							<input
-								type="text"
-								bind:value={formData.documents[index].name}
-								placeholder="Nombre del documento"
-							/>
-							<input
-								type="text"
-								bind:value={formData.documents[index].type}
-								placeholder="Tipo (certificación, licencia, etc.)"
-							/>
-							<input
-								type="url"
-								bind:value={formData.documents[index].url}
-								placeholder="URL del documento"
-							/>
-							<button
-								type="button"
-								class="btn-remove"
-								on:click={() => removeDocument(index)}
-								title="Eliminar documento"
-							>
-								<span class="sr-only">Eliminar documento</span>
-								✕
-							</button>
-						</div>
-					{/each}
-					
-					<button type="button" class="btn-add" on:click={addDocument}>
-						<span>➕</span>
-						Agregar Documento
-					</button>
-				</div>
-			</section>
+
 
 			<!-- Portafolio -->
 			<section class="form-section">
@@ -829,7 +780,6 @@
 	}
 
 	.service-areas,
-	.documents,
 	.portfolio {
 		display: flex;
 		flex-direction: column;
@@ -837,7 +787,6 @@
 	}
 
 	.area-input,
-	.document-input,
 	.portfolio-item {
 		display: flex;
 		gap: 0.75rem;
@@ -849,7 +798,6 @@
 	}
 
 	.area-input input,
-	.document-input input,
 	.portfolio-item input,
 	.portfolio-item textarea {
 		flex: 1;

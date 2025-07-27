@@ -6,8 +6,8 @@ export const GET: RequestHandler = async () => {
         openapi: '3.0.0',
         info: {
             title: 'Domify API',
-            description: 'API documentation for Domify marketplace platform. This documentation is publicly available. Use the login endpoint to get a valid JWT token for protected endpoints.',
-            version: '1.0.0',
+            description: 'API documentation for Domify marketplace platform. Complete CRUD operations for all entities. Use the login endpoint to get a valid JWT token for protected endpoints.',
+            version: '2.0.0',
             contact: {
                 name: 'Domify Support',
                 email: 'support@domify.com'
@@ -17,6 +17,10 @@ export const GET: RequestHandler = async () => {
             {
                 url: 'http://localhost:5173',
                 description: 'Development server'
+            },
+            {
+                url: 'https://domify.com',
+                description: 'Production server'
             }
         ],
         paths: {
@@ -33,22 +37,10 @@ export const GET: RequestHandler = async () => {
                                     schema: {
                                         type: 'object',
                                         properties: {
-                                            status: {
-                                                type: 'string',
-                                                example: 'ok'
-                                            },
-                                            timestamp: {
-                                                type: 'string',
-                                                format: 'date-time'
-                                            },
-                                            version: {
-                                                type: 'string',
-                                                example: '1.0.0'
-                                            },
-                                            message: {
-                                                type: 'string',
-                                                example: 'Domify API is running!'
-                                            }
+                                            status: { type: 'string', example: 'ok' },
+                                            timestamp: { type: 'string', format: 'date-time' },
+                                            version: { type: 'string', example: '2.0.0' },
+                                            message: { type: 'string', example: 'Domify API is running!' }
                                         }
                                     }
                                 }
@@ -2208,27 +2200,10 @@ export const GET: RequestHandler = async () => {
                                     type: 'object',
                                     required: ['nombre', 'email', 'asunto', 'mensaje'],
                                     properties: {
-                                        nombre: {
-                                            type: 'string',
-                                            description: 'Contact name',
-                                            example: 'Juan Pérez'
-                                        },
-                                        email: {
-                                            type: 'string',
-                                            format: 'email',
-                                            description: 'Contact email',
-                                            example: 'juan@example.com'
-                                        },
-                                        asunto: {
-                                            type: 'string',
-                                            description: 'Message subject',
-                                            example: 'Consulta sobre servicios'
-                                        },
-                                        mensaje: {
-                                            type: 'string',
-                                            description: 'Message content',
-                                            example: 'Hola, tengo una pregunta sobre...'
-                                        }
+                                        nombre: { type: 'string', description: 'Contact name', example: 'Juan Pérez' },
+                                        email: { type: 'string', format: 'email', description: 'Contact email', example: 'juan@example.com' },
+                                        asunto: { type: 'string', description: 'Message subject', example: 'Consulta sobre servicios' },
+                                        mensaje: { type: 'string', description: 'Message content', example: 'Hola, tengo una pregunta sobre...' }
                                     }
                                 }
                             }
@@ -2242,25 +2217,887 @@ export const GET: RequestHandler = async () => {
                                     schema: {
                                         type: 'object',
                                         properties: {
-                                            data: {
-                                                type: 'object',
-                                                properties: {
-                                                    messageId: {
-                                                        type: 'string',
-                                                        description: 'Email message ID'
-                                                    }
-                                                }
-                                            },
-                                            message: {
-                                                type: 'string',
-                                                example: 'Mensaje enviado correctamente. Te responderemos pronto.'
-                                            }
+                                            data: { type: 'object', properties: { messageId: { type: 'string', description: 'Email message ID' } } },
+                                            message: { type: 'string', example: 'Mensaje enviado correctamente. Te responderemos pronto.' }
                                         }
                                     }
                                 }
                             }
                         },
                         '400': { description: 'Bad request - validation error' },
+                        '500': { description: 'Internal server error' }
+                    }
+                }
+            },
+            '/api/customers': {
+                get: {
+                    summary: 'Get all customers',
+                    description: 'Retrieve a list of all customers (admin only)',
+                    tags: ['Customers'],
+                    security: [{ bearerAuth: [] }],
+                    parameters: [
+                        { in: 'query', name: 'limit', schema: { type: 'integer', default: 20 }, description: 'Number of customers to return' },
+                        { in: 'query', name: 'offset', schema: { type: 'integer', default: 0 }, description: 'Number of customers to skip' }
+                    ],
+                    responses: {
+                        '200': {
+                            description: 'Customers retrieved successfully',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        type: 'object',
+                                        properties: {
+                                            data: { type: 'array', items: { $ref: '#/components/schemas/Customer' } },
+                                            total: { type: 'integer' },
+                                            message: { type: 'string' }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        '401': { description: 'Unauthorized' },
+                        '403': { description: 'Forbidden - Admin access required' },
+                        '500': { description: 'Internal server error' }
+                    }
+                }
+            },
+            '/api/customers/{id}': {
+                get: {
+                    summary: 'Get customer by ID',
+                    description: 'Retrieve a specific customer by ID',
+                    tags: ['Customers'],
+                    security: [{ bearerAuth: [] }],
+                    parameters: [
+                        { in: 'path', name: 'id', required: true, schema: { type: 'string', format: 'uuid' }, description: 'Customer ID' }
+                    ],
+                    responses: {
+                        '200': {
+                            description: 'Customer retrieved successfully',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        type: 'object',
+                                        properties: {
+                                            data: { $ref: '#/components/schemas/Customer' },
+                                            message: { type: 'string' }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        '401': { description: 'Unauthorized' },
+                        '404': { description: 'Customer not found' },
+                        '500': { description: 'Internal server error' }
+                    }
+                },
+                put: {
+                    summary: 'Update customer',
+                    description: 'Update customer information',
+                    tags: ['Customers'],
+                    security: [{ bearerAuth: [] }],
+                    parameters: [
+                        { in: 'path', name: 'id', required: true, schema: { type: 'string', format: 'uuid' }, description: 'Customer ID' }
+                    ],
+                    requestBody: {
+                        required: true,
+                        content: {
+                            'application/json': {
+                                schema: {
+                                    type: 'object',
+                                    properties: {
+                                        first_name: { type: 'string', description: 'First name' },
+                                        last_name: { type: 'string', description: 'Last name' },
+                                        phone_number: { type: 'string', description: 'Phone number' },
+                                        address: { type: 'string', description: 'Address' },
+                                        profile_image_url: { type: 'string', description: 'Profile image URL' }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    responses: {
+                        '200': {
+                            description: 'Customer updated successfully',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        type: 'object',
+                                        properties: {
+                                            data: { $ref: '#/components/schemas/Customer' },
+                                            message: { type: 'string' }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        '400': { description: 'Bad request' },
+                        '401': { description: 'Unauthorized' },
+                        '404': { description: 'Customer not found' },
+                        '500': { description: 'Internal server error' }
+                    }
+                },
+                delete: {
+                    summary: 'Delete customer',
+                    description: 'Soft delete a customer',
+                    tags: ['Customers'],
+                    security: [{ bearerAuth: [] }],
+                    parameters: [
+                        { in: 'path', name: 'id', required: true, schema: { type: 'string', format: 'uuid' }, description: 'Customer ID' }
+                    ],
+                    responses: {
+                        '200': {
+                            description: 'Customer deleted successfully',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        type: 'object',
+                                        properties: {
+                                            message: { type: 'string' }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        '401': { description: 'Unauthorized' },
+                        '404': { description: 'Customer not found' },
+                        '500': { description: 'Internal server error' }
+                    }
+                }
+            },
+            '/api/services/{id}': {
+                get: {
+                    summary: 'Get service by ID',
+                    description: 'Retrieve a specific service by ID',
+                    tags: ['Services'],
+                    parameters: [
+                        { in: 'path', name: 'id', required: true, schema: { type: 'string', format: 'uuid' }, description: 'Service ID' }
+                    ],
+                    responses: {
+                        '200': {
+                            description: 'Service retrieved successfully',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        type: 'object',
+                                        properties: {
+                                            data: { $ref: '#/components/schemas/Service' },
+                                            message: { type: 'string' }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        '404': { description: 'Service not found' },
+                        '500': { description: 'Internal server error' }
+                    }
+                },
+                put: {
+                    summary: 'Update service',
+                    description: 'Update service information',
+                    tags: ['Services'],
+                    security: [{ bearerAuth: [] }],
+                    parameters: [
+                        { in: 'path', name: 'id', required: true, schema: { type: 'string', format: 'uuid' }, description: 'Service ID' }
+                    ],
+                    requestBody: {
+                        required: true,
+                        content: {
+                            'application/json': {
+                                schema: {
+                                    type: 'object',
+                                    properties: {
+                                        title: { type: 'string', description: 'Service title' },
+                                        description: { type: 'string', description: 'Service description' },
+                                        price: { type: 'number', minimum: 0, description: 'Service price' },
+                                        location: { type: 'string', description: 'Service location' },
+                                        is_active: { type: 'boolean', description: 'Service active status' }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    responses: {
+                        '200': {
+                            description: 'Service updated successfully',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        type: 'object',
+                                        properties: {
+                                            data: { $ref: '#/components/schemas/Service' },
+                                            message: { type: 'string' }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        '400': { description: 'Bad request' },
+                        '401': { description: 'Unauthorized' },
+                        '403': { description: 'Forbidden' },
+                        '404': { description: 'Service not found' },
+                        '500': { description: 'Internal server error' }
+                    }
+                },
+                delete: {
+                    summary: 'Delete service',
+                    description: 'Soft delete a service',
+                    tags: ['Services'],
+                    security: [{ bearerAuth: [] }],
+                    parameters: [
+                        { in: 'path', name: 'id', required: true, schema: { type: 'string', format: 'uuid' }, description: 'Service ID' }
+                    ],
+                    responses: {
+                        '200': {
+                            description: 'Service deleted successfully',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        type: 'object',
+                                        properties: {
+                                            message: { type: 'string' }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        '401': { description: 'Unauthorized' },
+                        '403': { description: 'Forbidden' },
+                        '404': { description: 'Service not found' },
+                        '500': { description: 'Internal server error' }
+                    }
+                }
+            },
+            '/api/bookings': {
+                get: {
+                    summary: 'Get all bookings',
+                    description: 'Retrieve a list of all bookings (admin only)',
+                    tags: ['Bookings'],
+                    security: [{ bearerAuth: [] }],
+                    parameters: [
+                        { in: 'query', name: 'status', schema: { type: 'string', enum: ['pending_confirmation', 'confirmed', 'completed', 'payment_succeeded', 'cancelled_by_client', 'cancelled_by_provider'] }, description: 'Filter by booking status' },
+                        { in: 'query', name: 'limit', schema: { type: 'integer', default: 20 }, description: 'Number of bookings to return' },
+                        { in: 'query', name: 'offset', schema: { type: 'integer', default: 0 }, description: 'Number of bookings to skip' }
+                    ],
+                    responses: {
+                        '200': {
+                            description: 'Bookings retrieved successfully',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        type: 'object',
+                                        properties: {
+                                            data: { type: 'array', items: { $ref: '#/components/schemas/Booking' } },
+                                            total: { type: 'integer' },
+                                            message: { type: 'string' }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        '401': { description: 'Unauthorized' },
+                        '403': { description: 'Forbidden - Admin access required' },
+                        '500': { description: 'Internal server error' }
+                    }
+                }
+            },
+            '/api/bookings/{id}': {
+                get: {
+                    summary: 'Get booking by ID',
+                    description: 'Retrieve a specific booking by ID',
+                    tags: ['Bookings'],
+                    security: [{ bearerAuth: [] }],
+                    parameters: [
+                        { in: 'path', name: 'id', required: true, schema: { type: 'string', format: 'uuid' }, description: 'Booking ID' }
+                    ],
+                    responses: {
+                        '200': {
+                            description: 'Booking retrieved successfully',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        type: 'object',
+                                        properties: {
+                                            data: { $ref: '#/components/schemas/Booking' },
+                                            message: { type: 'string' }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        '401': { description: 'Unauthorized' },
+                        '404': { description: 'Booking not found' },
+                        '500': { description: 'Internal server error' }
+                    }
+                },
+                put: {
+                    summary: 'Update booking',
+                    description: 'Update booking status and information',
+                    tags: ['Bookings'],
+                    security: [{ bearerAuth: [] }],
+                    parameters: [
+                        { in: 'path', name: 'id', required: true, schema: { type: 'string', format: 'uuid' }, description: 'Booking ID' }
+                    ],
+                    requestBody: {
+                        required: true,
+                        content: {
+                            'application/json': {
+                                schema: {
+                                    type: 'object',
+                                    properties: {
+                                        status: { type: 'string', enum: ['pending_confirmation', 'confirmed', 'completed', 'payment_succeeded', 'cancelled_by_client', 'cancelled_by_provider'], description: 'Booking status' },
+                                        start_time: { type: 'string', format: 'date-time', description: 'Booking start time' },
+                                        end_time: { type: 'string', format: 'date-time', description: 'Booking end time' },
+                                        total_price: { type: 'number', minimum: 0, description: 'Total price' },
+                                        notes: { type: 'string', description: 'Booking notes' }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    responses: {
+                        '200': {
+                            description: 'Booking updated successfully',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        type: 'object',
+                                        properties: {
+                                            data: { $ref: '#/components/schemas/Booking' },
+                                            message: { type: 'string' }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        '400': { description: 'Bad request' },
+                        '401': { description: 'Unauthorized' },
+                        '404': { description: 'Booking not found' },
+                        '500': { description: 'Internal server error' }
+                    }
+                },
+                delete: {
+                    summary: 'Delete booking',
+                    description: 'Soft delete a booking',
+                    tags: ['Bookings'],
+                    security: [{ bearerAuth: [] }],
+                    parameters: [
+                        { in: 'path', name: 'id', required: true, schema: { type: 'string', format: 'uuid' }, description: 'Booking ID' }
+                    ],
+                    responses: {
+                        '200': {
+                            description: 'Booking deleted successfully',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        type: 'object',
+                                        properties: {
+                                            message: { type: 'string' }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        '401': { description: 'Unauthorized' },
+                        '404': { description: 'Booking not found' },
+                        '500': { description: 'Internal server error' }
+                    }
+                }
+            },
+            '/api/reviews': {
+                get: {
+                    summary: 'Get all reviews',
+                    description: 'Retrieve a list of all reviews',
+                    tags: ['Reviews'],
+                    parameters: [
+                        { in: 'query', name: 'provider_profile_id', schema: { type: 'string', format: 'uuid' }, description: 'Filter by provider ID' },
+                        { in: 'query', name: 'rating', schema: { type: 'integer', minimum: 1, maximum: 5 }, description: 'Filter by rating' },
+                        { in: 'query', name: 'limit', schema: { type: 'integer', default: 20 }, description: 'Number of reviews to return' },
+                        { in: 'query', name: 'offset', schema: { type: 'integer', default: 0 }, description: 'Number of reviews to skip' }
+                    ],
+                    responses: {
+                        '200': {
+                            description: 'Reviews retrieved successfully',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        type: 'object',
+                                        properties: {
+                                            data: { type: 'array', items: { $ref: '#/components/schemas/Review' } },
+                                            total: { type: 'integer' },
+                                            message: { type: 'string' }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        '500': { description: 'Internal server error' }
+                    }
+                },
+                post: {
+                    summary: 'Create a new review',
+                    description: 'Create a new review for a provider',
+                    tags: ['Reviews'],
+                    security: [{ bearerAuth: [] }],
+                    requestBody: {
+                        required: true,
+                        content: {
+                            'application/json': {
+                                schema: {
+                                    type: 'object',
+                                    required: ['provider_profile_id', 'rating'],
+                                    properties: {
+                                        provider_profile_id: { type: 'string', format: 'uuid', description: 'Provider profile ID' },
+                                        booking_id: { type: 'string', format: 'uuid', description: 'Booking ID (optional)' },
+                                        rating: { type: 'integer', minimum: 1, maximum: 5, description: 'Rating (1-5)' },
+                                        comment: { type: 'string', description: 'Review comment' }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    responses: {
+                        '201': {
+                            description: 'Review created successfully',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        type: 'object',
+                                        properties: {
+                                            data: { $ref: '#/components/schemas/Review' },
+                                            message: { type: 'string' }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        '400': { description: 'Bad request' },
+                        '401': { description: 'Unauthorized' },
+                        '500': { description: 'Internal server error' }
+                    }
+                }
+            },
+            '/api/reviews/{id}': {
+                get: {
+                    summary: 'Get review by ID',
+                    description: 'Retrieve a specific review by ID',
+                    tags: ['Reviews'],
+                    parameters: [
+                        { in: 'path', name: 'id', required: true, schema: { type: 'integer' }, description: 'Review ID' }
+                    ],
+                    responses: {
+                        '200': {
+                            description: 'Review retrieved successfully',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        type: 'object',
+                                        properties: {
+                                            data: { $ref: '#/components/schemas/Review' },
+                                            message: { type: 'string' }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        '404': { description: 'Review not found' },
+                        '500': { description: 'Internal server error' }
+                    }
+                },
+                put: {
+                    summary: 'Update review',
+                    description: 'Update review information',
+                    tags: ['Reviews'],
+                    security: [{ bearerAuth: [] }],
+                    parameters: [
+                        { in: 'path', name: 'id', required: true, schema: { type: 'integer' }, description: 'Review ID' }
+                    ],
+                    requestBody: {
+                        required: true,
+                        content: {
+                            'application/json': {
+                                schema: {
+                                    type: 'object',
+                                    properties: {
+                                        rating: { type: 'integer', minimum: 1, maximum: 5, description: 'Rating (1-5)' },
+                                        comment: { type: 'string', description: 'Review comment' }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    responses: {
+                        '200': {
+                            description: 'Review updated successfully',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        type: 'object',
+                                        properties: {
+                                            data: { $ref: '#/components/schemas/Review' },
+                                            message: { type: 'string' }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        '400': { description: 'Bad request' },
+                        '401': { description: 'Unauthorized' },
+                        '403': { description: 'Forbidden' },
+                        '404': { description: 'Review not found' },
+                        '500': { description: 'Internal server error' }
+                    }
+                },
+                delete: {
+                    summary: 'Delete review',
+                    description: 'Delete a review',
+                    tags: ['Reviews'],
+                    security: [{ bearerAuth: [] }],
+                    parameters: [
+                        { in: 'path', name: 'id', required: true, schema: { type: 'integer' }, description: 'Review ID' }
+                    ],
+                    responses: {
+                        '200': {
+                            description: 'Review deleted successfully',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        type: 'object',
+                                        properties: {
+                                            message: { type: 'string' }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        '401': { description: 'Unauthorized' },
+                        '403': { description: 'Forbidden' },
+                        '404': { description: 'Review not found' },
+                        '500': { description: 'Internal server error' }
+                    }
+                }
+            },
+            '/api/payments': {
+                get: {
+                    summary: 'Get all payments',
+                    description: 'Retrieve a list of all payments (admin only)',
+                    tags: ['Payments'],
+                    security: [{ bearerAuth: [] }],
+                    parameters: [
+                        { in: 'query', name: 'status', schema: { type: 'string', enum: ['pending', 'succeeded', 'failed', 'cash'] }, description: 'Filter by payment status' },
+                        { in: 'query', name: 'limit', schema: { type: 'integer', default: 20 }, description: 'Number of payments to return' },
+                        { in: 'query', name: 'offset', schema: { type: 'integer', default: 0 }, description: 'Number of payments to skip' }
+                    ],
+                    responses: {
+                        '200': {
+                            description: 'Payments retrieved successfully',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        type: 'object',
+                                        properties: {
+                                            data: { type: 'array', items: { $ref: '#/components/schemas/Payment' } },
+                                            total: { type: 'integer' },
+                                            message: { type: 'string' }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        '401': { description: 'Unauthorized' },
+                        '403': { description: 'Forbidden - Admin access required' },
+                        '500': { description: 'Internal server error' }
+                    }
+                },
+                post: {
+                    summary: 'Create a new payment',
+                    description: 'Create a new payment record',
+                    tags: ['Payments'],
+                    security: [{ bearerAuth: [] }],
+                    requestBody: {
+                        required: true,
+                        content: {
+                            'application/json': {
+                                schema: {
+                                    type: 'object',
+                                    required: ['booking_id', 'amount', 'status', 'payment_method'],
+                                    properties: {
+                                        booking_id: { type: 'string', format: 'uuid', description: 'Booking ID' },
+                                        amount: { type: 'number', minimum: 0, description: 'Payment amount' },
+                                        currency: { type: 'string', default: 'NIO', description: 'Currency code' },
+                                        status: { type: 'string', enum: ['pending', 'succeeded', 'failed', 'cash'], description: 'Payment status' },
+                                        payment_method: { type: 'string', description: 'Payment method' },
+                                        transaction_id: { type: 'string', description: 'Transaction ID' }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    responses: {
+                        '201': {
+                            description: 'Payment created successfully',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        type: 'object',
+                                        properties: {
+                                            data: { $ref: '#/components/schemas/Payment' },
+                                            message: { type: 'string' }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        '400': { description: 'Bad request' },
+                        '401': { description: 'Unauthorized' },
+                        '500': { description: 'Internal server error' }
+                    }
+                }
+            },
+            '/api/payments/{id}': {
+                get: {
+                    summary: 'Get payment by ID',
+                    description: 'Retrieve a specific payment by ID',
+                    tags: ['Payments'],
+                    security: [{ bearerAuth: [] }],
+                    parameters: [
+                        { in: 'path', name: 'id', required: true, schema: { type: 'string', format: 'uuid' }, description: 'Payment ID' }
+                    ],
+                    responses: {
+                        '200': {
+                            description: 'Payment retrieved successfully',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        type: 'object',
+                                        properties: {
+                                            data: { $ref: '#/components/schemas/Payment' },
+                                            message: { type: 'string' }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        '401': { description: 'Unauthorized' },
+                        '404': { description: 'Payment not found' },
+                        '500': { description: 'Internal server error' }
+                    }
+                },
+                put: {
+                    summary: 'Update payment',
+                    description: 'Update payment information',
+                    tags: ['Payments'],
+                    security: [{ bearerAuth: [] }],
+                    parameters: [
+                        { in: 'path', name: 'id', required: true, schema: { type: 'string', format: 'uuid' }, description: 'Payment ID' }
+                    ],
+                    requestBody: {
+                        required: true,
+                        content: {
+                            'application/json': {
+                                schema: {
+                                    type: 'object',
+                                    properties: {
+                                        status: { type: 'string', enum: ['pending', 'succeeded', 'failed', 'cash'], description: 'Payment status' },
+                                        amount: { type: 'number', minimum: 0, description: 'Payment amount' },
+                                        payment_method: { type: 'string', description: 'Payment method' },
+                                        transaction_id: { type: 'string', description: 'Transaction ID' }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    responses: {
+                        '200': {
+                            description: 'Payment updated successfully',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        type: 'object',
+                                        properties: {
+                                            data: { $ref: '#/components/schemas/Payment' },
+                                            message: { type: 'string' }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        '400': { description: 'Bad request' },
+                        '401': { description: 'Unauthorized' },
+                        '404': { description: 'Payment not found' },
+                        '500': { description: 'Internal server error' }
+                    }
+                }
+            },
+            '/api/notifications': {
+                get: {
+                    summary: 'Get user notifications',
+                    description: 'Retrieve notifications for the authenticated user',
+                    tags: ['Notifications'],
+                    security: [{ bearerAuth: [] }],
+                    parameters: [
+                        { in: 'query', name: 'is_read', schema: { type: 'boolean' }, description: 'Filter by read status' },
+                        { in: 'query', name: 'limit', schema: { type: 'integer', default: 20 }, description: 'Number of notifications to return' },
+                        { in: 'query', name: 'offset', schema: { type: 'integer', default: 0 }, description: 'Number of notifications to skip' }
+                    ],
+                    responses: {
+                        '200': {
+                            description: 'Notifications retrieved successfully',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        type: 'object',
+                                        properties: {
+                                            data: { type: 'array', items: { $ref: '#/components/schemas/Notification' } },
+                                            total: { type: 'integer' },
+                                            message: { type: 'string' }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        '401': { description: 'Unauthorized' },
+                        '500': { description: 'Internal server error' }
+                    }
+                },
+                post: {
+                    summary: 'Create a new notification',
+                    description: 'Create a new notification (admin only)',
+                    tags: ['Notifications'],
+                    security: [{ bearerAuth: [] }],
+                    requestBody: {
+                        required: true,
+                        content: {
+                            'application/json': {
+                                schema: {
+                                    type: 'object',
+                                    required: ['user_id', 'title', 'message'],
+                                    properties: {
+                                        user_id: { type: 'string', format: 'uuid', description: 'User ID' },
+                                        title: { type: 'string', description: 'Notification title' },
+                                        message: { type: 'string', description: 'Notification message' },
+                                        notification_type: { type: 'string', default: 'general', description: 'Notification type' }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    responses: {
+                        '201': {
+                            description: 'Notification created successfully',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        type: 'object',
+                                        properties: {
+                                            data: { $ref: '#/components/schemas/Notification' },
+                                            message: { type: 'string' }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        '400': { description: 'Bad request' },
+                        '401': { description: 'Unauthorized' },
+                        '403': { description: 'Forbidden - Admin access required' },
+                        '500': { description: 'Internal server error' }
+                    }
+                }
+            },
+            '/api/notifications/{id}': {
+                get: {
+                    summary: 'Get notification by ID',
+                    description: 'Retrieve a specific notification by ID',
+                    tags: ['Notifications'],
+                    security: [{ bearerAuth: [] }],
+                    parameters: [
+                        { in: 'path', name: 'id', required: true, schema: { type: 'string', format: 'uuid' }, description: 'Notification ID' }
+                    ],
+                    responses: {
+                        '200': {
+                            description: 'Notification retrieved successfully',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        type: 'object',
+                                        properties: {
+                                            data: { $ref: '#/components/schemas/Notification' },
+                                            message: { type: 'string' }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        '401': { description: 'Unauthorized' },
+                        '404': { description: 'Notification not found' },
+                        '500': { description: 'Internal server error' }
+                    }
+                },
+                put: {
+                    summary: 'Update notification',
+                    description: 'Update notification (mark as read)',
+                    tags: ['Notifications'],
+                    security: [{ bearerAuth: [] }],
+                    parameters: [
+                        { in: 'path', name: 'id', required: true, schema: { type: 'string', format: 'uuid' }, description: 'Notification ID' }
+                    ],
+                    requestBody: {
+                        required: true,
+                        content: {
+                            'application/json': {
+                                schema: {
+                                    type: 'object',
+                                    properties: {
+                                        is_read: { type: 'boolean', description: 'Mark as read' }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    responses: {
+                        '200': {
+                            description: 'Notification updated successfully',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        type: 'object',
+                                        properties: {
+                                            data: { $ref: '#/components/schemas/Notification' },
+                                            message: { type: 'string' }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        '400': { description: 'Bad request' },
+                        '401': { description: 'Unauthorized' },
+                        '404': { description: 'Notification not found' },
+                        '500': { description: 'Internal server error' }
+                    }
+                },
+                delete: {
+                    summary: 'Delete notification',
+                    description: 'Delete a notification',
+                    tags: ['Notifications'],
+                    security: [{ bearerAuth: [] }],
+                    parameters: [
+                        { in: 'path', name: 'id', required: true, schema: { type: 'string', format: 'uuid' }, description: 'Notification ID' }
+                    ],
+                    responses: {
+                        '200': {
+                            description: 'Notification deleted successfully',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        type: 'object',
+                                        properties: {
+                                            message: { type: 'string' }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        '401': { description: 'Unauthorized' },
+                        '404': { description: 'Notification not found' },
                         '500': { description: 'Internal server error' }
                     }
                 }

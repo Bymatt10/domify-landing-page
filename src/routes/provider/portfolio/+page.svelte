@@ -51,18 +51,28 @@
 			// Cargar portafolio del proveedor
 			portfolio = profile.portfolio || [];
 
-			// Cargar servicios del proveedor
+			// Cargar servicios del proveedor (sin duplicados)
 			const { data: svcs, error: svcsError } = await supabase
 				.from('services')
 				.select(`
-					*,
-					categories(*)
+					id,
+					title,
+					description,
+					price,
+					category_id,
+					categories(id, name, slug)
 				`)
 				.eq('provider_profile_id', profile.id)
 				.order('title');
 
 			if (svcsError) throw svcsError;
-			services = svcs || [];
+			
+			// Eliminar duplicados por ID
+			const uniqueServices = svcs ? svcs.filter((service, index, self) => 
+				index === self.findIndex(s => s.id === service.id)
+			) : [];
+			
+			services = uniqueServices;
 
 			// Cargar categorías disponibles
 			const { data: cats, error: catsError } = await supabase
@@ -71,7 +81,13 @@
 				.order('name');
 
 			if (catsError) throw catsError;
-			categories = cats || [];
+			
+			// Eliminar duplicados por ID
+			const uniqueCategories = cats ? cats.filter((category, index, self) => 
+				index === self.findIndex(c => c.id === category.id)
+			) : [];
+			
+			categories = uniqueCategories;
 
 		} catch (error) {
 			console.error('Error loading data:', error);
@@ -116,7 +132,7 @@
 		uploadError = '';
 
 		try {
-			let mediaUrl = newItem.image_url;
+			let mediaUrl = '';
 
 			// Upload file if selected
 			if (selectedFile) {
@@ -134,22 +150,43 @@
 				} finally {
 					isUploading = false;
 				}
+			} else {
+				showMessage('Debes seleccionar un archivo para subir', 'error');
+				return;
 			}
 
-			// Create new portfolio item
-			const newPortfolioItem = {
-				id: Date.now().toString(),
-				title: newItem.title.trim(),
-				description: newItem.description.trim(),
-				image_url: mediaUrl,
-				media_type: newItem.media_type,
-				service_id: newItem.service_id,
-				category_id: newItem.category_id,
-				created_at: new Date().toISOString()
-			};
+			let updatedPortfolio;
 
-			// Add to local array
-			const updatedPortfolio = [...portfolio, newPortfolioItem];
+			if (editingItemId) {
+				// Editing existing item
+				updatedPortfolio = portfolio.map(item => 
+					item.id === editingItemId 
+						? {
+							...item,
+							title: newItem.title.trim(),
+							description: newItem.description.trim(),
+							image_url: mediaUrl,
+							media_type: newItem.media_type,
+							service_id: newItem.service_id,
+							category_id: newItem.category_id,
+							updated_at: new Date().toISOString()
+						}
+						: item
+				);
+			} else {
+				// Creating new item
+				const newPortfolioItem = {
+					id: Date.now().toString(),
+					title: newItem.title.trim(),
+					description: newItem.description.trim(),
+					image_url: mediaUrl,
+					media_type: newItem.media_type,
+					service_id: newItem.service_id,
+					category_id: newItem.category_id,
+					created_at: new Date().toISOString()
+				};
+				updatedPortfolio = [...portfolio, newPortfolioItem];
+			}
 
 			// Update in database
 			const { error } = await supabase
@@ -168,12 +205,13 @@
 			// Clear form and close modal
 			resetForm();
 			showAddModal = false;
+			editingItemId = null;
 			
-			showMessage('Trabajo agregado exitosamente', 'success');
+			showMessage(editingItemId ? 'Trabajo actualizado exitosamente' : 'Trabajo agregado exitosamente', 'success');
 		} catch (error: any) {
-			console.error('Error adding portfolio item:', error);
+			console.error('Error saving portfolio item:', error);
 			const errorMessage = error.message || error.details || 'Error desconocido';
-			showMessage(`Error al agregar el trabajo: ${errorMessage}`, 'error');
+			showMessage(`Error al guardar el trabajo: ${errorMessage}`, 'error');
 		} finally {
 			saving = false;
 		}
@@ -222,7 +260,7 @@
 		newItem = { 
 			title: '', 
 			description: '', 
-			image_url: '', 
+			image_url: '', // Mantener para compatibilidad pero no se usa
 			media_type: 'image',
 			service_id: '',
 			category_id: ''
@@ -231,6 +269,7 @@
 		uploadProgress = 0;
 		isUploading = false;
 		uploadError = '';
+		editingItemId = null;
 	}
 
 	function openAddModal() {
@@ -301,6 +340,25 @@
 		
 		return Object.values(grouped);
 	}
+
+	// Función para editar un trabajo existente
+	function editPortfolioItem(item: any) {
+		newItem = {
+			title: item.title || '',
+			description: item.description || '',
+			image_url: '', // No se usa en el formulario
+			media_type: item.media_type || 'image',
+			service_id: item.service_id || '',
+			category_id: item.category_id || ''
+		};
+		selectedFile = null;
+		showAddModal = true;
+		// Marcar que estamos editando
+		editingItemId = item.id;
+	}
+
+	// Variable para controlar si estamos editando
+	let editingItemId: string | null = null;
 </script>
 
 <svelte:head>
@@ -363,12 +421,21 @@
 				</div>
 
 				<div class="portfolio-grid">
-							{#each serviceGroup.items as item, index}
+					{#each serviceGroup.items as item, index}
 						<div class="portfolio-item">
 							<div class="portfolio-actions">
 								<button 
+									class="btn-edit" 
+									on:click={() => editPortfolioItem(item)}
+									title="Editar trabajo"
+								>
+									<svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+									</svg>
+								</button>
+								<button 
 									class="btn-delete" 
-											on:click={() => deletePortfolioItem(portfolio.indexOf(item))}
+									on:click={() => deletePortfolioItem(portfolio.indexOf(item))}
 									title="Eliminar trabajo"
 								>
 									<svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -448,9 +515,13 @@
 			<div class="modal-header">
 				<div class="modal-title">
 					<svg class="modal-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+						{#if editingItemId}
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+						{:else}
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+						{/if}
 					</svg>
-					<h2>Agregar Trabajo al Portafolio</h2>
+					<h2>{editingItemId ? 'Editar Trabajo' : 'Agregar Trabajo al Portafolio'}</h2>
 				</div>
 				<button class="modal-close" on:click={closeAddModal}>
 					<svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -545,7 +616,7 @@
 						<svg class="label-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
 						</svg>
-						Subir archivo
+						Subir archivo *
 					</label>
 					
 					{#if selectedFile}
@@ -605,24 +676,10 @@
 						</div>
 					{/if}
 
-					<small class="form-help">Sube una imagen o video que muestre el resultado del trabajo. El archivo se guardará en nuestro servidor seguro.</small>
+					<small class="form-help">Sube una imagen o video que muestre el resultado del trabajo. El archivo se guardará en nuestro servidor seguro. <strong>Este campo es obligatorio.</strong></small>
 				</div>
 
-				<div class="form-group">
-					<label for="image_url">
-						<svg class="label-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
-						</svg>
-						URL alternativa (opcional)
-					</label>
-					<input
-						id="image_url"
-						type="url"
-						bind:value={newItem.image_url}
-						placeholder="https://ejemplo.com/imagen.jpg"
-					/>
-					<small class="form-help">Si prefieres usar una URL externa en lugar de subir un archivo</small>
-				</div>
+
 
 				<div class="modal-actions">
 					<button type="button" class="btn btn-secondary" on:click={closeAddModal}>
@@ -636,7 +693,7 @@
 							<svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
 							</svg>
-							Guardar Trabajo
+							{editingItemId ? 'Actualizar Trabajo' : 'Guardar Trabajo'}
 						{/if}
 					</button>
 				</div>
@@ -790,24 +847,28 @@
 	/* Grid styles */
 	.portfolio-grid {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-		gap: 1.5rem;
+		grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+		gap: 2rem;
+		padding: 1rem 0;
 	}
 
 	/* Portfolio item styles */
 	.portfolio-item {
 		background: white;
 		border: 1px solid #e5e7eb;
-		border-radius: 1rem;
+		border-radius: 1.5rem;
 		overflow: hidden;
-		transition: all 0.3s ease;
+		transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 		position: relative;
-		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+		box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+		height: 100%;
+		display: flex;
+		flex-direction: column;
 	}
 
 	.portfolio-item:hover {
-		transform: translateY(-4px);
-		box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+		transform: translateY(-8px) scale(1.02);
+		box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
 		border-color: #3b82f6;
 	}
 
@@ -816,28 +877,46 @@
 		top: 0.75rem;
 		right: 0.75rem;
 		z-index: 10;
+		display: flex;
+		gap: 0.5rem;
+		opacity: 0;
+		transition: opacity 0.3s ease;
 	}
 
+	.portfolio-item:hover .portfolio-actions {
+		opacity: 1;
+	}
+
+	.btn-edit,
 	.btn-delete {
-		background: rgba(239, 68, 68, 0.9);
-		color: white;
+		background: rgba(255, 255, 255, 0.95);
+		color: #374151;
 		border: none;
 		border-radius: 50%;
-		width: 36px;
-		height: 36px;
+		width: 40px;
+		height: 40px;
 		cursor: pointer;
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		transition: all 0.2s ease;
-		backdrop-filter: blur(4px);
+		backdrop-filter: blur(8px);
+		box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+	}
+
+	.btn-edit:hover {
+		background: #3b82f6;
+		color: white;
+		transform: scale(1.1);
 	}
 
 	.btn-delete:hover {
 		background: #ef4444;
+		color: white;
 		transform: scale(1.1);
 	}
 
+	.btn-edit svg,
 	.btn-delete svg {
 		width: 18px;
 		height: 18px;
@@ -846,28 +925,29 @@
 	/* Media styles */
 	.portfolio-media {
 		width: 100%;
-		height: 200px;
+		height: 250px;
 		overflow: hidden;
 		position: relative;
+		flex-shrink: 0;
 	}
 
 	.portfolio-image {
 		width: 100%;
 		height: 100%;
 		object-fit: cover;
-		transition: transform 0.3s ease;
+		transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 	}
 
 	.portfolio-video {
 		width: 100%;
 		height: 100%;
 		object-fit: cover;
-		transition: transform 0.3s ease;
+		transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 	}
 
 	.portfolio-item:hover .portfolio-image,
 	.portfolio-item:hover .portfolio-video {
-		transform: scale(1.05);
+		transform: scale(1.1);
 	}
 
 	.media-overlay {
@@ -876,12 +956,13 @@
 		left: 0;
 		right: 0;
 		bottom: 0;
-		background: rgba(59, 130, 246, 0.8);
+		background: linear-gradient(135deg, rgba(59, 130, 246, 0.9) 0%, rgba(37, 99, 235, 0.9) 100%);
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		opacity: 0;
 		transition: opacity 0.3s ease;
+		backdrop-filter: blur(2px);
 	}
 
 	.portfolio-item:hover .media-overlay {
@@ -890,45 +971,54 @@
 
 	.view-text {
 		color: white;
-		font-weight: 600;
-		font-size: 0.875rem;
+		font-weight: 700;
+		font-size: 1rem;
+		text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 	}
 
 	/* Placeholder styles */
 	.portfolio-placeholder {
 		width: 100%;
-		height: 200px;
-		background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+		height: 250px;
+		background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
 		display: flex;
 		flex-direction: column;
 		align-items: center;
 		justify-content: center;
-		gap: 0.5rem;
+		gap: 0.75rem;
+		border: 2px dashed #cbd5e1;
 	}
 
 	.placeholder-icon {
-		width: 48px;
-		height: 48px;
-		color: #9ca3af;
+		width: 64px;
+		height: 64px;
+		color: #94a3b8;
 	}
 
 	.placeholder-text {
-		color: #6b7280;
-		font-size: 0.875rem;
-		font-weight: 500;
+		color: #64748b;
+		font-size: 1rem;
+		font-weight: 600;
 	}
 
 	/* Info styles */
 	.portfolio-info {
 		padding: 1.5rem;
+		flex: 1;
+		display: flex;
+		flex-direction: column;
 	}
 
 	.portfolio-title {
 		margin: 0 0 0.75rem 0;
 		color: #1f2937;
 		font-size: 1.25rem;
-		font-weight: 600;
-		line-height: 1.4;
+		font-weight: 700;
+		line-height: 1.3;
+		display: -webkit-box;
+		-webkit-line-clamp: 2;
+		-webkit-box-orient: vertical;
+		overflow: hidden;
 	}
 
 	.portfolio-description {
@@ -936,6 +1026,11 @@
 		color: #6b7280;
 		font-size: 0.875rem;
 		line-height: 1.6;
+		flex: 1;
+		display: -webkit-box;
+		-webkit-line-clamp: 3;
+		-webkit-box-orient: vertical;
+		overflow: hidden;
 	}
 
 	.portfolio-meta {
@@ -1384,12 +1479,25 @@
 
 		.portfolio-grid {
 			grid-template-columns: 1fr;
+			gap: 1.5rem;
 		}
 
 		.portfolio-stats {
 			flex-direction: column;
 			gap: 1rem;
 			text-align: center;
+		}
+
+		.portfolio-actions {
+			opacity: 1;
+		}
+
+		.portfolio-media {
+			height: 200px;
+		}
+
+		.portfolio-placeholder {
+			height: 200px;
 		}
 
 		.modal-overlay {
@@ -1402,6 +1510,25 @@
 
 		.empty-state {
 			padding: 3rem 1rem;
+		}
+	}
+
+	@media (max-width: 480px) {
+		.portfolio-grid {
+			grid-template-columns: 1fr;
+			gap: 1rem;
+		}
+
+		.portfolio-info {
+			padding: 1rem;
+		}
+
+		.portfolio-title {
+			font-size: 1.125rem;
+		}
+
+		.portfolio-description {
+			font-size: 0.8125rem;
 		}
 	}
 </style> 

@@ -228,6 +228,7 @@ export const GET: RequestHandler = async ({ url }) => {
                 location: provider.location,
                 phone: provider.phone,
                 portfolio: provider.portfolio || [], // Incluir portfolio real
+                settings: provider.settings || null, // Incluir settings para horarios
                 users: {
                     id: provider.user_id,
                     email: email,

@@ -62,7 +62,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
             type: 'signup',
             email: email,
             options: {
-                emailRedirectTo: isDevelopment ? undefined : `${import.meta.env.PUBLIC_SITE_URL}/auth/callback`
+                emailRedirectTo: isDevelopment ? undefined : 'https://domify.app/auth/callback'
             }
         });
 
