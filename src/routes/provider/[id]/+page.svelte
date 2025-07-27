@@ -55,34 +55,6 @@ $: jsonLd = provider ? generateProviderJSONLD({
   is_elite: provider.is_elite,
   portfolio: provider.portfolio
 }, provider.id) : null;
-</script>
-
-<svelte:head>
-  {#if metaTags}
-    <title>{metaTags.title}</title>
-    <meta name="description" content={metaTags.description} />
-    <meta name="keywords" content={metaTags.keywords} />
-    
-    <!-- Open Graph / Facebook -->
-    <meta property="og:type" content={metaTags.og.type} />
-    <meta property="og:url" content={metaTags.og.url} />
-    <meta property="og:title" content={metaTags.og.title} />
-    <meta property="og:description" content={metaTags.og.description} />
-    <meta property="og:image" content={metaTags.og.image} />
-    
-    <!-- Twitter -->
-    <meta property="twitter:card" content={metaTags.twitter.card} />
-    <meta property="twitter:url" content={metaTags.twitter.url} />
-    <meta property="twitter:title" content={metaTags.twitter.title} />
-    <meta property="twitter:description" content={metaTags.twitter.description} />
-    <meta property="twitter:image" content={metaTags.twitter.image} />
-    
-    <!-- Schema.org structured data -->
-    <script type="application/ld+json">
-      {JSON.stringify(jsonLd)}
-    </script>
-  {/if}
-</svelte:head>
 
 function whatsapp(phone: string) {
   const cleanPhone = phone.replace(/[^0-9+]/g, '');
@@ -112,6 +84,33 @@ function llamar(phone: string) {
   window.location.href = `tel:${cleanPhone}`;
 }
 </script>
+
+<svelte:head>
+  {#if metaTags}
+    <title>{metaTags.title}</title>
+    <meta name="description" content={metaTags.description} />
+    <meta name="keywords" content={metaTags.keywords} />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content={metaTags.og.type} />
+    <meta property="og:url" content={metaTags.og.url} />
+    <meta property="og:title" content={metaTags.og.title} />
+    <meta property="og:description" content={metaTags.og.description} />
+    <meta property="og:image" content={metaTags.og.image} />
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content={metaTags.twitter.card} />
+    <meta property="twitter:url" content={metaTags.twitter.url} />
+    <meta property="twitter:title" content={metaTags.twitter.title} />
+    <meta property="twitter:description" content={metaTags.twitter.description} />
+    <meta property="twitter:image" content={metaTags.twitter.image} />
+    
+    <!-- Schema.org structured data -->
+    <script type="application/ld+json">
+      {JSON.stringify(jsonLd)}
+    </script>
+  {/if}
+</svelte:head>
 
 <div class="provider-detail-wrapper">
   {#if loading}
