@@ -25,14 +25,40 @@
 
 	async function loadProviderData() {
 		try {
-			// Cargar perfil del proveedor
+			// Verificar que el usuario esté autenticado
+			if (!user || !user.id) {
+				console.error('No hay usuario autenticado');
+				loading = false;
+				return;
+			}
+
+			// Obtener usuario autenticado para mayor seguridad
+			const { data: { user: authUser }, error: userError } = await supabase.auth.getUser();
+			if (userError) {
+				console.error('Error verificando usuario autenticado:', userError);
+				loading = false;
+				return;
+			}
+
+			// Cargar perfil del proveedor de la tabla correcta 'provider_profiles'
 			const { data: profile, error: profileError } = await supabase
 				.from('provider_profiles')
 				.select('*')
 				.eq('user_id', user.id)
-				.single();
+				.maybeSingle(); // Usar maybeSingle en lugar de single para evitar errores
 
-			if (profileError) throw profileError;
+			if (profileError) {
+				console.error('Error al cargar perfil de proveedor:', profileError);
+				loading = false;
+				return;
+			}
+
+			if (!profile) {
+				console.warn('No se encontró el perfil de proveedor para el usuario actual');
+				loading = false;
+				return;
+			}
+
 			providerProfile = profile;
 
 			// Cargar estadísticas
@@ -128,7 +154,8 @@
 		<div class="text-center">
 			<h2 class="text-2xl font-bold text-gray-900">Acceso no autorizado</h2>
 			<p class="mt-2 text-gray-600">Por favor inicia sesión para acceder a tu panel de proveedor.</p>
-			<a href="/auth/login" class="mt-4 inline-block px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+			<a href="/auth/login" class="mt-4 inline-block px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+			   on:keydown={(e) => { if (e.key === 'Enter' || e.key === ' ') e.currentTarget.click(); }} tabindex="0">
 				Iniciar Sesión
 			</a>
 		</div>
@@ -170,7 +197,8 @@
 					</div>
 				</div>
 				<div class="mt-4">
-					<a href="/provider/bookings" class="text-sm text-primary-600 hover:text-primary-700 font-medium">
+					<a href="/provider/bookings" class="text-sm text-primary-600 hover:text-primary-700 font-medium" 
+					   on:keydown={(e) => { if (e.key === 'Enter' || e.key === ' ') e.currentTarget.click(); }} tabindex="0">
 						Ver todas las reservas →
 					</a>
 					</div>
@@ -190,7 +218,8 @@
 					</div>
 				</div>
 				<div class="mt-4">
-					<a href="/provider/bookings?status=pending" class="text-sm text-primary-600 hover:text-primary-700 font-medium">
+					<a href="/provider/bookings?status=pending" class="text-sm text-primary-600 hover:text-primary-700 font-medium"
+					   on:keydown={(e) => { if (e.key === 'Enter' || e.key === ' ') e.currentTarget.click(); }} tabindex="0">
 						Ver reservas pendientes →
 					</a>
 					</div>
@@ -210,7 +239,8 @@
 					</div>
 				</div>
 				<div class="mt-4">
-					<a href="/provider/bookings?status=completed" class="text-sm text-primary-600 hover:text-primary-700 font-medium">
+					<a href="/provider/bookings?status=completed" class="text-sm text-primary-600 hover:text-primary-700 font-medium"
+					   on:keydown={(e) => { if (e.key === 'Enter' || e.key === ' ') e.currentTarget.click(); }} tabindex="0">
 						Ver completadas →
 					</a>
 					</div>
@@ -231,7 +261,8 @@
 					</div>
 				</div>
 				<div class="mt-4">
-					<a href="/provider/reviews" class="text-sm text-primary-600 hover:text-primary-700 font-medium">
+					<a href="/provider/reviews" class="text-sm text-primary-600 hover:text-primary-700 font-medium"
+					   on:keydown={(e) => { if (e.key === 'Enter' || e.key === ' ') e.currentTarget.click(); }} tabindex="0">
 						Ver reseñas →
 					</a>
 				</div>
@@ -242,7 +273,7 @@
 		<h2 class="text-xl font-bold text-gray-900 mb-4">Acciones Rápidas</h2>
 		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
 			<!-- Gestionar Servicios -->
-			<a href="/provider/services" class="group">
+			<a href="/provider/services" class="group" on:keydown={(e) => { if (e.key === 'Enter' || e.key === ' ') e.currentTarget.click(); }} tabindex="0">
 				<div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all hover:scale-105 h-full">
 					<div class="w-12 h-12 bg-primary-50 rounded-full flex items-center justify-center mb-4 group-hover:bg-primary-100 transition-colors">
 						<svg class="w-6 h-6 text-primary-600" viewBox="0 0 24 24" fill="none">
@@ -255,7 +286,7 @@
 			</a>
 
 			<!-- Subir Portafolio -->
-			<a href="/provider/portfolio" class="group">
+			<a href="/provider/portfolio" class="group" on:keydown={(e) => { if (e.key === 'Enter' || e.key === ' ') e.currentTarget.click(); }} tabindex="0">
 				<div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all hover:scale-105 h-full">
 					<div class="w-12 h-12 bg-primary-50 rounded-full flex items-center justify-center mb-4 group-hover:bg-primary-100 transition-colors">
 						<svg class="w-6 h-6 text-primary-600" viewBox="0 0 24 24" fill="none">
@@ -270,7 +301,7 @@
 
 
 			<!-- Configuración -->
-			<a href="/provider/settings" class="group">
+			<a href="/provider/settings" class="group" on:keydown={(e) => { if (e.key === 'Enter' || e.key === ' ') e.currentTarget.click(); }} tabindex="0">
 				<div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all hover:scale-105 h-full">
 					<div class="w-12 h-12 bg-primary-50 rounded-full flex items-center justify-center mb-4 group-hover:bg-primary-100 transition-colors">
 						<svg class="w-6 h-6 text-primary-600" viewBox="0 0 24 24" fill="none">
@@ -288,7 +319,8 @@
 		<div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
 			<div class="flex items-center justify-between mb-6">
 				<h2 class="text-xl font-bold text-gray-900">Reservas Recientes</h2>
-				<a href="/provider/bookings" class="text-sm text-primary-600 hover:text-primary-700 font-medium">
+				<a href="/provider/bookings" class="text-sm text-primary-600 hover:text-primary-700 font-medium"
+				   on:keydown={(e) => { if (e.key === 'Enter' || e.key === ' ') e.currentTarget.click(); }} tabindex="0">
 					Ver Todas →
 				</a>
 			</div>

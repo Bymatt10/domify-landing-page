@@ -10,8 +10,9 @@ import { ExceptionHandler } from '$lib/exceptions';
 export const POST: RequestHandler = async ({ request, locals: { supabase }, fetch }) => {
     try {
         // Verificar que el usuario sea admin
+        const { data: { user } } = await supabase.auth.getUser();
         const { data: { session } } = await supabase.auth.getSession();
-        if (!session || session.user.user_metadata?.role !== 'admin') {
+        if (!session || !user || user.user_metadata?.role !== 'admin') {
             return json({ error: 'Acceso denegado. Se requieren permisos de administrador.' }, { status: 403 });
         }
 
@@ -156,8 +157,9 @@ export const POST: RequestHandler = async ({ request, locals: { supabase }, fetc
 export const GET: RequestHandler = async ({ locals: { supabase }, fetch }) => {
     try {
         // Verificar que el usuario sea admin
+        const { data: { user } } = await supabase.auth.getUser();
         const { data: { session } } = await supabase.auth.getSession();
-        if (!session || session.user.user_metadata?.role !== 'admin') {
+        if (!session || !user || user.user_metadata?.role !== 'admin') {
             return json({ error: 'Acceso denegado. Se requieren permisos de administrador.' }, { status: 403 });
         }
 

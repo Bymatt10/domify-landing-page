@@ -1,0 +1,70 @@
+/* Custom animations for the app */
+
+@keyframes bounce-subtle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+.animate-bounce-subtle {
+  animation: bounce-subtle 2s infinite ease-in-out;
+}
+
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(10deg); }
+  75% { transform: rotate(-10deg); }
+}
+.animate-wiggle {
+  animation: wiggle 2s infinite ease-in-out;
+}
+
+@keyframes grow-subtle {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+.animate-grow-subtle {
+  animation: grow-subtle 2s infinite ease-in-out;
+}
+
+.animate-spin-slow {
+  animation: spin 3s linear infinite;
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-pulse-slow {
+  animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* Entrance animations for staggered effect */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.stagger-fade-in > * {
+  opacity: 0;
+  animation: fade-in-up 0.5s ease-out forwards;
+}
+
+.stagger-fade-in > *:nth-child(1) { animation-delay: calc(1 * var(--stagger-delay)); }
+.stagger-fade-in > *:nth-child(2) { animation-delay: calc(2 * var(--stagger-delay)); }
+.stagger-fade-in > *:nth-child(3) { animation-delay: calc(3 * var(--stagger-delay)); }
+.stagger-fade-in > *:nth-child(4) { animation-delay: calc(4 * var(--stagger-delay)); }
+.stagger-fade-in > *:nth-child(5) { animation-delay: calc(5 * var(--stagger-delay)); }
+.stagger-fade-in > *:nth-child(6) { animation-delay: calc(6 * var(--stagger-delay)); }
+.stagger-fade-in > *:nth-child(7) { animation-delay: calc(7 * var(--stagger-delay)); }
+.stagger-fade-in > *:nth-child(8) { animation-delay: calc(8 * var(--stagger-delay)); }
+.stagger-fade-in > *:nth-child(9) { animation-delay: calc(9 * var(--stagger-delay)); }
+.stagger-fade-in > *:nth-child(10) { animation-delay: calc(10 * var(--stagger-delay)); }

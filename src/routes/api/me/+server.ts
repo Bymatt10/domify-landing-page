@@ -3,18 +3,19 @@ import type { RequestHandler } from './$types';
 
 export const GET: RequestHandler = async ({ locals }) => {
 	try {
-		const { data: { session } } = await locals.supabase.auth.getSession();
+		const { data: { user } } = await locals.supabase.auth.getUser();
+		const { session } = await locals.safeGetSession();
 		
-		if (!session?.user) {
+		if (!session || !user) {
 			return json({ authenticated: false }, { status: 401 });
 		}
 
 		return json({
 			authenticated: true,
             user: {
-				id: session.user.id,
-				email: session.user.email,
-				role: session.user.user_metadata?.role || 'customer'
+				id: user.id,
+				email: user.email,
+				role: user.user_metadata?.role || 'customer'
 			}
 		});
 

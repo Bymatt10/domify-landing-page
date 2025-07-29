@@ -4,11 +4,13 @@
 	import { page } from '$app/stores';
 	import { invalidateAll } from '$app/navigation';
 	import { onMount } from 'svelte';
+	import { cleanPKCEState, clearOAuthStateAndRetry } from '$lib/auth';
 
 	let email = '';
 	let password = '';
 	let loading = false;
 	let error = '';
+	let showRetryButton = false;
 
 	// Capturar error de URL (desde OAuth callback)
 	onMount(() => {
@@ -19,8 +21,15 @@
 			
 			if (decodedError.includes('exception:')) {
 				error = 'Error en la autenticación con Google. Por favor, inténtalo de nuevo.';
+				showRetryButton = true;
+			} else if (decodedError.includes('pkceError:')) {
+				error = decodedError.replace('pkceError:', '');
+				showRetryButton = true;
+				// Clean PKCE state for retry
+				cleanPKCEState();
 			} else if (decodedError.includes('oauthError:')) {
 				error = decodedError.replace('oauthError:', '');
+				showRetryButton = true;
 			} else if (decodedError.includes('profileError:')) {
 				error = 'Error creando tu perfil. Por favor, inténtalo de nuevo.';
 			} else {
@@ -28,6 +37,12 @@
 			}
 		}
 	});
+
+	function handleRetryOAuth() {
+		clearOAuthStateAndRetry();
+		error = '';
+		showRetryButton = false;
+	}
 
 	async function handleLogin() {
 		try {
@@ -67,10 +82,17 @@
 
 			console.log('🔄 Iniciando login con Google...');
 
+			// Clean any existing PKCE state before starting new OAuth flow
+			cleanPKCEState();
+
+			// Use current environment URL for redirect
+			const currentUrl = window.location.origin;
+			const redirectUrl = `${currentUrl}/auth/callback`;
+
 			const { data, error: googleError } = await supabase.auth.signInWithOAuth({
 				provider: 'google',
 				options: {
-					redirectTo: 'https://domify.app/auth/callback',
+					redirectTo: redirectUrl,
 					queryParams: {
 						access_type: 'offline',
 						prompt: 'consent'
@@ -81,12 +103,21 @@
 			console.log('📡 Respuesta de Google OAuth:', {
 				hasData: !!data,
 				hasError: !!googleError,
-				errorMessage: googleError?.message || 'NO ERROR'
+				errorMessage: googleError?.message || 'NO ERROR',
+				redirectUrl
 			});
 
 			if (googleError) {
 				console.error('❌ Error en login de Google:', googleError);
-				error = googleError.message || 'Error al conectar con Google';
+				
+				// Handle specific PKCE errors
+				if (googleError.message.includes('code challenge') || googleError.message.includes('code verifier')) {
+					error = 'Error de autenticación. Por favor, intenta de nuevo.';
+					// Clean state and suggest retry
+					cleanPKCEState();
+				} else {
+					error = googleError.message || 'Error al conectar con Google';
+				}
 			} else if (data) {
 				console.log('✅ Login de Google iniciado correctamente');
 				// El usuario será redirigido automáticamente
@@ -106,10 +137,14 @@
 			
 			console.log('🔄 Iniciando login con Facebook...');
 			
+			// Use current environment URL for redirect
+			const currentUrl = window.location.origin;
+			const redirectUrl = `${currentUrl}/auth/callback`;
+			
 			const { data, error: fbError } = await supabase.auth.signInWithOAuth({
 				provider: 'facebook',
 				options: {
-					redirectTo: 'https://domify.app/auth/callback',
+					redirectTo: redirectUrl,
 					queryParams: {
 						access_type: 'offline',
 						prompt: 'consent'
@@ -120,7 +155,8 @@
 			console.log('📡 Respuesta de Facebook OAuth:', {
 				hasData: !!data,
 				hasError: !!fbError,
-				errorMessage: fbError?.message || 'NO ERROR'
+				errorMessage: fbError?.message || 'NO ERROR',
+				redirectUrl
 			});
 			
 			if (fbError) {
@@ -149,6 +185,20 @@
 		{#if error}
 			<div class="error-message mb-4">
 				{error}
+			</div>
+		{/if}
+
+		{#if showRetryButton}
+			<div class="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+				<p class="text-sm text-yellow-800 mb-2">
+					Si continúas teniendo problemas con la autenticación, puedes limpiar el estado e intentar de nuevo.
+				</p>
+				<button 
+					on:click={handleRetryOAuth}
+					class="w-full px-3 py-2 bg-yellow-100 text-yellow-800 border border-yellow-300 rounded-md hover:bg-yellow-200 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 transition-colors duration-200 text-sm font-medium"
+				>
+					🔄 Limpiar estado e intentar de nuevo
+				</button>
 			</div>
 		{/if}
 

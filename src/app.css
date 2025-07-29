@@ -94,7 +94,19 @@ h1, h2, h3, h4, h5, h6 {
 .divider::before {
   @apply border-t border-gray-300;
 }
+/* Animación para barra de progreso durante navegación */
+@keyframes progress {
+  0% { width: 0; }
+  10% { width: 30%; }
+  50% { width: 60%; }
+  80% { width: 80%; }
+  100% { width: 100%; }
+}
 
+.animate-progress-bar {
+  animation: progress 1s ease-out;
+  animation-fill-mode: forwards;
+}
 .divider span {
   @apply relative bg-white px-3 text-sm text-gray-500;
 } 

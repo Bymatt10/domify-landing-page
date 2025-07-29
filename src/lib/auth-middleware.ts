@@ -20,13 +20,13 @@ export async function authenticateUser(event: RequestEvent): Promise<Authenticat
   let userEmail = null;
   let userMetadata = null;
 
-  // Try to get session from Supabase first
-  const { data: { session: supabaseSession }, error: sessionError } = await locals.supabase.auth.getSession();
+  // Try to get user from Supabase first (more secure)
+  const { data: { user }, error: userError } = await locals.supabase.auth.getUser();
   
-  if (supabaseSession) {
-    userId = supabaseSession.user.id;
-    userEmail = supabaseSession.user.email;
-    userMetadata = supabaseSession.user.user_metadata;
+  if (user && !userError) {
+    userId = user.id;
+    userEmail = user.email;
+    userMetadata = user.user_metadata;
   } else {
     // If no session, try to get user from Authorization header
     const authHeader = event.request.headers.get('authorization');

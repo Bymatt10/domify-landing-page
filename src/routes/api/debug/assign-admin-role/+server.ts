@@ -15,10 +15,11 @@ export const POST: RequestHandler = async ({ request, locals: { supabase } }) =>
         }
 
         // Verificar que el usuario actual sea admin (o permitir en desarrollo)
+        const { data: { user } } = await supabase.auth.getUser();
         const { data: { session } } = await supabase.auth.getSession();
         const isDevelopment = import.meta.env.DEV;
         
-        if (!isDevelopment && (!session || session.user.user_metadata?.role !== 'admin')) {
+        if (!isDevelopment && (!session || !user || user.user_metadata?.role !== 'admin')) {
             return json({ error: 'Acceso denegado. Se requieren permisos de administrador.' }, { status: 403 });
         }
 
@@ -78,10 +79,11 @@ export const POST: RequestHandler = async ({ request, locals: { supabase } }) =>
 export const GET: RequestHandler = async ({ locals: { supabase } }) => {
     try {
         // Verificar que el usuario actual sea admin (o permitir en desarrollo)
+        const { data: { user } } = await supabase.auth.getUser();
         const { data: { session } } = await supabase.auth.getSession();
         const isDevelopment = import.meta.env.DEV;
         
-        if (!isDevelopment && (!session || session.user.user_metadata?.role !== 'admin')) {
+        if (!isDevelopment && (!session || !user || user.user_metadata?.role !== 'admin')) {
             return json({ error: 'Acceso denegado. Se requieren permisos de administrador.' }, { status: 403 });
         }
 

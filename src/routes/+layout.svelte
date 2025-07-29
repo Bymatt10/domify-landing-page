@@ -8,6 +8,14 @@
 	import { browser } from '$app/environment';
 	import '../app.css';
 
+	// Función para manejar eventos de teclado en enlaces (accesibilidad)
+	function handleKeyPress(event: KeyboardEvent) {
+		if (event.key === 'Enter' || event.key === ' ') {
+			event.preventDefault();
+			(event.currentTarget as HTMLElement).click();
+		}
+	}
+
 	export let data: any;
 
 	// Ensure boolean values are properly handled
@@ -38,6 +46,7 @@
 
 	// Reaccionar a cambios en isAdmin y forzar recarga si cambia
 	$: if (browser && isAdmin !== prevIsAdmin) {
+		console.log('🔄 [Layout] Admin status changed, invalidating all');
 		prevIsAdmin = isAdmin;
 		invalidateAll();
 	}
@@ -46,8 +55,18 @@
 		// Inyectar Speed Insights
 		injectSpeedInsights();
 
+		// Verificar el usuario actual usando getUser() que es más seguro
+		supabase.auth.getUser().then(({ data: userData, error: userError }) => {
+			if (userError) {
+				console.error('Error obteniendo usuario autenticado:', userError);
+			}
+		});
+
 		const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
-			if (newSession?.expires_at !== session?.expires_at) {
+			// Don't use newSession.user directly to avoid security warning
+			if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED' || 
+			    newSession?.expires_at !== session?.expires_at) {
+				console.log('🔄 [Layout] Auth state changed, invalidating all. Event:', event);
 				invalidateAll();
 			}
 		});
@@ -77,25 +96,25 @@
 			</div>
 			<div class="flex flex-col gap-4">
 				<h4 class="text-lg font-semibold text-white">Servicios</h4>
-				<a href="/services/cleaning" class="text-white/80 hover:text-yellow-400 hover:translate-x-1 transition-all duration-200 font-medium">Limpieza</a>
-				<a href="/services/moving" class="text-white/80 hover:text-yellow-400 hover:translate-x-1 transition-all duration-200 font-medium">Mudanza</a>
-				<a href="/services/gardening" class="text-white/80 hover:text-yellow-400 hover:translate-x-1 transition-all duration-200 font-medium">Jardinería</a>
-				<a href="/services/assembly" class="text-white/80 hover:text-yellow-400 hover:translate-x-1 transition-all duration-200 font-medium">Ensamblaje</a>
-				<a href="/services/mounting" class="text-white/80 hover:text-yellow-400 hover:translate-x-1 transition-all duration-200 font-medium">Montaje</a>
+				<a href="/services/cleaning" class="text-white/80 hover:text-yellow-400 hover:translate-x-1 transition-all duration-200 font-medium" on:keydown={handleKeyPress} tabindex="0">Limpieza</a>
+				<a href="/services/moving" class="text-white/80 hover:text-yellow-400 hover:translate-x-1 transition-all duration-200 font-medium" on:keydown={handleKeyPress} tabindex="0">Mudanza</a>
+				<a href="/services/gardening" class="text-white/80 hover:text-yellow-400 hover:translate-x-1 transition-all duration-200 font-medium" on:keydown={handleKeyPress} tabindex="0">Jardinería</a>
+				<a href="/services/assembly" class="text-white/80 hover:text-yellow-400 hover:translate-x-1 transition-all duration-200 font-medium" on:keydown={handleKeyPress} tabindex="0">Ensamblaje</a>
+				<a href="/services/mounting" class="text-white/80 hover:text-yellow-400 hover:translate-x-1 transition-all duration-200 font-medium" on:keydown={handleKeyPress} tabindex="0">Montaje</a>
 			</div>
 			<div class="flex flex-col gap-4">
 				<h4 class="text-lg font-semibold text-white">Compañía</h4>
-				<a href="/about" class="text-white/80 hover:text-yellow-400 hover:translate-x-1 transition-all duration-200 font-medium">Sobre Nosotros</a>
-				<a href="/contact" class="text-white/80 hover:text-yellow-400 hover:translate-x-1 transition-all duration-200 font-medium">Contacto</a>
-				<a href="/privacy" class="text-white/80 hover:text-yellow-400 hover:translate-x-1 transition-all duration-200 font-medium">Privacidad</a>
-				<a href="/terms" class="text-white/80 hover:text-yellow-400 hover:translate-x-1 transition-all duration-200 font-medium">Términos</a>
+				<a href="/about" class="text-white/80 hover:text-yellow-400 hover:translate-x-1 transition-all duration-200 font-medium" on:keydown={handleKeyPress} tabindex="0">Sobre Nosotros</a>
+				<a href="/contact" class="text-white/80 hover:text-yellow-400 hover:translate-x-1 transition-all duration-200 font-medium" on:keydown={handleKeyPress} tabindex="0">Contacto</a>
+				<a href="/privacy" class="text-white/80 hover:text-yellow-400 hover:translate-x-1 transition-all duration-200 font-medium" on:keydown={handleKeyPress} tabindex="0">Privacidad</a>
+				<a href="/terms" class="text-white/80 hover:text-yellow-400 hover:translate-x-1 transition-all duration-200 font-medium" on:keydown={handleKeyPress} tabindex="0">Términos</a>
 			</div>
 			<div class="flex flex-col gap-4">
 				<h4 class="text-lg font-semibold text-white">Síguenos</h4>
 				<div class="flex gap-4">
-					<a href="https://facebook.com/domifyy" target="_blank" rel="noopener noreferrer" aria-label="Síguenos en Facebook" class="text-white/80 hover:text-yellow-400 hover:-translate-y-1 transition-all duration-200 p-2 rounded-md hover:bg-white/10">Facebook</a>
-					<a href="https://twitter.com/domify" target="_blank" rel="noopener noreferrer" aria-label="Síguenos en Twitter" class="text-white/80 hover:text-yellow-400 hover:-translate-y-1 transition-all duration-200 p-2 rounded-md hover:bg-white/10">Twitter</a>
-					<a href="https://instagram.com/domify" target="_blank" rel="noopener noreferrer" aria-label="Síguenos en Instagram" class="text-white/80 hover:text-yellow-400 hover:-translate-y-1 transition-all duration-200 p-2 rounded-md hover:bg-white/10">Instagram</a>
+					<a href="https://facebook.com/domifyy" target="_blank" rel="noopener noreferrer" aria-label="Síguenos en Facebook" class="text-white/80 hover:text-yellow-400 hover:-translate-y-1 transition-all duration-200 p-2 rounded-md hover:bg-white/10" on:keydown={handleKeyPress} tabindex="0">Facebook</a>
+					<a href="https://twitter.com/domify" target="_blank" rel="noopener noreferrer" aria-label="Síguenos en Twitter" class="text-white/80 hover:text-yellow-400 hover:-translate-y-1 transition-all duration-200 p-2 rounded-md hover:bg-white/10" on:keydown={handleKeyPress} tabindex="0">Twitter</a>
+					<a href="https://instagram.com/domify" target="_blank" rel="noopener noreferrer" aria-label="Síguenos en Instagram" class="text-white/80 hover:text-yellow-400 hover:-translate-y-1 transition-all duration-200 p-2 rounded-md hover:bg-white/10" on:keydown={handleKeyPress} tabindex="0">Instagram</a>
 				</div>
 			</div>
 		</div>

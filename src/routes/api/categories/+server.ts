@@ -84,6 +84,116 @@ export const GET: RequestHandler = async ({ url, locals }) => {
             return json(errorResponse, { status: errorResponse.error.statusCode });
         }
 
+        // Si no hay categorías en la base de datos, devolver categorías de ejemplo
+        if (!categories || categories.length === 0) {
+            console.log('No categories found in database, returning sample categories');
+            const sampleCategories = [
+                {
+                    id: 1,
+                    name: 'Electricistas',
+                    description: 'Instalaciones y reparaciones eléctricas profesionales',
+                    icon: '⚡',
+                    slug: 'electricistas',
+                    created_at: new Date().toISOString()
+                },
+                {
+                    id: 2,
+                    name: 'Fontaneros / Plomeros',
+                    description: 'Reparación e instalación de sistemas de agua',
+                    icon: '🚰',
+                    slug: 'fontaneros',
+                    created_at: new Date().toISOString()
+                },
+                {
+                    id: 3,
+                    name: 'Jardinería',
+                    description: 'Cuidado y diseño de áreas verdes',
+                    icon: '🌳',
+                    slug: 'jardineria',
+                    created_at: new Date().toISOString()
+                },
+                {
+                    id: 4,
+                    name: 'Limpieza de Casas',
+                    description: 'Limpieza general y profunda del hogar',
+                    icon: '🏠',
+                    slug: 'limpieza-casas',
+                    created_at: new Date().toISOString()
+                },
+                {
+                    id: 5,
+                    name: 'Ensamblaje de Muebles',
+                    description: 'Montaje y ensamblaje profesional de muebles',
+                    icon: '🔧',
+                    slug: 'ensamblaje',
+                    created_at: new Date().toISOString()
+                },
+                {
+                    id: 6,
+                    name: 'Construcción',
+                    description: 'Servicios de construcción y remodelación',
+                    icon: '🏗️',
+                    slug: 'construccion',
+                    created_at: new Date().toISOString()
+                },
+                {
+                    id: 7,
+                    name: 'Pintura',
+                    description: 'Servicios de pintura interior y exterior',
+                    icon: '🎨',
+                    slug: 'pintura',
+                    created_at: new Date().toISOString()
+                },
+                {
+                    id: 8,
+                    name: 'Mudanzas',
+                    description: 'Servicios de mudanza y traslado',
+                    icon: '🚚',
+                    slug: 'mudanzas',
+                    created_at: new Date().toISOString()
+                },
+                {
+                    id: 9,
+                    name: 'Carpintería',
+                    description: 'Trabajos de carpintería y ebanistería',
+                    icon: '🪚',
+                    slug: 'carpinteria',
+                    created_at: new Date().toISOString()
+                },
+                {
+                    id: 10,
+                    name: 'Tecnología',
+                    description: 'Servicios de tecnología y computación',
+                    icon: '💻',
+                    slug: 'tecnologia',
+                    created_at: new Date().toISOString()
+                },
+                {
+                    id: 11,
+                    name: 'Seguridad',
+                    description: 'Sistemas de seguridad y vigilancia',
+                    icon: '🔒',
+                    slug: 'seguridad',
+                    created_at: new Date().toISOString()
+                },
+                {
+                    id: 12,
+                    name: 'Albañilería',
+                    description: 'Trabajos de albañilería y mampostería',
+                    icon: '🧱',
+                    slug: 'albañileria',
+                    created_at: new Date().toISOString()
+                }
+            ];
+
+            const successResponse = ExceptionHandler.createSuccessResponse(
+                { categories: sampleCategories, total: sampleCategories.length },
+                'Sample categories retrieved successfully'
+            );
+
+            return json(successResponse);
+        }
+
         const successResponse = ExceptionHandler.createSuccessResponse(
             { categories, total: count },
             'Categories retrieved successfully'

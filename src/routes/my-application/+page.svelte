@@ -10,11 +10,12 @@
   let session: any = null;
 
   onMount(async () => {
-    // Obtener sesión actual
+    // Obtener sesión actual de forma segura
+    const { data: { user } } = await supabase.auth.getUser();
     const { data: { session: currentSession } } = await supabase.auth.getSession();
     session = currentSession;
 
-    if (!session) {
+    if (!user || !session) {
       goto('/auth/login');
       return;
     }

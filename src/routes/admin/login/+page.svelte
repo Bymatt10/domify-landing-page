@@ -3,6 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
+	import { cleanPKCEState } from '$lib/auth';
 
 	let email = '';
 	let password = '';
@@ -59,18 +60,32 @@
 			loading = true;
 			error = '';
 
+			// Clean any existing PKCE state before starting new OAuth flow
+			cleanPKCEState();
+
+			// Use current environment URL for redirect
+			const currentUrl = window.location.origin;
+			const redirectUrl = `${currentUrl}/auth/callback?next=/admin`;
+
 			// Al iniciar desde el panel de admin, nos aseguramos de que el callback
 			// nos devuelva aquí para ser validados por el guardián del layout.
 			const { data, error: googleError } = await supabase.auth.signInWithOAuth({
 				provider: 'google',
 				
 				options: {
-					redirectTo: 'https://domify.app/auth/callback?next=/admin'
+					redirectTo: redirectUrl
 				}
 			});
 
 			if (googleError) {
-				error = googleError.message;
+				// Handle specific PKCE errors
+				if (googleError.message.includes('code challenge') || googleError.message.includes('code verifier')) {
+					error = 'Error de autenticación. Por favor, intenta de nuevo.';
+					// Clean state and suggest retry
+					cleanPKCEState();
+				} else {
+					error = googleError.message;
+				}
 			}
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'Error inesperado.';

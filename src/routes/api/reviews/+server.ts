@@ -72,7 +72,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	try {
 		const { session, user } = await locals.safeGetSession();
 		
-		if (!session?.user) {
+		if (!session || !user) {
 			return json({ error: 'No autorizado' }, { status: 401 });
 		}
 
@@ -106,7 +106,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		const { data: customerProfile, error: customerProfileError } = await supabaseAdmin
 			.from('customers')
 			.select('id, first_name, last_name')
-			.eq('user_id', session.user.id)
+			.eq('user_id', user.id)
 			.single();
 
 		if (customerProfileError || !customerProfile) {
@@ -130,7 +130,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			.from('reviews')
 			.insert({
 				provider_profile_id: provider_id,
-				reviewer_user_id: session.user.id,
+				reviewer_user_id: user.id,
 				rating: rating,
 				comment: comment.trim(),
 				booking_id: null // Permitir reseñas sin reserva
@@ -142,7 +142,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		const { data: customer, error: customerError } = await supabaseAdmin
 			.from('customers')
 			.select('user_id, first_name, last_name, profile_image_url')
-			.eq('user_id', session.user.id)
+			.eq('user_id', user.id)
 			.single();
 
 		if (customerError) {

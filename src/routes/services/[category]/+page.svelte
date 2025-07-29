@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/stores';
+	import { navigating } from '$app/stores';
 	import { onMount, onDestroy } from 'svelte';
 	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
 	import { getTemplatesByCategoryName, type ServiceTemplate } from '$lib/service-templates';
@@ -60,18 +61,29 @@
 	};
 
 	let category = $page.params.category;
-	let providers: Provider[] = (data.providers || []).map(p => ({
-		...p,
-		description: p.bio || p.description || 'Sin descripción',
-		rating: p.average_rating || p.rating || 0,
-		photo_url: p.photo_url || '/img/cleaning.png',
-		users: p.users || { id: p.user_id, email: '', role: 'provider' }
-	}));
-	let loading = !data.preloaded;
+	
+	// Log when category changes
+	$: if (category) {
+		console.log('🔄 [Category Page] Category changed to:', category);
+	}
+	let providers: Provider[] = [];
+	
+	// Initialize providers from server data if available
+	$: if (data.providers && data.providers.length > 0 && providers.length === 0) {
+		providers = data.providers.map((p: any) => ({
+			...p,
+			description: p.bio || p.description || 'Sin descripción',
+			rating: p.average_rating || p.rating || 0,
+			photo_url: p.photo_url || '/img/cleaning.png',
+			users: p.users || { id: p.user_id, email: '', role: 'provider' }
+		}));
+		console.log('🔄 [Category Page] Providers initialized from server data:', providers.length);
+	}
+	let loading = !data.preloaded; // Solo loading si no hay preload
 	let error: string | null = null;
 	let showFiltersModal = false;
 	let showProfileModal = false;
-	let selectedProvider: Provider | null = null;
+	let selectedProvider: any = null;
 	let categoryServices: ServiceTemplate[] = [];
 
 	// Filtros
@@ -111,10 +123,12 @@
 
 	$: availableCities = selectedDepartment ? departments.find(d => d.name === selectedDepartment)?.cities || [] : [];
 
-	// Paginación
+	// Paginación con carga optimizada
 	let currentPage = 1;
-	let itemsPerPage = 5;
+	let itemsPerPage = 8; // Aumentamos para mostrar más resultados por página
 	let totalPages = 1;
+	// Estado para seguimiento de carga
+	let loadingNextPage = false;
 
 	// Contador de filtros activos
 	$: activeFiltersCount = [
@@ -130,64 +144,104 @@
 	}
 
 	$: paginatedProviders = providers.slice(
-		(currentPage - 1) * itemsPerPage,
-		currentPage * itemsPerPage
-	);
+		0, // Siempre desde el inicio
+		currentPage * itemsPerPage // Hasta la página actual × elementos por página
+	); // Esto implementa un "load more" en lugar de paginación tradicional
 
 	function goToPage(page: number) {
 		if (page >= 1 && page <= totalPages) {
-			currentPage = page;
-			window.scrollTo({ top: 0, behavior: 'smooth' });
+			if (page > currentPage) {
+				// Si estamos cargando más contenido
+				loadingNextPage = true;
+				// Simular un pequeño delay para feedback visual
+				setTimeout(() => {
+					currentPage = page;
+					loadingNextPage = false;
+				}, 300);
+			} else {
+				// Si estamos volviendo a una página anterior
+				currentPage = page;
+				window.scrollTo({ top: 0, behavior: 'smooth' });
+			}
 		}
 	}
 
-	async function fetchProviders() {
-		loading = true;
-		error = null;
-		
-		try {
-			const cacheBuster = Date.now();
-			const url = `/api/providers?category=${encodeURIComponent(category)}&v=${cacheBuster}`;
-			const response = await fetch(url);
-			const result = await response.json();
-
-			if (!response.ok) {
-				throw new Error(result.message || 'Error al cargar proveedores');
-			}
-
-			// Aplicar todos los filtros
-			let filteredProviders = result.data.providers.filter((provider: Provider) => {
-				// Filtro de precio
-				const priceMatch = provider.hourly_rate >= priceRange[0] && provider.hourly_rate <= priceRange[1];
-				
-				// Filtro de tipo de proveedor
-				const typeMatch = selectedProviderType === 'all' || provider.provider_type === selectedProviderType;
-				
-				// Filtro de departamento (búsqueda flexible en el campo location)
-				const departmentMatch = !selectedDepartment || 
-					(provider.location && provider.location.toLowerCase().includes(selectedDepartment.toLowerCase()));
-				
-				// Filtro de ciudad (búsqueda flexible en el campo location)
-				const cityMatch = !selectedCity || 
-					(provider.location && provider.location.toLowerCase().includes(selectedCity.toLowerCase()));
-
-				return priceMatch && typeMatch && departmentMatch && cityMatch;
-			});
-
-			// Ordenar por rating (más alto primero)
-			filteredProviders.sort((a: Provider, b: Provider) => b.rating - a.rating);
-
-			providers = filteredProviders;
-			currentPage = 1;
-		} catch (err) {
-			error = err instanceof Error ? err.message : 'Error al cargar proveedores';
-		} finally {
-			loading = false;
+	// Función para cargar más resultados (reemplaza paginación tradicional)
+	function loadMore() {
+		if (currentPage < totalPages) {
+			goToPage(currentPage + 1);
 		}
+	}
+
+	// Implementación optimizada con debounce y filtrado en el servidor cuando es posible
+	let fetchTimeout: ReturnType<typeof setTimeout> | null = null;
+
+	async function fetchProviders() {
+		console.log('🔄 [Category Page] fetchProviders called for category:', category);
+		
+		// Cancelar solicitud anterior si existe
+		if (fetchTimeout) {
+			console.log('🔄 [Category Page] Clearing previous fetch timeout');
+			clearTimeout(fetchTimeout);
+		}
+
+		// Implementar debounce de 300ms para evitar múltiples llamadas
+		fetchTimeout = setTimeout(async () => {
+			console.log('🔄 [Category Page] Executing fetchProviders after debounce');
+			loading = true;
+			error = null;
+
+			try {
+				// Construir parámetros de URL para mover filtrado al servidor cuando sea posible
+				const params = new URLSearchParams();
+				params.append('category', category);
+
+				// Añadir parámetros de filtrado que puedan procesarse en servidor
+				if (selectedProviderType !== 'all') {
+					params.append('provider_type', selectedProviderType);
+				}
+				params.append('min_price', priceRange[0].toString());
+				params.append('max_price', priceRange[1].toString());
+				params.append('limit', (itemsPerPage * 3).toString()); // Obtener más resultados para filtrado local
+
+				const url = `/api/providers?${params.toString()}`;
+				const response = await fetch(url);
+				const result = await response.json();
+
+				if (!response.ok) {
+					throw new Error(result.message || 'Error al cargar proveedores');
+				}
+
+				// Aplicar filtros que no se pudieron hacer en servidor
+				let filteredProviders = result.data.providers.filter((provider: Provider) => {
+					// Filtro de departamento (búsqueda flexible en el campo location)
+					const departmentMatch = !selectedDepartment || 
+						(provider.location && provider.location.toLowerCase().includes(selectedDepartment.toLowerCase()));
+
+					// Filtro de ciudad (búsqueda flexible en el campo location)
+					const cityMatch = !selectedCity || 
+						(provider.location && provider.location.toLowerCase().includes(selectedCity.toLowerCase()));
+
+					return departmentMatch && cityMatch;
+				});
+
+				// Ordenar por rating (más alto primero)
+				filteredProviders.sort((a: Provider, b: Provider) => b.rating - a.rating);
+
+				providers = filteredProviders;
+				currentPage = 1;
+			} catch (err) {
+				error = err instanceof Error ? err.message : 'Error al cargar proveedores';
+			} finally {
+				loading = false;
+				fetchTimeout = null;
+			}
+		}, 300);
 	}
 
 	function applyFilters() {
 		if (typeof window !== 'undefined') {
+			console.log('🔄 [Category Page] Applying filters, fetching providers...');
 			fetchProviders();
 			showFiltersModal = false;
 		}
@@ -203,46 +257,56 @@
 	}
 
 	async function openProfileModal(provider: any) {
-		// Si el provider no tiene settings, haz un fetch para traerlo completo
-		if (!provider.settings) {
-			const res = await fetch(`/api/providers/${provider.id}`);
-			const data = await res.json();
-			if (data && data.success && data.provider) {
-				provider = { ...provider, ...data.provider };
-			}
-		}
-
-		// Cargar reseñas reales del proveedor
-		try {
-			const response = await fetch(`/api/reviews?provider_id=${provider.id}`);
-			const result = await response.json();
-			if (response.ok && result.data?.reviews) {
-				// Formatear las reseñas para mostrar
-				const formattedReviews = result.data.reviews.map((review: any) => ({
-					...review,
-					reviewer_name: `${review.reviewer?.first_name || ''} ${review.reviewer?.last_name || ''}`.trim() || 'Usuario Anónimo'
-				}));
-				provider.reviews = formattedReviews;
-			} else {
-				provider.reviews = [];
-			}
-		} catch (error) {
-			console.error('Error loading reviews:', error);
-			provider.reviews = [];
-		}
-
-		// Usar datos reales del proveedor (sin hardcodeo)
-		const enhancedProvider = {
-			...provider,
-			bio: provider.bio || `Soy un profesional con más de 5 años de experiencia en ${formatCategoryName(category).toLowerCase()}. Me especializo en brindar servicios de alta calidad, siempre enfocado en la satisfacción del cliente. Trabajo con materiales de primera calidad y utilizo las mejores técnicas del mercado.`,
+		// Mostrar modal inmediatamente con datos disponibles para mejorar percepción de velocidad
+		selectedProvider = {
+			id: provider.id || '',
+			business_name: provider.business_name || '',
+			description: provider.description || provider.bio || 'Sin descripción',
+			hourly_rate: provider.hourly_rate || 0,
+			rating: provider.rating || provider.average_rating || 0,
+			photo_url: provider.photo_url || '/img/cleaning.png',
+			location: provider.location || '',
+			phone: provider.phone,
+			total_reviews: provider.total_reviews,
+			provider_type: provider.provider_type,
+			users: provider.users,
+			provider_categories: provider.provider_categories,
+			bio: provider.bio || `Soy un profesional con más de 5 años de experiencia en ${formatCategoryName(category).toLowerCase()}. Me especializo en brindar servicios de alta calidad, siempre enfocado en la satisfacción del cliente.`,
+			settings: provider.settings,
 			portfolio: provider.portfolio || [],
 			reviews: provider.reviews || []
 		};
-
-		selectedProvider = enhancedProvider;
 		showProfileModal = true;
 		if (typeof window !== 'undefined') {
 			document.body.style.overflow = 'hidden';
+		}
+
+		// Cargar datos adicionales en paralelo después de mostrar el modal
+		try {
+			const [providerDetails, reviewsData] = await Promise.all([
+				// Solo hacer fetch si no tenemos settings
+				provider.settings ? Promise.resolve({provider}) : fetch(`/api/providers/${provider.id}`).then(res => res.json()),
+				// Cargar reseñas
+				fetch(`/api/reviews?provider_id=${provider.id}&limit=5`).then(res => res.json())
+			]);
+
+			// Actualizar datos del proveedor si se obtuvieron
+			if (providerDetails && providerDetails.success && providerDetails.provider) {
+				selectedProvider = { ...selectedProvider, ...providerDetails.provider };
+			}
+
+			// Actualizar reseñas si se obtuvieron
+			if (reviewsData && reviewsData.data?.reviews) {
+				// Formatear las reseñas para mostrar
+				const formattedReviews = reviewsData.data.reviews.map((review: any) => ({
+					...review,
+					reviewer_name: `${review.reviewer?.first_name || ''} ${review.reviewer?.last_name || ''}`.trim() || 'Usuario Anónimo'
+				}));
+				selectedProvider = { ...selectedProvider, reviews: formattedReviews };
+			}
+		} catch (error) {
+			console.error('Error loading additional provider data:', error);
+			// No mostramos error al usuario ya que tenemos datos básicos visibles
 		}
 	}
 
@@ -602,25 +666,30 @@
 
 	// 4. After fetching providers, fetch their services - only once
 	let servicesFetched = false;
-	$: if (!loading && providers.length > 0 && !servicesFetched) {
+	$: if (!loading && providers.length > 0 && !servicesFetched && !initialLoad) {
+		console.log('🔄 [Category Page] Fetching category services for', providers.length, 'providers');
 		servicesFetched = true;
 		fetchCategoryServices();
 	}
 
 	onMount(async () => {
-		// Add cache busting parameter to force fresh data
-		const cacheBuster = Date.now();
-		console.log('🔄 Loading with cache buster:', cacheBuster);
+		console.log('🔄 [Category Page] onMount called for category:', category);
+		console.log('🔄 [Category Page] Data preloaded:', data.preloaded);
+		console.log('🔄 [Category Page] Providers count:', data.providers?.length || 0);
 		
 		// Only fetch if not preloaded from server
 		if (!data.preloaded) {
+			console.log('🔄 [Category Page] No preload, fetching providers from API...');
 			fetchProviders();
+		} else {
+			console.log('🔄 [Category Page] Using preloaded data, skipping API call');
 		}
+		
 		loadCategoryServices();
 		
-		// Verificar si el usuario está autenticado y obtener información
+		// Verificar si el usuario está autenticado y obtener información (sin cache buster para evitar reloads)
 		try {
-			const response = await fetch(`/api/me?v=${cacheBuster}`);
+			const response = await fetch('/api/me');
 			if (response.ok) {
 				const userData = await response.json();
 				isAuthenticated = true;
@@ -633,6 +702,8 @@
 		// Mark initial load as complete after a short delay
 		setTimeout(() => {
 			initialLoad = false;
+			filtersInitialized = true;
+			console.log('🔄 [Category Page] Initial load marked as complete, filters initialized');
 		}, 100);
 	});
 
@@ -677,11 +748,34 @@
 	// Debounced filter application to prevent multiple API calls
 	let filterTimeout: any;
 	let initialLoad = true;
-	$: if (typeof window !== 'undefined' && !initialLoad && (priceRange || selectedProviderType || selectedDepartment || selectedCity || selectedTime)) {
-		clearTimeout(filterTimeout);
-		filterTimeout = setTimeout(() => {
-			applyFilters();
-		}, 300); // 300ms debounce
+	let lastFilterState = '';
+	let filtersInitialized = false;
+	
+	$: {
+		if (typeof window !== 'undefined' && !initialLoad && filtersInitialized) {
+			const currentFilterState = JSON.stringify({
+				priceRange: priceRange,
+				selectedProviderType,
+				selectedDepartment,
+				selectedCity,
+				selectedTime
+			});
+			
+			if (currentFilterState !== lastFilterState && lastFilterState !== '') {
+				console.log('🔄 [Category Page] Filter state changed, applying filters');
+				console.log('🔄 [Category Page] Previous state:', lastFilterState);
+				console.log('🔄 [Category Page] Current state:', currentFilterState);
+				lastFilterState = currentFilterState;
+				clearTimeout(filterTimeout);
+				filterTimeout = setTimeout(() => {
+					applyFilters();
+				}, 300); // 300ms debounce
+			} else if (lastFilterState === '') {
+				// First time initialization - just save the state, don't apply filters
+				lastFilterState = currentFilterState;
+				console.log('🔄 [Category Page] Initial filter state saved:', currentFilterState);
+			}
+		}
 	}
 
 	function togglePortfolio() {
@@ -1189,6 +1283,8 @@
 												<img 
 													src={provider.photo_url} 
 													alt={provider.business_name}
+																			loading="lazy"
+																			decoding="async"
 													class="w-full h-full object-cover"
 												/>
 											{:else}

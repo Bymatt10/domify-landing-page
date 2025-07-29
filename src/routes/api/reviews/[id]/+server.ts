@@ -93,7 +93,7 @@ export const PUT: RequestHandler = async ({ params, request, locals }) => {
 		}
 
 		// Verificar que el usuario es el autor de la reseña
-		if (existingReview.reviewer_user_id !== session.user.id) {
+		if (existingReview.reviewer_user_id !== user.id) {
 			return json({ error: 'No tienes permisos para editar esta reseña' }, { status: 403 });
 		}
 
@@ -118,7 +118,7 @@ export const PUT: RequestHandler = async ({ params, request, locals }) => {
 		const { data: customer, error: customerError } = await supabaseAdmin
 			.from('customers')
 			.select('user_id, first_name, last_name, profile_image_url')
-			.eq('user_id', session.user.id)
+			.eq('user_id', user.id)
 			.single();
 
 		if (customerError) {
@@ -150,7 +150,7 @@ export const DELETE: RequestHandler = async ({ params, locals }) => {
 	try {
 		const { session, user } = await locals.safeGetSession();
 		
-		if (!session?.user) {
+		if (!session || !user) {
 			return json({ error: 'No autorizado' }, { status: 401 });
 		}
 
@@ -176,7 +176,7 @@ export const DELETE: RequestHandler = async ({ params, locals }) => {
 		}
 
 		// Verificar que el usuario es el autor de la reseña
-		if (existingReview.reviewer_user_id !== session.user.id) {
+		if (existingReview.reviewer_user_id !== user.id) {
 			return json({ error: 'No tienes permisos para eliminar esta reseña' }, { status: 403 });
 		}
 

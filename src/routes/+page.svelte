@@ -37,29 +37,7 @@
 		}
 	];
 
-	const testimonials = [
-		{
-			name: 'María González',
-			location: 'Casa en Las Condes',
-			rating: 5,
-			comment: 'Excelente servicio de limpieza. Los profesionales fueron muy puntuales y dejaron mi casa impecable.',
-			avatar: '👩‍💼'
-		},
-		{
-			name: 'Carlos Rodríguez',
-			location: 'Apartamento en Providencia',
-			rating: 5,
-			comment: 'El servicio de montaje de muebles fue perfecto. Muy recomendado para mudanzas.',
-			avatar: '👨‍💼'
-		},
-		{
-			name: 'Ana Silva',
-			location: 'Oficina en Santiago Centro',
-			rating: 5,
-			comment: 'Contratamos limpieza comercial y quedamos muy satisfechos. Profesionales y confiables.',
-			avatar: '👩‍💻'
-		}
-	];
+
 
 	const popularSlugs = [
 		{ name: 'Electricistas', slug: 'electricistas' },
@@ -263,35 +241,110 @@
 	</div>
 </section>
 
-<!-- Testimonials Section -->
-<section class="py-20 bg-white">
+<!-- How It Works Section -->
+<section class="py-20 bg-gradient-to-br from-gray-50 to-white">
 	<div class="container mx-auto px-4 sm:px-6 lg:px-8">
 		<div class="text-center mb-16">
 			<h2 class="text-4xl sm:text-5xl font-bold text-secondary-900 mb-6">
-				Lo que dicen nuestros clientes
+				¿Cómo funciona?
 			</h2>
+			<p class="text-xl text-secondary-600 max-w-3xl mx-auto">
+				Encuentra y contrata servicios de forma rápida y segura
+			</p>
 		</div>
 
 		<div class="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-			{#each testimonials as testimonial}
-				<div class="bg-white rounded-2xl p-8 shadow-soft border border-secondary-100">
-					<div class="flex items-center mb-4">
-						<div class="text-3xl mr-4">{testimonial.avatar}</div>
-						<div>
-							<h4 class="font-bold text-secondary-900">{testimonial.name}</h4>
-							<p class="text-sm text-secondary-600">{testimonial.location}</p>
-						</div>
+			<!-- Paso 1 -->
+			<div class="relative">
+				<!-- Línea conectora -->
+				<div class="hidden md:block absolute top-20 left-full w-full h-0.5 bg-gradient-to-r from-primary-500 to-primary-600 z-0"></div>
+				
+				<div class="relative bg-white rounded-2xl p-8 shadow-soft border border-secondary-100 text-center z-10">
+					<!-- Número del paso -->
+					<div class="w-20 h-20 bg-gradient-to-br from-primary-500 to-primary-600 rounded-full flex items-center justify-center mx-auto mb-6 text-white text-2xl font-bold shadow-lg">
+						1
 					</div>
-					<div class="flex mb-4">
-						{#each Array(testimonial.rating) as _}
-							<svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-								<path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
-							</svg>
-						{/each}
+					
+					<!-- Icono -->
+					<div class="w-16 h-16 bg-primary-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+						<svg class="w-8 h-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+						</svg>
 					</div>
-					<p class="text-secondary-700 italic">"{testimonial.comment}"</p>
+					
+					<h3 class="text-2xl font-bold text-secondary-900 mb-4">Busca tu servicio</h3>
+					<p class="text-secondary-600 leading-relaxed">
+						Explora nuestras categorías de servicios o usa el buscador para encontrar exactamente lo que necesitas en tu área.
+					</p>
 				</div>
-			{/each}
+			</div>
+
+			<!-- Paso 2 -->
+			<div class="relative">
+				<!-- Línea conectora -->
+				<div class="hidden md:block absolute top-20 left-full w-full h-0.5 bg-gradient-to-r from-primary-500 to-primary-600 z-0"></div>
+				
+				<div class="relative bg-white rounded-2xl p-8 shadow-soft border border-secondary-100 text-center z-10">
+					<!-- Número del paso -->
+					<div class="w-20 h-20 bg-gradient-to-br from-primary-500 to-primary-600 rounded-full flex items-center justify-center mx-auto mb-6 text-white text-2xl font-bold shadow-lg">
+						2
+					</div>
+					
+					<!-- Icono -->
+					<div class="w-16 h-16 bg-primary-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+						<svg class="w-8 h-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+						</svg>
+					</div>
+					
+					<h3 class="text-2xl font-bold text-secondary-900 mb-4">Revisa proveedores</h3>
+					<p class="text-secondary-600 leading-relaxed">
+						Ve perfiles detallados, calificaciones, reseñas y precios de profesionales verificados en tu zona.
+					</p>
+				</div>
+			</div>
+
+			<!-- Paso 3 -->
+			<div class="relative">
+				<div class="relative bg-white rounded-2xl p-8 shadow-soft border border-secondary-100 text-center z-10">
+					<!-- Número del paso -->
+					<div class="w-20 h-20 bg-gradient-to-br from-primary-500 to-primary-600 rounded-full flex items-center justify-center mx-auto mb-6 text-white text-2xl font-bold shadow-lg">
+						3
+					</div>
+					
+					<!-- Icono -->
+					<div class="w-16 h-16 bg-primary-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+						<svg class="w-8 h-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
+						</svg>
+					</div>
+					
+					<h3 class="text-2xl font-bold text-secondary-900 mb-4">Contacta y contrata</h3>
+					<p class="text-secondary-600 leading-relaxed">
+						Contacta directamente al proveedor que elijas por teléfono o WhatsApp y coordina tu servicio de forma segura.
+					</p>
+				</div>
+			</div>
+		</div>
+
+		<!-- Call to Action -->
+		<div class="text-center mt-12">
+			<div class="bg-white rounded-2xl p-8 shadow-soft border border-secondary-100 max-w-2xl mx-auto">
+				<h3 class="text-2xl font-bold text-secondary-900 mb-4">¿Listo para empezar?</h3>
+				<p class="text-secondary-600 mb-6">
+					Únete a miles de clientes satisfechos que ya confían en Domify para sus servicios
+				</p>
+				<a 
+					href="/services" 
+					class="inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-primary-600 to-primary-700 text-white font-semibold rounded-xl hover:from-primary-700 hover:to-primary-800 transition-all duration-200 shadow-lg hover:shadow-xl"
+
+				>
+					Buscar servicios ahora
+					<svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+					</svg>
+				</a>
+			</div>
 		</div>
 	</div>
 </section>

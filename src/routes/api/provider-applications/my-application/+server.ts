@@ -4,8 +4,9 @@ import type { RequestHandler } from './$types';
 export const GET: RequestHandler = async ({ locals }) => {
   try {
     // Verificar autenticación
+    const { data: { user } } = await locals.supabase.auth.getUser();
     const { data: { session } } = await locals.supabase.auth.getSession();
-    if (!session) {
+    if (!session || !user) {
       return json({ error: 'No autorizado' }, { status: 401 });
     }
 
@@ -16,7 +17,7 @@ export const GET: RequestHandler = async ({ locals }) => {
         *,
         categories:provider_categories(id, name)
       `)
-      .eq('user_id', session.user.id)
+      .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(1)
       .single();

@@ -36,6 +36,28 @@
 	// Variable reactiva para cache busting del avatar
 	$: avatarVersion = user?.user_metadata?.avatar_url ? getAvatarHash(user.user_metadata.avatar_url) : '0';
 
+	// Función para obtener la URL de la imagen de perfil
+	function getProfileImageUrl(user: any): string | null {
+		if (!user?.user_metadata) return null;
+		
+		// Priorizar avatar_url sobre picture
+		const imageUrl = user.user_metadata.avatar_url || user.user_metadata.picture;
+		
+		if (!imageUrl) return null;
+		
+		// Por ahora, no usar cache busting para probar
+		return imageUrl;
+	}
+
+	// Función para manejar errores de imagen
+	function handleImageError(event: Event) {
+		const img = event.target as HTMLImageElement;
+		if (img) {
+			console.log('Error cargando imagen de perfil, ocultando imagen');
+			img.style.display = 'none';
+		}
+	}
+
 	async function handleLogout() {
 		const { error } = await supabase.auth.signOut();
 		if (error) {
@@ -80,8 +102,8 @@
 						<div class="flex items-center gap-4" role="group" aria-label="Menú de usuario">
 							<div class="relative" tabIndex="0" on:blur={() => isDropdownOpen = false}>
 								<button class="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors duration-200" on:click={() => isDropdownOpen = !isDropdownOpen} aria-haspopup="true" aria-expanded={isDropdownOpen}>
-									{#if user?.user_metadata?.avatar_url || user?.user_metadata?.picture}
-										<img src={(user.user_metadata.avatar_url || user.user_metadata.picture) + '?v=' + avatarVersion} alt="Avatar" class="w-8 h-8 rounded-full object-cover" on:error={(e) => { const img = e.target as HTMLImageElement; if (img) img.style.display = 'none'; }} />
+									{#if getProfileImageUrl(user)}
+										<img src={getProfileImageUrl(user)} alt="Avatar" class="w-8 h-8 rounded-full object-cover" on:error={handleImageError} />
 									{:else if (user?.user_metadata?.first_name || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email)}
 										<div class="w-8 h-8 rounded-full bg-primary-600 text-white flex items-center justify-center text-sm font-medium">{getInitial(user)}</div>
 									{:else}
@@ -146,8 +168,8 @@
 				<div class="px-4 py-2" role="group" aria-label="Menú de usuario">
 					<div class="relative" tabIndex="0" on:blur={() => isDropdownOpen = false}>
 						<button class="flex items-center gap-3 w-full p-2 rounded-lg hover:bg-gray-50 transition-colors duration-200" on:click={() => isDropdownOpen = !isDropdownOpen} aria-haspopup="true" aria-expanded={isDropdownOpen}>
-							{#if user?.user_metadata?.avatar_url || user?.user_metadata?.picture}
-								<img src={(user.user_metadata.avatar_url || user.user_metadata.picture) + '?v=' + avatarVersion} alt="Avatar" class="w-8 h-8 rounded-full object-cover" on:error={(e) => { const img = e.target as HTMLImageElement; if (img) img.style.display = 'none'; }} />
+							{#if getProfileImageUrl(user)}
+								<img src={getProfileImageUrl(user)} alt="Avatar" class="w-8 h-8 rounded-full object-cover" on:error={handleImageError} />
 							{:else if (user?.user_metadata?.first_name || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email)}
 								<div class="w-8 h-8 rounded-full bg-primary-600 text-white flex items-center justify-center text-sm font-medium">{getInitial(user)}</div>
 							{:else}

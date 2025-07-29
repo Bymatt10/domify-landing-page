@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
+	import SearchSuggestions from '$lib/components/SearchSuggestions.svelte';
 
 	type Category = {
 		id: number;
@@ -17,27 +18,47 @@
 	let error: string | null = null;
 	let searchQuery = '';
 
-	// Mapeo de categorías a íconos SVG modernos y colores
+	// Mapeo de categorías a íconos SVG modernos y colores (actualizado para coincidir con el home)
 	const categoryIcons: Record<string, { icon: string; color: string; bgColor: string }> = {
-		'limpieza': {
-			icon: 'M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z',
-			color: 'text-blue-600',
-			bgColor: 'bg-blue-50'
-		},
-		'plomeria': {
-			icon: 'M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v-2m6-6V4m6 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m0 4v2m0-6V4',
-			color: 'text-cyan-600',
-			bgColor: 'bg-cyan-50'
+		'electricistas': {
+			icon: 'M13 10V3L4 14h7v7l9-11h-7z',
+			color: 'text-yellow-600',
+			bgColor: 'bg-yellow-50'
 		},
 		'electricidad': {
 			icon: 'M13 10V3L4 14h7v7l9-11h-7z',
 			color: 'text-yellow-600',
 			bgColor: 'bg-yellow-50'
 		},
+		'fontaneros': {
+			icon: 'M15 8a3 3 0 11-6 0 3 3 0 016 0z M19 13a4 4 0 10-8 0v3H5v6h14v-6h-4v-3z',
+			color: 'text-cyan-600',
+			bgColor: 'bg-cyan-50'
+		},
+		'plomeria': {
+			icon: 'M15 8a3 3 0 11-6 0 3 3 0 016 0z M19 13a4 4 0 10-8 0v3H5v6h14v-6h-4v-3z',
+			color: 'text-cyan-600',
+			bgColor: 'bg-cyan-50'
+		},
+		'plomeros': {
+			icon: 'M15 8a3 3 0 11-6 0 3 3 0 016 0z M19 13a4 4 0 10-8 0v3H5v6h14v-6h-4v-3z',
+			color: 'text-cyan-600',
+			bgColor: 'bg-cyan-50'
+		},
 		'jardineria': {
 			icon: 'M12 2l3.09 6.26L22 9l-5 4.87L18.18 22 12 18.27 5.82 22 7 13.87 2 9l6.91-.74L12 2z',
 			color: 'text-green-600',
 			bgColor: 'bg-green-50'
+		},
+		'limpieza-casas': {
+			icon: 'M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z',
+			color: 'text-blue-600',
+			bgColor: 'bg-blue-50'
+		},
+		'limpieza': {
+			icon: 'M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z',
+			color: 'text-blue-600',
+			bgColor: 'bg-blue-50'
 		},
 		'construccion': {
 			icon: 'M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4H6zM3 6h18M8 6v4M16 6v4',
@@ -49,16 +70,106 @@
 			color: 'text-purple-600',
 			bgColor: 'bg-purple-50'
 		},
+		'ensamblaje': {
+			icon: 'M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 004.486-6.336l-3.276 3.277a3.004 3.004 0 01-2.25-2.25l3.276-3.276a4.5 4.5 0 00-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437l1.745-1.437m6.615 8.206L15.75 15.75M4.867 19.125h.008v.008h-.008v-.008z',
+			color: 'text-indigo-600',
+			bgColor: 'bg-indigo-50'
+		},
+		'mudanza': {
+			icon: 'M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12',
+			color: 'text-red-600',
+			bgColor: 'bg-red-50'
+		},
+		'carpinteria': {
+			icon: 'M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 004.486-6.336l-3.276 3.277a3.004 3.004 0 01-2.25-2.25l3.276-3.276a4.5 4.5 0 00-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437l1.745-1.437m6.615 8.206L15.75 15.75M4.867 19.125h.008v.008h-.008v-.008z',
+			color: 'text-amber-600',
+			bgColor: 'bg-amber-50'
+		},
+		'tecnologia': {
+			icon: 'M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z',
+			color: 'text-blue-600',
+			bgColor: 'bg-blue-50'
+		},
+		'seguridad': {
+			icon: 'M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z',
+			color: 'text-emerald-600',
+			bgColor: 'bg-emerald-50'
+		},
 		'default': {
 			icon: 'M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0H8m8 0v6l-8-6',
 			color: 'text-gray-600',
 			bgColor: 'bg-gray-50'
+		},
+		'albañileria': {
+			icon: 'M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4H6zM3 6h18M8 6v4M16 6v4',
+			color: 'text-orange-600',
+			bgColor: 'bg-orange-50'
+		},
+		'albañil': {
+			icon: 'M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4H6zM3 6h18M8 6v4M16 6v4',
+			color: 'text-orange-600',
+			bgColor: 'bg-orange-50'
+		},
+		'muebles': {
+			icon: 'M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 004.486-6.336l-3.276 3.277a3.004 3.004 0 01-2.25-2.25l3.276-3.276a4.5 4.5 0 00-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437l1.745-1.437m6.615 8.206L15.75 15.75M4.867 19.125h.008v.008h-.008v-.008z',
+			color: 'text-indigo-600',
+			bgColor: 'bg-indigo-50'
 		}
 	};
 
 	function getCategoryIcon(categoryName: string) {
-		const key = categoryName.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-		return categoryIcons[key] || categoryIcons['default'];
+		// Normalizar el nombre de la categoría
+		const normalizedName = categoryName.toLowerCase()
+			.normalize("NFD")
+			.replace(/[\u0300-\u036f]/g, "")
+			.replace(/[^a-z0-9\s]/g, "")
+			.trim();
+		
+		console.log('🔍 Looking for icon for category:', categoryName, '-> normalized:', normalizedName);
+		
+		// Buscar coincidencias exactas primero
+		if (categoryIcons[normalizedName]) {
+			console.log('✅ Exact match found for:', normalizedName);
+			return categoryIcons[normalizedName];
+		}
+		
+		// Buscar coincidencias parciales
+		for (const [key, iconData] of Object.entries(categoryIcons)) {
+			if (normalizedName.includes(key) || key.includes(normalizedName)) {
+				console.log('✅ Partial match found:', key, 'for', normalizedName);
+				return iconData;
+			}
+		}
+		
+		// Buscar por palabras clave
+		const keywords = {
+			'electric': 'electricistas',
+			'plom': 'fontaneros',
+			'fontan': 'fontaneros',
+			'jardin': 'jardineria',
+			'limpi': 'limpieza',
+			'construc': 'construccion',
+			'pint': 'pintura',
+			'ensambl': 'ensamblaje',
+			'mudanz': 'mudanza',
+			'carpint': 'carpinteria',
+			'tech': 'tecnologia',
+			'segur': 'seguridad',
+			'albañil': 'albañileria',
+			'muebl': 'muebles',
+			'comput': 'tecnologia',
+			'vigil': 'seguridad'
+		};
+		
+		for (const [keyword, iconKey] of Object.entries(keywords)) {
+			if (normalizedName.includes(keyword)) {
+				console.log('✅ Keyword match found:', keyword, '->', iconKey);
+				return categoryIcons[iconKey];
+			}
+		}
+		
+		console.log('❌ No match found, using default icon for:', normalizedName);
+		return categoryIcons['default'];
 	}
 
 	// Función para filtrar categorías

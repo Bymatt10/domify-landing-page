@@ -4,6 +4,7 @@
 	import { handleEmailConfirmationError } from '$lib/auth-helpers';
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
+	import { cleanPKCEState } from '$lib/auth';
 
 	let email = '';
 	let password = '';
@@ -23,6 +24,10 @@
 			
 			if (decodedError.includes('exception:')) {
 				error = 'Error en la autenticación con Google. Por favor, inténtalo de nuevo.';
+			} else if (decodedError.includes('pkceError:')) {
+				error = decodedError.replace('pkceError:', '');
+				// Clean PKCE state for retry
+				cleanPKCEState();
 			} else if (decodedError.includes('oauthError:')) {
 				error = decodedError.replace('oauthError:', '');
 			} else if (decodedError.includes('profileError:')) {
@@ -109,10 +114,17 @@
 			loading = true;
 			error = '';
 
+			// Clean any existing PKCE state before starting new OAuth flow
+			cleanPKCEState();
+
+			// Use current environment URL for redirect
+			const currentUrl = window.location.origin;
+			const redirectUrl = `${currentUrl}/auth/callback`;
+
 			const { data, error: googleError } = await supabase.auth.signInWithOAuth({
 				provider: 'google',
 				options: {
-					redirectTo: 'https://domify.app/auth/callback',
+					redirectTo: redirectUrl,
 					queryParams: {
 						access_type: 'offline',
 						prompt: 'consent',
@@ -121,7 +133,14 @@
 			});
 
 			if (googleError) {
-				error = googleError.message;
+				// Handle specific PKCE errors
+				if (googleError.message.includes('code challenge') || googleError.message.includes('code verifier')) {
+					error = 'Error de autenticación. Por favor, intenta de nuevo.';
+					// Clean state and suggest retry
+					cleanPKCEState();
+				} else {
+					error = googleError.message;
+				}
 			} else {
 				// El usuario será redirigido a Google para autenticación
 				// No necesitamos hacer nada más aquí, el callback manejará el resto
@@ -139,10 +158,15 @@
 		try {
 			loading = true;
 			error = '';
+			
+			// Use current environment URL for redirect
+			const currentUrl = window.location.origin;
+			const redirectUrl = `${currentUrl}/auth/callback`;
+			
 			const { data, error: fbError } = await supabase.auth.signInWithOAuth({
 				provider: 'facebook',
 				options: {
-					redirectTo: 'https://domify.app/auth/callback'
+					redirectTo: redirectUrl
 				}
 			});
 			if (fbError) {
