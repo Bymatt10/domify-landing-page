@@ -4,11 +4,20 @@ import { getOrCreateUserProfile } from '$lib/auth-fixes'
 export const load: PageServerLoad = async ({ url, locals: { supabase } }) => {
   const code = url.searchParams.get('code')
   const next = url.searchParams.get('next') ?? '/'
+  const error = url.searchParams.get('error')
+  const errorDescription = url.searchParams.get('error_description')
+
+  // Handle OAuth errors from Google
+  if (error) {
+    console.error('❌ OAuth Error from Google:', { error, errorDescription });
+    throw redirect(303, `/auth/login?error=oauthError:${encodeURIComponent(errorDescription || error)}`)
+  }
 
   if (code) {
     console.log('=== OAuth Callback Debug ===');
     console.log('Code recibido:', code ? 'SÍ' : 'NO');
     console.log('Next URL:', next);
+    console.log('URL completa:', url.toString());
     
     try {
       const { data, error } = await supabase.auth.exchangeCodeForSession(code)
