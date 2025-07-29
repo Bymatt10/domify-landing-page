@@ -49,71 +49,30 @@ export async function safeGetUserProfile(supabase: SupabaseClient, userId: strin
     return { profile: null, error: err };
   }
 }
-interface CustomerProfile {
-  first_name: string;
-  last_name: string;
-  [key: string]: any;
-}
 
 /**
  * Verifica si una tabla existe en la base de datos
  */
 export async function tableExists(supabase: SupabaseClient, tableName: string): Promise<boolean> {
   try {
-    // Intentar hacer una consulta mínima a la tabla
     const { data, error } = await supabase
       .from(tableName)
       .select('*')
       .limit(1);
 
-    // Si hay un error específico sobre tabla no existente
     if (error && 
        (error.message.includes('does not exist') || 
         error.code === '42P01')) {
       return false;
     }
 
-    // Si no hay error específico de tabla, asumimos que existe
     return true;
   } catch (error) {
     console.error(`Error verificando tabla ${tableName}:`, error);
-    // En caso de duda, devolver false
     return false;
   }
 }
-      .eq('user_id', userId)
-      .single();
 
-    if (!profileError && existingProfile) {
-      return { profile: existingProfile, created: false, error: null };
-    }
-
-    // Si no existe en customers, crearlo
-    const { data: newProfile, error: createError } = await supabase
-      .from('customers')
-      .insert({
-        user_id: userId,
-        first_name: profileData.first_name,
-        last_name: profileData.last_name
-      })
-      .select()
-      .single();
-
-    if (createError) {
-      console.error('Error creando perfil de usuario:', createError);
-      return { profile: null, created: false, error: createError };
-    }
-
-    return { profile: newProfile, created: true, error: null };
-  } catch (error) {
-    console.error('Error inesperado en getOrCreateUserProfile:', error);
-    return {
-      profile: null,
-      created: false,
-      error: error instanceof Error ? error : new Error('Error desconocido')
-    };
-  }
-}
 /**
  * Crea un perfil de usuario de forma segura
  */
@@ -154,7 +113,6 @@ export async function safeCreateUserProfile(
 
 /**
  * Obtiene o crea un perfil de usuario
- * Función todo-en-uno para casos comunes
  */
 export async function getOrCreateUserProfile(
   supabase: SupabaseClient,
@@ -165,7 +123,6 @@ export async function getOrCreateUserProfile(
     phone_number?: string;
   }
 ) {
-  // Primero intentar obtener el perfil existente
   const { profile: existingProfile, error: getError } = await safeGetUserProfile(supabase, userId);
   
   if (existingProfile) {
@@ -176,7 +133,6 @@ export async function getOrCreateUserProfile(
     return { profile: null, created: false, error: getError };
   }
   
-  // Si no existe, crearlo
   const { profile: newProfile, error: createError } = await safeCreateUserProfile(
     supabase,
     userId,
@@ -192,7 +148,6 @@ export async function getOrCreateUserProfile(
 
 /**
  * Verifica si un usuario tiene un rol específico
- * Ahora obtiene el rol desde auth.users en lugar de customers
  */
 export async function checkUserRole(
   supabase: SupabaseClient,
@@ -200,7 +155,6 @@ export async function checkUserRole(
   requiredRole: 'customer' | 'provider' | 'admin'
 ) {
   try {
-    // Obtener el rol desde auth.users
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     
     if (userError || !user) {
@@ -218,4 +172,4 @@ export async function checkUserRole(
     console.error('Exception checking user role:', err);
     return { hasRole: false, profile: null, error: err };
   }
-} 
+}
