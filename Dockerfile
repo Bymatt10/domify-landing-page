@@ -29,7 +29,9 @@ ENV FROM_EMAIL=$FROM_EMAIL
 ENV PORT=4000
 ENV HOST=0.0.0.0
 
-RUN npm run build
+RUN npm run build:prod
+RUN ls -la /app/build || echo "Build directory not found, checking current directory:"
+RUN ls -la /app/ || echo "App directory contents:"
 
 FROM node:18-alpine AS production
 
@@ -44,8 +46,10 @@ COPY package*.json ./
 
 RUN npm ci --only=production && npm cache clean --force
 
-COPY --from=builder --chown=svelte:nodejs /app/build ./build
+# Copy the entire build output (adapts to different adapters)
+COPY --from=builder --chown=svelte:nodejs /app/build ./
 COPY --from=builder --chown=svelte:nodejs /app/static ./static
+COPY --from=builder --chown=svelte:nodejs /app/package.json ./package.json
 
 
 ARG PUBLIC_SUPABASE_URL
@@ -73,7 +77,7 @@ USER svelte
 EXPOSE 4000
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-  CMD curl -f http://localhost:4000/api/health || exit 1
+  CMD curl -f http://localhost:4000/api/debug/server-status || exit 1
 
-# Start the application
-CMD ["node", "build/index.js"]
+# Start the application (adapts to different adapters)
+CMD ["node", "index.js"]
