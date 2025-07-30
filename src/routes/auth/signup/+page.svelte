@@ -158,6 +158,9 @@
 		try {
 			loading = true;
 			error = '';
+
+			// Clean any existing PKCE state before starting new OAuth flow
+			cleanPKCEState();
 			
 			// Use helper function for redirect URL
 			const redirectUrl = getOAuthRedirectUrl();
@@ -169,7 +172,14 @@
 				}
 			});
 			if (fbError) {
-				error = fbError.message;
+				// Handle specific PKCE errors
+				if (fbError.message.includes('code challenge') || fbError.message.includes('code verifier')) {
+					error = 'Error de autenticación. Por favor, intenta de nuevo.';
+					// Clean state and suggest retry
+					cleanPKCEState();
+				} else {
+					error = fbError.message;
+				}
 			}
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'Error inesperado';

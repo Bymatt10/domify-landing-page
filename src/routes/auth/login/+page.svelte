@@ -136,6 +136,9 @@
 			error = '';
 			
 			console.log('🔄 Iniciando login con Facebook...');
+
+			// Clean any existing PKCE state before starting new OAuth flow
+			cleanPKCEState();
 			
 			// Use helper function for redirect URL
 			const redirectUrl = getOAuthRedirectUrl();
@@ -162,7 +165,15 @@
 			
 			if (fbError) {
 				console.error('❌ Error en login de Facebook:', fbError);
-				error = fbError.message || 'Error al conectar con Facebook';
+				
+				// Handle specific PKCE errors
+				if (fbError.message.includes('code challenge') || fbError.message.includes('code verifier')) {
+					error = 'Error de autenticación. Por favor, intenta de nuevo.';
+					// Clean state and suggest retry
+					cleanPKCEState();
+				} else {
+					error = fbError.message || 'Error al conectar con Facebook';
+				}
 			} else if (data) {
 				console.log('✅ Login de Facebook iniciado correctamente');
 				// El usuario será redirigido automáticamente
