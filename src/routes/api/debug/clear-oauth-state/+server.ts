@@ -1,0 +1,1 @@
+import { json } from "@sveltejs/kit"; export const GET = async ({ locals: { supabase } }) => { try { await supabase.auth.signOut(); return json({ success: true, message: "OAuth state cleared successfully" }); } catch (error) { return json({ success: false, error: error.message }); } };
