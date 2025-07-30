@@ -44,7 +44,7 @@ WORKDIR /app
 
 COPY package*.json ./
 
-RUN npm ci --only=production && npm cache clean --force
+RUN npm ci --omit=dev && npm cache clean --force
 
 # Copy the entire build output (adapts to different adapters)
 COPY --from=builder --chown=svelte:nodejs /app/.svelte-kit/output/server ./
@@ -80,4 +80,10 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
   CMD curl -f http://localhost:4000/api/debug/server-status || exit 1
 
 # Start the application (adapts to different adapters)
-CMD ["node", "index.js"]
+# Add some debugging to see what's happening
+RUN ls -la /app/
+RUN echo "=== Contents of current directory ===" && ls -la
+RUN echo "=== Package.json content ===" && head -20 package.json || echo "No package.json found"
+
+# Try to start with better error handling
+CMD ["sh", "-c", "echo 'Starting application...' && echo 'Current directory:' && pwd && echo 'Files:' && ls -la && echo 'Starting Node.js...' && node index.js"]
