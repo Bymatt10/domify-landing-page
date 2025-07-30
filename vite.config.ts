@@ -23,5 +23,9 @@ export default defineConfig({
 	server: {
 		port: 5173,
 		strictPort: false,
+	},
+	preview: {
+		port: 4000,
+		host: '0.0.0.0'
 	}
 });

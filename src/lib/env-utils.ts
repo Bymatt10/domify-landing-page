@@ -241,3 +241,39 @@ export function getFromEmail(): string {
 	// Default fallback
 	return 'noreply@domify.app';
 } 
+
+/**
+ * Verifica que todas las variables de entorno críticas estén configuradas
+ */
+export function validateEnvironment(): { valid: boolean; missing: string[] } {
+	const requiredVars = [
+		'PUBLIC_SUPABASE_URL',
+		'PUBLIC_SUPABASE_ANON_KEY',
+		'PRIVATE_SUPABASE_SERVICE_ROLE_KEY'
+	];
+
+	const missing: string[] = [];
+
+	for (const varName of requiredVars) {
+		if (!process.env[varName]) {
+			missing.push(varName);
+		}
+	}
+
+	return {
+		valid: missing.length === 0,
+		missing
+	};
+}
+
+/**
+ * Obtiene la configuración del servidor
+ */
+export function getServerConfig() {
+	return {
+		port: process.env.PORT || '4000',
+		host: process.env.HOST || '0.0.0.0',
+		nodeEnv: process.env.NODE_ENV || 'development',
+		isProduction: process.env.NODE_ENV === 'production'
+	};
+} 
