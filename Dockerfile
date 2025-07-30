@@ -30,8 +30,8 @@ ENV PORT=4000
 ENV HOST=0.0.0.0
 
 RUN npm run build:prod
-RUN ls -la /app/build || echo "Build directory not found, checking current directory:"
-RUN ls -la /app/ || echo "App directory contents:"
+RUN ls -la /app/.svelte-kit/output/server || echo "Server output directory not found, checking current directory:"
+RUN ls -la /app/.svelte-kit/output/ || echo "Output directory contents:"
 
 FROM node:18-alpine AS production
 
@@ -47,7 +47,7 @@ COPY package*.json ./
 RUN npm ci --only=production && npm cache clean --force
 
 # Copy the entire build output (adapts to different adapters)
-COPY --from=builder --chown=svelte:nodejs /app/build ./
+COPY --from=builder --chown=svelte:nodejs /app/.svelte-kit/output/server ./
 COPY --from=builder --chown=svelte:nodejs /app/static ./static
 COPY --from=builder --chown=svelte:nodejs /app/package.json ./package.json
 
