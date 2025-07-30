@@ -155,7 +155,9 @@
 				hasData: !!data,
 				hasError: !!fbError,
 				errorMessage: fbError?.message || 'NO ERROR',
-				redirectUrl
+				errorDetails: fbError,
+				redirectUrl,
+				url: data?.url
 			});
 			
 			if (fbError) {
