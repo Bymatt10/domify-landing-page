@@ -4,6 +4,7 @@
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
 	import { cleanPKCEState } from '$lib/auth';
+	import { getOAuthRedirectUrl } from '$lib/auth-helpers';
 
 	let email = '';
 	let password = '';
@@ -63,9 +64,8 @@
 			// Clean any existing PKCE state before starting new OAuth flow
 			cleanPKCEState();
 
-			// Use current environment URL for redirect
-			const currentUrl = window.location.origin;
-			const redirectUrl = `${currentUrl}/auth/callback?next=/admin`;
+			// Use helper function for redirect URL
+			const redirectUrl = getOAuthRedirectUrl('?next=/admin');
 
 			// Al iniciar desde el panel de admin, nos aseguramos de que el callback
 			// nos devuelva aquí para ser validados por el guardián del layout.

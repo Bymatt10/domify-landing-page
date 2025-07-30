@@ -158,3 +158,29 @@ export async function signUpWithProfile(profile: UserProfile, password: string, 
 		};
 	}
 } 
+
+/**
+ * Obtiene la URL de redirección correcta para OAuth basada en el entorno
+ */
+export function getOAuthRedirectUrl(queryParams: string = ''): string {
+	const basePath = '/auth/callback';
+	const fullPath = queryParams ? `${basePath}${queryParams}` : basePath;
+	
+	// En producción, usar siempre el dominio de producción
+	if (typeof window !== 'undefined') {
+		const hostname = window.location.hostname;
+		
+		// Si estamos en localhost, usar localhost
+		if (hostname === 'localhost' || hostname === '127.0.0.1') {
+			return `${window.location.origin}${fullPath}`;
+		}
+		
+		// Si estamos en el dominio de producción, usar el dominio de producción
+		if (hostname === 'domify.app' || hostname.endsWith('.domify.app')) {
+			return `https://domify.app${fullPath}`;
+		}
+	}
+	
+	// Fallback: usar el dominio de producción
+	return `https://domify.app${fullPath}`;
+} 

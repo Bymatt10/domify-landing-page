@@ -5,6 +5,7 @@
 	import { invalidateAll } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { cleanPKCEState, clearOAuthStateAndRetry } from '$lib/auth';
+	import { getOAuthRedirectUrl } from '$lib/auth-helpers';
 
 	let email = '';
 	let password = '';
@@ -85,9 +86,8 @@
 			// Clean any existing PKCE state before starting new OAuth flow
 			cleanPKCEState();
 
-			// Use current environment URL for redirect
-			const currentUrl = window.location.origin;
-			const redirectUrl = `${currentUrl}/auth/callback`;
+			// Use helper function for redirect URL
+			const redirectUrl = getOAuthRedirectUrl();
 
 			const { data, error: googleError } = await supabase.auth.signInWithOAuth({
 				provider: 'google',
@@ -137,9 +137,8 @@
 			
 			console.log('🔄 Iniciando login con Facebook...');
 			
-			// Use current environment URL for redirect
-			const currentUrl = window.location.origin;
-			const redirectUrl = `${currentUrl}/auth/callback`;
+			// Use helper function for redirect URL
+			const redirectUrl = getOAuthRedirectUrl();
 			
 			const { data, error: fbError } = await supabase.auth.signInWithOAuth({
 				provider: 'facebook',
