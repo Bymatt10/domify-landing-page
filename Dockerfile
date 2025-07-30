@@ -8,7 +8,6 @@ COPY package*.json ./
 RUN npm ci
 
 COPY . .
-COPY start.sh .
 
 ARG PUBLIC_SUPABASE_URL
 ARG PUBLIC_SUPABASE_ANON_KEY
