@@ -1,6 +1,8 @@
-# Domify - Platforma de Servicios
+# Domify
 
-Una plataforma completa para conectar clientes con proveedores de servicios.
+A modern service marketplace platform built with SvelteKit.
+
+<!-- Last deployment: 2024-07-30 -->
 
 ## 🚀 Características
 
