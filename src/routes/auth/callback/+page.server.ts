@@ -1,17 +1,67 @@
 import { redirect } from '@sveltejs/kit'
 import type { PageServerLoad } from './$types'
 import { getOrCreateUserProfile } from '$lib/auth-fixes'
+
+// Environment validation
+function validateOAuthEnvironment() {
+  const required = [
+    'PUBLIC_SUPABASE_URL',
+    'PUBLIC_SUPABASE_ANON_KEY'
+  ];
+  
+  const missing = required.filter(env => !process.env[env]);
+  
+  if (missing.length > 0) {
+    console.error('❌ Missing required environment variables:', missing);
+    return { valid: false, missing };
+  }
+  
+  // Validate URL format
+  const supabaseUrl = process.env.PUBLIC_SUPABASE_URL;
+  if (supabaseUrl && !supabaseUrl.startsWith('http')) {
+    console.error('❌ Invalid SUPABASE_URL format:', supabaseUrl);
+    return { valid: false, missing: ['Valid PUBLIC_SUPABASE_URL'] };
+  }
+  
+  return { valid: true, missing: [] };
+}
+
+// Timeout configurations
+const CALLBACK_TIMEOUT = 25000; // 25 seconds - well under most server timeouts
+const PROFILE_CREATION_TIMEOUT = 15000; // 15 seconds for profile operations
+
+// Helper function to create a timeout promise
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, operation: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(`Timeout after ${timeoutMs}ms in ${operation}`)), timeoutMs)
+    )
+  ]);
+}
+
 export const load: PageServerLoad = async ({ url, locals: { supabase } }) => {
   const startTime = Date.now();
   const requestId = Math.random().toString(36).substring(7);
   
-  try {
+  // Wrap the entire callback in a timeout to prevent 502 errors
+  return await withTimeout(
+    (async () => {
+      try {
+    // Validate environment first to prevent configuration-related 502 errors
+    const envValidation = validateOAuthEnvironment();
+    if (!envValidation.valid) {
+      console.error(`[${requestId}] ❌ Environment validation failed:`, envValidation.missing);
+      throw redirect(303, `/auth/login?error=configError:${encodeURIComponent('Error de configuración del servidor. Contacta soporte.')}`);
+    }
+
     const code = url.searchParams.get('code')
     const next = url.searchParams.get('next') ?? '/'
     const error = url.searchParams.get('error')
     const errorDescription = url.searchParams.get('error_description')
 
     console.log(`[${requestId}] === OAuth Callback Debug ===`);
+    console.log(`[${requestId}] Environment validation: ✅ PASSED`);
     console.log(`[${requestId}] Code received:`, code ? `YES (length: ${code.length})` : 'NO');
     console.log(`[${requestId}] Next URL:`, next);
     console.log(`[${requestId}] Full URL:`, url.toString());
@@ -36,10 +86,26 @@ export const load: PageServerLoad = async ({ url, locals: { supabase } }) => {
     if (code) {
     
     try {
+      // Quick health check of Supabase client before proceeding
+      console.log(`[${requestId}] 🏥 Performing Supabase health check...`);
+      try {
+        const healthCheckStart = Date.now();
+        await supabase.from('customers').select('id').limit(1);
+        const healthCheckTime = Date.now() - healthCheckStart;
+        console.log(`[${requestId}] ✅ Supabase health check passed in ${healthCheckTime}ms`);
+      } catch (healthError) {
+        console.error(`[${requestId}] ❌ Supabase health check failed:`, healthError);
+        throw redirect(303, `/auth/login?error=dbError:${encodeURIComponent('Error de conexión con la base de datos. Intenta de nuevo.')}`);
+      }
+
       console.log(`[${requestId}] 🔄 Attempting to exchange code for session...`);
       const exchangeStartTime = Date.now();
       
-      const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+      const { data, error } = await withTimeout(
+        supabase.auth.exchangeCodeForSession(code),
+        10000, // 10 seconds for code exchange
+        'exchangeCodeForSession'
+      )
       
       const exchangeTime = Date.now() - exchangeStartTime;
       console.log(`[${requestId}] 📊 exchangeCodeForSession completed in ${exchangeTime}ms:`, {
@@ -112,13 +178,17 @@ export const load: PageServerLoad = async ({ url, locals: { supabase } }) => {
       console.log(`[${requestId}] 🔄 Attempting to get/create user profile...`);
       const profileStartTime = Date.now();
       
-      const { profile, created, error: profileError } = await getOrCreateUserProfile(
-        supabase,
-        data.user.id,
-        {
-          first_name: firstName,
-          last_name: lastName
-        }
+      const { profile, created, error: profileError } = await withTimeout(
+        getOrCreateUserProfile(
+          supabase,
+          data.user.id,
+          {
+            first_name: firstName,
+            last_name: lastName
+          }
+        ),
+        PROFILE_CREATION_TIMEOUT,
+        'getOrCreateUserProfile'
       );
 
       const profileTime = Date.now() - profileStartTime;
@@ -136,6 +206,27 @@ export const load: PageServerLoad = async ({ url, locals: { supabase } }) => {
           email: data.user.email,
           profileData: { firstName, lastName }
         });
+        
+        // Try a simple fallback approach - allow user to continue without profile creation
+        // They can create their profile later from the app
+        console.log(`[${requestId}] 🔄 Attempting fallback: continue without profile creation...`);
+        
+        try {
+          // Just verify the session is valid and continue
+          const { data: { user: sessionUser } } = await supabase.auth.getUser();
+          if (sessionUser && sessionUser.id === data.user.id) {
+            console.log(`[${requestId}] ✅ Session valid, proceeding without profile. User can create profile later.`);
+            
+            const totalTime = Date.now() - startTime;
+            console.log(`[${requestId}] ✅ OAuth callback completed with fallback in ${totalTime}ms for:`, data.user.email);
+            console.log(`[${requestId}] 🔄 Redirecting to profile completion page`);
+            
+            // Redirect to a profile setup page where user can complete their profile
+            return redirect(303, `/profile/info?setup=true&error=profile_creation_failed`);
+          }
+        } catch (fallbackError) {
+          console.error(`[${requestId}] ❌ Fallback also failed:`, fallbackError);
+        }
         
         let msg = 'Error creando perfil de usuario';
         if (profileError instanceof Error) {
@@ -195,10 +286,16 @@ export const load: PageServerLoad = async ({ url, locals: { supabase } }) => {
       if (e instanceof Error) {
         msg = e.message;
         // Add more specific error handling
-        if (e.message.includes('Connection') || e.message.includes('timeout')) {
+        if (e.message.includes('Timeout after') || e.message.includes('timeout')) {
+          msg = 'La autenticación está tardando más de lo esperado. Por favor, intenta de nuevo.';
+        } else if (e.message.includes('Connection') || e.message.includes('ECONNRESET')) {
           msg = 'Error de conexión con el servidor. Intenta de nuevo.';
         } else if (e.message.includes('Database') || e.message.includes('relation')) {
           msg = 'Error de base de datos. Contacta soporte.';
+        } else if (e.message.includes('getOrCreateUserProfile')) {
+          msg = 'Error creando tu perfil. La autenticación fue exitosa, pero hay un problema con la configuración del perfil.';
+        } else if (e.message.includes('exchangeCodeForSession')) {
+          msg = 'Error intercambiando código de autenticación. Por favor, intenta iniciar sesión de nuevo.';
         }
       } else if (typeof e === 'string') {
         msg = e;
@@ -237,4 +334,11 @@ export const load: PageServerLoad = async ({ url, locals: { supabase } }) => {
     const msg = globalError instanceof Error ? globalError.message : 'Error crítico del servidor';
     throw redirect(303, `/auth/login?error=serverError:${encodeURIComponent(msg)}`);
   }
+    })(),
+    CALLBACK_TIMEOUT,
+    'OAuth callback'
+  ).catch((timeoutError) => {
+    console.error(`[${requestId}] ⏰ CALLBACK TIMEOUT after ${CALLBACK_TIMEOUT}ms:`, timeoutError);
+    throw redirect(303, '/auth/login?error=timeout:La autenticación tardó demasiado tiempo. Por favor, intenta de nuevo.');
+  });
 } 

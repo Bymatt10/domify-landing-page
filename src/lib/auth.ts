@@ -7,16 +7,28 @@ export function cleanPKCEState() {
   console.log('🧹 Limpiando estado de autenticación...');
 
   try {
-    // Limpiar localStorage
+    // Limpiar localStorage - pero preservar estado PKCE activo si estamos en callback
+    const isInCallback = window.location.pathname.includes('/auth/callback');
     const lsKeys = [];
+    
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (key && (key.includes('supabase') || 
           key.includes('sb-') || 
-          key.includes('pkce') || 
-          key.includes('code_verifier') ||
           key.includes('auth'))) {
-        lsKeys.push(key);
+        
+        // Durante callback, preservar PKCE keys activos
+        if (isInCallback && (key.includes('pkce') || key.includes('code_verifier'))) {
+          console.log(`  ⚠️ Preservando durante callback: ${key}`);
+          continue;
+        }
+        
+        // En otros casos, limpiar normalmente
+        if (!isInCallback && (key.includes('pkce') || key.includes('code_verifier'))) {
+          lsKeys.push(key);
+        } else if (!key.includes('pkce') && !key.includes('code_verifier')) {
+          lsKeys.push(key);
+        }
       }
     }
 
