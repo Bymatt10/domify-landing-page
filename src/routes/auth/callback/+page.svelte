@@ -1,55 +1,69 @@
-<script>
+<script lang="ts">
 	import { onMount } from 'svelte';
+	import { handleRedirectCallback } from '$lib/auth0';
 	import { goto } from '$app/navigation';
-	import { browser } from '$app/environment';
-	import { page } from '$app/stores';
-	let message = 'Procesando autenticación...';
-	let error = null;
 
-	onMount(() => {
-		if (!browser) return;
+	let loading = true;
+	let error = '';
 
-		// Este componente es solo visual, la redirección se maneja en +page.js y +page.server.ts
-		console.log('Procesando callback OAuth/Magic Link...');
-
-		// Detectar errores en la URL
-		const errorParam = $page.url.searchParams.get('error');
-		const errorDescription = $page.url.searchParams.get('error_description');
-
-		if (errorParam) {
-			error = errorDescription || errorParam;
-			message = 'Error de autenticación';
-			console.error('Error en callback de autenticación:', error);
-
-			// Redirigir al login después de mostrar el error
-			setTimeout(() => {
-				goto('/auth/login?error=' + encodeURIComponent(error));
-			}, 3000);
-			return;
+	onMount(async () => {
+		try {
+			console.log('🔄 Auth0 callback page loaded');
+			
+			// Handle the Auth0 redirect callback
+			const isCallback = await handleRedirectCallback();
+			
+			if (isCallback) {
+				console.log('✅ Auth0 callback handled successfully');
+				// Redirect to home page
+				goto('/');
+			} else {
+				console.log('❌ No Auth0 callback detected');
+				error = 'No se detectó una respuesta de autenticación válida';
+			}
+		} catch (e) {
+			console.error('💥 Error in Auth0 callback:', e);
+			error = e instanceof Error ? e.message : 'Error inesperado durante la autenticación';
+		} finally {
+			loading = false;
 		}
-
-		// Mostrar un mensaje de éxito después de un tiempo
-		setTimeout(() => {
-			message = 'Autenticación exitosa. Redirigiendo...';
-		}, 1500);
 	});
 </script>
 
-<div class="flex items-center justify-center min-h-screen bg-gray-100">
-	<div class="bg-white p-8 rounded-lg shadow-md max-w-md w-full text-center" role="alert" aria-live="polite">
-		{#if error}
-			<div class="text-red-500 mx-auto mb-4">
-				<svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-				</svg>
+<div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-600 to-primary-700 py-12 px-4 sm:px-6 lg:px-8">
+	<div class="max-w-md w-full bg-white p-8 rounded-lg shadow-xl text-center">
+		{#if loading}
+			<div class="mb-6">
+				<div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
 			</div>
-			<h1 class="text-xl font-semibold text-gray-800 mb-2">{message}</h1>
-			<p class="text-red-600">{error}</p>
-			<p class="text-gray-600 mt-4">Redirigiendo a la página de inicio de sesión...</p>
+			<h2 class="text-xl font-semibold text-gray-900 mb-2">Procesando autenticación...</h2>
+			<p class="text-gray-600">Por favor, espera mientras completamos tu inicio de sesión.</p>
+		{:else if error}
+			<div class="mb-6">
+				<div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto">
+					<svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+					</svg>
+				</div>
+			</div>
+			<h2 class="text-xl font-semibold text-gray-900 mb-2">Error de autenticación</h2>
+			<p class="text-gray-600 mb-4">{error}</p>
+			<button 
+				on:click={() => goto('/auth/login')}
+				class="w-full px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-colors duration-200"
+			>
+				Volver al login
+			</button>
 		{:else}
-			<div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto mb-4"></div>
-			<h1 class="text-xl font-semibold text-gray-800 mb-2">{message}</h1>
-			<p class="text-gray-600">Por favor, espera mientras completamos el proceso...</p>
+			<div class="mb-6">
+				<div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+					<svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+					</svg>
+				</div>
+			</div>
+			<h2 class="text-xl font-semibold text-gray-900 mb-2">¡Autenticación exitosa!</h2>
+			<p class="text-gray-600">Redirigiendo a la página principal...</p>
 		{/if}
 	</div>
 </div>

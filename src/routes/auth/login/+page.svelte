@@ -1,11 +1,9 @@
 <script lang="ts">
-	import { supabase } from '$lib/supabase';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { invalidateAll } from '$app/navigation';
 	import { onMount } from 'svelte';
-	import { cleanPKCEState, clearOAuthStateAndRetry } from '$lib/auth';
-	import { getOAuthRedirectUrl } from '$lib/auth-helpers';
+	import { loginWithGoogle, loginWithFacebook, handleRedirectCallback } from '$lib/auth0';
 
 	let email = '';
 	let password = '';
@@ -13,35 +11,34 @@
 	let error = '';
 	let showRetryButton = false;
 
-	// Capturar error de URL (desde OAuth callback)
-	onMount(() => {
-		const urlError = $page.url.searchParams.get('error');
-		if (urlError) {
-			// Decodificar y limpiar el mensaje de error
-			const decodedError = decodeURIComponent(urlError);
-			
-			if (decodedError.includes('exception:')) {
-				error = 'Error en la autenticación con Google. Por favor, inténtalo de nuevo.';
-				showRetryButton = true;
-			} else if (decodedError.includes('pkceError:')) {
-				error = decodedError.replace('pkceError:', '');
-				showRetryButton = true;
-				// Clean PKCE state for retry
-				cleanPKCEState();
-				console.log('🧹 PKCE state cleaned due to error');
-			} else if (decodedError.includes('oauthError:')) {
-				error = decodedError.replace('oauthError:', '');
-				showRetryButton = true;
-			} else if (decodedError.includes('profileError:')) {
-				error = 'Error creando tu perfil. Por favor, inténtalo de nuevo.';
-			} else {
-				error = decodedError;
+	// Handle Auth0 redirect callback
+	onMount(async () => {
+		try {
+			// Check if this is a callback from Auth0
+			const isCallback = await handleRedirectCallback();
+			if (isCallback) {
+				console.log('✅ Auth0 callback handled successfully');
+				// Redirect to home or intended page
+				const redirectTo = $page.url.searchParams.get('redirectTo') || '/';
+				window.location.href = redirectTo;
+				return;
 			}
+
+			// Check for errors
+			const urlError = $page.url.searchParams.get('error');
+			if (urlError) {
+				const decodedError = decodeURIComponent(urlError);
+				error = decodedError;
+				showRetryButton = true;
+			}
+		} catch (e) {
+			console.error('Error handling Auth0 callback:', e);
+			error = 'Error en la autenticación. Por favor, inténtalo de nuevo.';
+			showRetryButton = true;
 		}
 	});
 
 	function handleRetryOAuth() {
-		clearOAuthStateAndRetry();
 		error = '';
 		showRetryButton = false;
 	}
@@ -51,25 +48,9 @@
 			loading = true;
 			error = '';
 
-			// Use Supabase auth directly for session management
-			const { data, error: loginError } = await supabase.auth.signInWithPassword({
-				email,
-				password
-			});
-
-			if (loginError) {
-				error = loginError.message;
-				return;
-			}
-
-			if (data.user) {
-				console.log('Login successful:', data.user);
-				// Invalidate all to refresh the session
-				await invalidateAll();
-				// Redirect to home or intended page with full reload
-				const redirectTo = $page.url.searchParams.get('redirectTo') || '/';
-				window.location.href = redirectTo;
-			}
+			// For now, we'll use Auth0 for all authentication
+			// Email/password login can be implemented later with Auth0
+			error = 'Por favor, usa Google o Facebook para iniciar sesión.';
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'Error inesperado';
 		} finally {
@@ -82,86 +63,12 @@
 			loading = true;
 			error = '';
 
-			console.log('🔄 Iniciando login con Google...');
-
-			// AGGRESSIVE PKCE state cleanup for production
-			console.log('🧹 Limpieza agresiva de estado PKCE para producción...');
+			console.log('🔄 Iniciando login con Google via Auth0...');
 			
-			// Clean any existing PKCE state before starting new OAuth flow
-			cleanPKCEState();
-			
-			// Additional production-specific cleanup
-			if (typeof window !== 'undefined') {
-				// Force clear all Supabase-related storage
-				const keysToRemove = [];
-				
-				// localStorage cleanup
-				for (let i = 0; i < localStorage.length; i++) {
-					const key = localStorage.key(i);
-					if (key && (key.includes('supabase') || key.includes('sb-') || key.includes('auth'))) {
-						keysToRemove.push(key);
-					}
-				}
-				keysToRemove.forEach(key => {
-					localStorage.removeItem(key);
-					console.log(`🧹 Removed localStorage: ${key}`);
-				});
-				
-				// sessionStorage cleanup
-				const sessionKeysToRemove = [];
-				for (let i = 0; i < sessionStorage.length; i++) {
-					const key = sessionStorage.key(i);
-					if (key && (key.includes('supabase') || key.includes('sb-') || key.includes('auth'))) {
-						sessionKeysToRemove.push(key);
-					}
-				}
-				sessionKeysToRemove.forEach(key => {
-					sessionStorage.removeItem(key);
-					console.log(`🧹 Removed sessionStorage: ${key}`);
-				});
-				
-				// Wait a moment for cleanup to complete
-				await new Promise(resolve => setTimeout(resolve, 100));
-			}
-
-			// Use helper function for redirect URL
-			const redirectUrl = getOAuthRedirectUrl();
-
-			const { data, error: googleError } = await supabase.auth.signInWithOAuth({
-				provider: 'google',
-				options: {
-					redirectTo: redirectUrl,
-					queryParams: {
-						access_type: 'offline',
-						prompt: 'consent'
-					}
-				}
-			});
-
-			console.log('📡 Respuesta de Google OAuth:', {
-				hasData: !!data,
-				hasError: !!googleError,
-				errorMessage: googleError?.message || 'NO ERROR',
-				redirectUrl
-			});
-
-			if (googleError) {
-				console.error('❌ Error en login de Google:', googleError);
-				
-				// Handle specific PKCE errors
-				if (googleError.message.includes('code challenge') || googleError.message.includes('code verifier')) {
-					error = 'Error de autenticación. Por favor, intenta de nuevo.';
-					// Clean state and suggest retry
-					cleanPKCEState();
-				} else {
-					error = googleError.message || 'Error al conectar con Google';
-				}
-			} else if (data) {
-				console.log('✅ Login de Google iniciado correctamente');
-				// El usuario será redirigido automáticamente
-			}
+			await loginWithGoogle();
+			// User will be redirected to Auth0
 		} catch (e) {
-			console.error('💥 Excepción en login de Google:', e);
+			console.error('💥 Error en login de Google:', e);
 			error = e instanceof Error ? e.message : 'Error inesperado al conectar con Google';
 		} finally {
 			loading = false;
@@ -173,51 +80,12 @@
 			loading = true;
 			error = '';
 			
-			console.log('🔄 Iniciando login con Facebook...');
-
-			// Clean any existing PKCE state before starting new OAuth flow
-			cleanPKCEState();
+			console.log('🔄 Iniciando login con Facebook via Auth0...');
 			
-			// Use helper function for redirect URL
-			const redirectUrl = getOAuthRedirectUrl();
-			
-			const { data, error: fbError } = await supabase.auth.signInWithOAuth({
-				provider: 'facebook',
-				options: {
-					redirectTo: redirectUrl,
-					queryParams: {
-						access_type: 'offline',
-						prompt: 'consent'
-					}
-				}
-			});
-			
-			console.log('📡 Respuesta de Facebook OAuth:', {
-				hasData: !!data,
-				hasError: !!fbError,
-				errorMessage: fbError?.message || 'NO ERROR',
-				errorDetails: fbError,
-				redirectUrl,
-				url: data?.url
-			});
-			
-			if (fbError) {
-				console.error('❌ Error en login de Facebook:', fbError);
-				
-				// Handle specific PKCE errors
-				if (fbError.message.includes('code challenge') || fbError.message.includes('code verifier')) {
-					error = 'Error de autenticación. Por favor, intenta de nuevo.';
-					// Clean state and suggest retry
-					cleanPKCEState();
-				} else {
-					error = fbError.message || 'Error al conectar con Facebook';
-				}
-			} else if (data) {
-				console.log('✅ Login de Facebook iniciado correctamente');
-				// El usuario será redirigido automáticamente
-			}
+			await loginWithFacebook();
+			// User will be redirected to Auth0
 		} catch (e) {
-			console.error('💥 Excepción en login de Facebook:', e);
+			console.error('💥 Error en login de Facebook:', e);
 			error = e instanceof Error ? e.message : 'Error inesperado al conectar con Facebook';
 		} finally {
 			loading = false;
