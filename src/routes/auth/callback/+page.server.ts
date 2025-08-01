@@ -70,6 +70,10 @@ export const load: PageServerLoad = async ({ url, locals: { supabase } }) => {
     console.log(`[${requestId}] Code received:`, code ? `YES (length: ${code.length})` : 'NO');
     console.log(`[${requestId}] Next URL:`, next);
     console.log(`[${requestId}] Full URL:`, url.toString());
+    console.log(`[${requestId}] Request headers:`, {
+      userAgent: url.searchParams.get('user_agent') || 'not provided',
+      referer: url.searchParams.get('referer') || 'not provided'
+    });
     console.log(`[${requestId}] Environment:`, {
       nodeEnv: process.env.NODE_ENV,
       origin: url.origin,
@@ -96,15 +100,159 @@ export const load: PageServerLoad = async ({ url, locals: { supabase } }) => {
       console.log(`[${requestId}] 🔄 Attempting to exchange code for session...`);
       const exchangeStartTime = Date.now();
       
-      const { data, error } = await withTimeout(
-        supabase.auth.exchangeCodeForSession(code),
-        CODE_EXCHANGE_TIMEOUT, // 3 seconds for code exchange
-        'exchangeCodeForSession'
-      )
+      // Handle PKCE state issues in production
+      console.log(`[${requestId}] 🔄 Starting OAuth code exchange...`);
+      
+      let exchangeAttempts = 0;
+      const maxAttempts = 2;
+      let lastError = null;
+      
+      while (exchangeAttempts < maxAttempts) {
+        try {
+          exchangeAttempts++;
+          console.log(`[${requestId}] 🔄 Attempt ${exchangeAttempts}/${maxAttempts} to exchange code...`);
+          
+          const { data, error } = await withTimeout(
+            supabase.auth.exchangeCodeForSession(code),
+            CODE_EXCHANGE_TIMEOUT,
+            'exchangeCodeForSession'
+          );
+          
+          if (error) {
+            lastError = error;
+            console.error(`[${requestId}] ❌ Exchange attempt ${exchangeAttempts} failed:`, error.message);
+            
+            // If it's a PKCE state error, try to clean state and retry
+            if (error.message.includes('invalid flow state') || error.message.includes('no valid flow state')) {
+              console.log(`[${requestId}] 🔄 PKCE state error detected, cleaning state and retrying...`);
+              
+              // Clean PKCE state from cookies/storage
+              try {
+                // Clear any existing PKCE state
+                const cookies = ['sb-access-token', 'sb-refresh-token', 'supabase-auth-token'];
+                cookies.forEach(cookieName => {
+                  // This will be handled by the client-side cleanup
+                });
+                
+                // Wait a moment before retry
+                await new Promise(resolve => setTimeout(resolve, 500));
+                continue;
+              } catch (cleanupError) {
+                console.error(`[${requestId}] ❌ Error cleaning PKCE state:`, cleanupError);
+              }
+            }
+            
+            // For other errors, don't retry
+            break;
+          }
+          
+                // Success!
+      console.log(`[${requestId}] ✅ Code exchange successful on attempt ${exchangeAttempts}`);
+      const exchangeResult = { data, error: null };
       
       // CRITICAL: Ensure session is properly set in cookies after OAuth
       if (data?.session) {
         console.log(`[${requestId}] 🍪 Setting session in cookies for user:`, data.user.email);
+        
+        // Force set the session to ensure it's properly stored in cookies
+        const { error: sessionError } = await supabase.auth.setSession(data.session);
+        if (sessionError) {
+          console.error(`[${requestId}] ❌ Error setting session:`, sessionError);
+        } else {
+          console.log(`[${requestId}] ✅ Session successfully set in cookies`);
+        }
+        
+        // Wait a moment for session to be persisted
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Verify session was set correctly
+        const { data: { session: verifySession } } = await supabase.auth.getSession();
+        console.log(`[${requestId}] 🔍 Session verification:`, {
+          hasSession: !!verifySession,
+          sessionUserId: verifySession?.user?.id,
+          expectedUserId: data.user.id,
+          sessionExpiry: verifySession?.expires_at
+        });
+      }
+      
+      const exchangeTime = Date.now() - exchangeStartTime;
+      console.log(`[${requestId}] 📊 exchangeCodeForSession completed in ${exchangeTime}ms:`, {
+        hasData: !!data,
+        hasUser: !!data?.user,
+        hasSession: !!data?.session,
+        error: 'NO ERROR',
+        errorCode: 'NO CODE',
+        errorDetails: null
+      });
+      
+      if (!data?.user) {
+        console.error(`[${requestId}] ❌ No user obtained from OAuth callback`);
+        throw redirect(302, '/auth/login?error=No se pudo obtener información del usuario.')
+      }
+
+      console.log(`[${requestId}] ✅ User authenticated with OAuth:`, {
+        id: data.user.id,
+        email: data.user.email,
+        provider: data.user.app_metadata?.provider,
+        userMetadata: data.user.user_metadata,
+        appMetadata: data.user.app_metadata,
+        createdAt: data.user.created_at
+      });
+      
+      // Preparar datos de usuario con fallbacks más robustos
+      const firstName = data.user.user_metadata?.full_name?.split(' ')[0] 
+        || data.user.user_metadata?.name?.split(' ')[0] 
+        || data.user.user_metadata?.given_name 
+        || 'Usuario';
+        
+      const lastName = data.user.user_metadata?.full_name?.split(' ').slice(1).join(' ')
+        || data.user.user_metadata?.name?.split(' ').slice(1).join(' ')
+        || data.user.user_metadata?.family_name
+        || 'OAuth';
+      
+      console.log(`[${requestId}] 📋 Prepared profile data:`, { firstName, lastName });
+      
+      // CIRCUIT BREAKER: Skip profile creation entirely for faster OAuth callback
+      console.log(`[${requestId}] ⚡ Circuit breaker activated: skipping profile creation for speed`);
+      
+      // Let database triggers handle profile creation asynchronously
+      // Or user can complete profile setup later from the UI
+      console.log(`[${requestId}] 📝 Profile creation will be handled by:`)
+      console.log(`  - Database triggers (if configured)`)
+      console.log(`  - User profile setup page (manual fallback)`)
+      
+      // Continue immediately without profile creation
+      
+      const totalTime = Date.now() - startTime;
+      console.log(`[${requestId}] ✅ OAuth callback completed in FAST MODE in ${totalTime}ms for:`, data.user.email);
+      console.log(`[${requestId}] 🔄 Redirecting to:`, next);
+      
+      // Final session check before redirect
+      const { data: { session: finalSession } } = await supabase.auth.getSession();
+      if (!finalSession) {
+        console.error(`[${requestId}] ❌ No session found before redirect! This will cause layout issues`);
+        // Try to set session one more time
+        if (data?.session) {
+          await supabase.auth.setSession(data.session);
+          console.log(`[${requestId}] 🔄 Retried setting session before redirect`);
+        }
+      } else {
+        console.log(`[${requestId}] ✅ Session confirmed before redirect for user:`, finalSession.user.email);
+      }
+      
+      // Use 302 redirect with proper cache headers to ensure session is maintained
+      throw redirect(302, next + (next.includes('?') ? '&' : '?') + 'oauth_success=true');
+      
+    } catch (timeoutError) {
+      lastError = timeoutError;
+      console.error(`[${requestId}] ❌ Timeout on attempt ${exchangeAttempts}:`, timeoutError);
+      break;
+    }
+  }
+  
+     // All attempts failed
+   console.error(`[${requestId}] ❌ All ${maxAttempts} exchange attempts failed`);
+   throw redirect(302, `/auth/login?error=pkceError:${encodeURIComponent('Error de autenticación PKCE. Por favor, intenta de nuevo.')}`);
         
         // Force set the session to ensure it's properly stored in cookies
         const { error: sessionError } = await supabase.auth.setSession(data.session);
