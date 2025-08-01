@@ -51,6 +51,10 @@ export const load: PageServerLoad = async ({ url, locals: { supabase } }) => {
   const startTime = Date.now();
   const requestId = Math.random().toString(36).substring(7);
   
+  console.log(`[${requestId}] 🚀 OAuth callback started`);
+  console.log(`[${requestId}] 📍 URL:`, url.toString());
+  console.log(`[${requestId}] 🔧 Supabase client:`, !!supabase);
+  
   try {
     // Validate environment first to prevent configuration-related 502 errors
     const envValidation = validateOAuthEnvironment();
@@ -243,21 +247,38 @@ export const load: PageServerLoad = async ({ url, locals: { supabase } }) => {
     console.error(`[${requestId}] ❌ All ${maxAttempts} exchange attempts failed`);
     throw redirect(302, `/auth/login?error=pkceError:${encodeURIComponent('Error de autenticación PKCE. Por favor, intenta de nuevo.')}`);
     
-  } catch (error) {
-    // Handle redirects properly - don't treat them as errors
-    if (error instanceof Response && (error.status === 302 || error.status === 303)) {
-      console.log(`[${requestId}] 🔄 Redirect response (not an error):`, error.status, error.headers.get('location'));
-      throw error; // Re-throw redirects as-is
-    }
-    
-    console.error(`[${requestId}] 💥 Unhandled error in OAuth callback after ${Date.now() - startTime}ms:`, {
-      error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : null,
-      url: url.toString()
-    });
-    
-    // Fallback error redirect
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    throw redirect(302, `/auth/login?error=callbackError:${encodeURIComponent(errorMessage)}`);
-  }
+     } catch (error) {
+     // Handle redirects properly - don't treat them as errors
+     if (error instanceof Response && (error.status === 302 || error.status === 303)) {
+       console.log(`[${requestId}] 🔄 Redirect response (not an error):`, error.status, error.headers.get('location'));
+       throw error; // Re-throw redirects as-is
+     }
+     
+     console.error(`[${requestId}] 💥 Unhandled error in OAuth callback after ${Date.now() - startTime}ms:`, {
+       error: error instanceof Error ? error.message : String(error),
+       stack: error instanceof Error ? error.stack : null,
+       url: url.toString()
+     });
+     
+     // Better error message handling
+     let errorMessage = 'Error inesperado durante la autenticación';
+     
+     if (error instanceof Error) {
+       errorMessage = error.message;
+     } else if (typeof error === 'string') {
+       errorMessage = error;
+     } else if (error && typeof error === 'object') {
+       try {
+         errorMessage = JSON.stringify(error);
+       } catch (jsonError) {
+         errorMessage = 'Error complejo durante la autenticación';
+       }
+     }
+     
+     // Ensure error message is safe for URL encoding
+     const safeErrorMessage = errorMessage.replace(/[^\w\s\-\.]/g, ' ').substring(0, 100);
+     
+     console.log(`[${requestId}] 🔄 Redirecting with safe error:`, safeErrorMessage);
+     throw redirect(302, `/auth/login?error=callbackError:${encodeURIComponent(safeErrorMessage)}`);
+   }
 } 
