@@ -57,6 +57,7 @@ export const GET: RequestHandler = async ({ url, locals: { supabase } }) => {
         callbackUrl: `${url.origin}/auth/callback`,
         redirectUrls: [
           `${url.origin}/auth/callback`,
+          
           'https://domify.app/auth/callback'
         ],
         environment: {

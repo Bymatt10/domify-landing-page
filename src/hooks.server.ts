@@ -4,12 +4,51 @@ import type { Handle } from '@sveltejs/kit'
 import { ExceptionHandler } from '$lib/exceptions';
 import { getSupabaseUrl, getSupabaseAnonKey, getSupabaseServiceRoleKey } from '$lib/env-utils';
 import { rateLimitHandle } from '$lib/rate-limit-middleware';
+import { auth, auth0Config } from '$lib/auth0-server';
+import { sequence } from '@sveltejs/kit/hooks';
 
 // Get environment variables with fallbacks
 const supabaseUrl = getSupabaseUrl();
 const supabaseAnonKey = getSupabaseAnonKey();
 
-export const handle: Handle = async ({ event, resolve }) => {
+// Auth0 middleware
+const auth0Handle: Handle = async ({ event, resolve }) => {
+	// Apply Auth0 middleware to the request
+	const authMiddleware = auth(auth0Config);
+	
+	// Create a mock response object for Auth0 middleware
+	const mockRes = {
+		statusCode: 200,
+		headers: {},
+		setHeader: (name: string, value: string) => {
+			mockRes.headers[name] = value;
+		},
+		end: (body: string) => {
+			// Handle Auth0 redirects
+			if (body.includes('redirect')) {
+				const redirectMatch = body.match(/window\.location\.href\s*=\s*['"]([^'"]+)['"]/);
+				if (redirectMatch) {
+					return new Response(null, {
+						status: 302,
+						headers: { Location: redirectMatch[1] }
+					});
+				}
+			}
+			return new Response(body);
+		}
+	};
+
+	// Apply Auth0 middleware
+	await new Promise((resolve) => {
+		authMiddleware(event.request, mockRes, resolve);
+	});
+
+	// Continue with SvelteKit
+	return resolve(event);
+};
+
+// Supabase middleware (keep existing)
+const supabaseHandle: Handle = async ({ event, resolve }) => {
 	/**
 	 * Creates a Supabase client specific to this server request.
 	 *
@@ -131,7 +170,9 @@ export const handle: Handle = async ({ event, resolve }) => {
 			return name === 'content-range' || name === 'x-supabase-api-version'
 		},
 	})
-}
+};
+
+export const handle = sequence(auth0Handle, supabaseHandle);
 
 // Global error handler for API routes
 export const handleError = async ({ error, event }: { error: any; event: any }) => {

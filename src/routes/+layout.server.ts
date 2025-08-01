@@ -1,44 +1,75 @@
 import type { LayoutServerLoad } from './$types';
+import { isAuthenticated, getUser } from '$lib/auth0-server';
 
-export const load: LayoutServerLoad = async ({ locals, fetch }) => {
+export const load: LayoutServerLoad = async ({ locals, request }) => {
 	try {
-		// Get current session and user using getUser for security
-		const { data: { user } } = await locals.supabase.auth.getUser();
-		const { session } = await locals.safeGetSession();
+		// Get Auth0 user info
+		const auth0User = getUser(request);
+		const isAuth0Authenticated = isAuthenticated(request);
 
-		console.log('Layout server load - Session:', {
-			hasSession: !!session,
-			hasUser: !!user,
-			userEmail: user?.email,
-			userRole: user?.user_metadata?.role
+		console.log('Layout server load - Auth0 Session:', {
+			hasSession: isAuth0Authenticated,
+			hasUser: !!auth0User,
+			userEmail: auth0User?.email,
+			userSub: auth0User?.sub
 		});
 
-		// Check if user is a provider
+		// If Auth0 user exists, sync with Supabase
+		let supabaseUser = null;
 		let isProvider = false;
 		let providerProfile = null;
+		let isAdmin = false;
 
-		if (user) {
-			// Verificar en la tabla correcta: provider_profiles
-			const { data: provider, error: providerError } = await locals.supabase
-				.from('provider_profiles')
-				.select('*')
-				.eq('user_id', user.id)
-				.maybeSingle(); // Usar maybeSingle para evitar errores si no existe
+		if (auth0User) {
+			// Try to get or create Supabase user
+			const { data: { user }, error } = await locals.supabase.auth.getUser();
+			
+			if (error || !user) {
+				// Create Supabase user from Auth0 data
+				const { data: signUpData, error: signUpError } = await locals.supabase.auth.signUp({
+					email: auth0User.email,
+					password: crypto.randomUUID(), // Generate random password
+					options: {
+						data: {
+							auth0_id: auth0User.sub,
+							name: auth0User.name,
+							picture: auth0User.picture,
+							email_verified: auth0User.email_verified
+						}
+					}
+				});
 
-			isProvider = !!provider;
-			providerProfile = provider;
-
-			if (providerError) {
-				console.error('Error checking provider status:', providerError);
+				if (signUpData?.user) {
+					supabaseUser = signUpData.user;
+				}
+			} else {
+				supabaseUser = user;
 			}
+
+			// Check provider status
+			if (supabaseUser) {
+				const { data: provider, error: providerError } = await locals.supabase
+					.from('provider_profiles')
+					.select('*')
+					.eq('user_id', supabaseUser.id)
+					.maybeSingle();
+
+				isProvider = !!provider;
+				providerProfile = provider;
+
+				if (providerError) {
+					console.error('Error checking provider status:', providerError);
+				}
+			}
+
+			// Check admin status
+			isAdmin = auth0User['https://domify.app/roles']?.includes('admin') || false;
 		}
 
-		// Check if user is admin
-		const isAdmin = user?.user_metadata?.role === 'admin';
-
 		return {
-			session,
-			user,
+			session: isAuth0Authenticated ? { user: auth0User } : null,
+			user: auth0User,
+			supabaseUser,
 			isProvider,
 			isAdmin,
 			providerProfile
@@ -48,6 +79,7 @@ export const load: LayoutServerLoad = async ({ locals, fetch }) => {
 		return {
 			session: null,
 			user: null,
+			supabaseUser: null,
 			isProvider: false,
 			isAdmin: false,
 			providerProfile: null
