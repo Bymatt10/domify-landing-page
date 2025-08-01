@@ -85,7 +85,7 @@ export async function safeCreateUserProfile(
     phone_number?: string;
   }
 ) {
-  const maxRetries = 3;
+  const maxRetries = 2; // Reduced retries for faster failure
   let lastError: any = null;
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
@@ -130,9 +130,9 @@ export async function safeCreateUserProfile(
           }
         }
         
-        // For retryable errors, wait before next attempt
+        // For retryable errors, wait before next attempt  
         if (attempt < maxRetries && isRetryableError(error)) {
-          const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000); // Exponential backoff, max 5s
+          const delay = Math.min(500 * attempt, 1000); // Faster backoff, max 1s
           console.log(`Waiting ${delay}ms before retry...`);
           await new Promise(resolve => setTimeout(resolve, delay));
           continue;
@@ -151,7 +151,7 @@ export async function safeCreateUserProfile(
       
       // For exceptions, only retry if it seems like a temporary issue
       if (attempt < maxRetries && isRetryableException(err)) {
-        const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+        const delay = Math.min(500 * attempt, 1000);
         console.log(`Waiting ${delay}ms before retry after exception...`);
         await new Promise(resolve => setTimeout(resolve, delay));
         continue;

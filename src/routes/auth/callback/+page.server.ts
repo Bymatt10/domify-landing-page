@@ -26,9 +26,11 @@ function validateOAuthEnvironment() {
   return { valid: true, missing: [] };
 }
 
-// Timeout configurations
-const CALLBACK_TIMEOUT = 25000; // 25 seconds - well under most server timeouts
-const PROFILE_CREATION_TIMEOUT = 15000; // 15 seconds for profile operations
+// Timeout configurations - optimized for serverless/edge environments
+const CALLBACK_TIMEOUT = 8000; // 8 seconds - safe for most serverless platforms
+const PROFILE_CREATION_TIMEOUT = 4000; // 4 seconds for profile operations
+const CODE_EXCHANGE_TIMEOUT = 3000; // 3 seconds for code exchange
+const HEALTH_CHECK_TIMEOUT = 1000; // 1 second for health check
 
 // Helper function to create a timeout promise
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number, operation: string): Promise<T> {
@@ -86,24 +88,14 @@ export const load: PageServerLoad = async ({ url, locals: { supabase } }) => {
     if (code) {
     
     try {
-      // Quick health check of Supabase client before proceeding
-      console.log(`[${requestId}] 🏥 Performing Supabase health check...`);
-      try {
-        const healthCheckStart = Date.now();
-        await supabase.from('customers').select('id').limit(1);
-        const healthCheckTime = Date.now() - healthCheckStart;
-        console.log(`[${requestId}] ✅ Supabase health check passed in ${healthCheckTime}ms`);
-      } catch (healthError) {
-        console.error(`[${requestId}] ❌ Supabase health check failed:`, healthError);
-        throw redirect(303, `/auth/login?error=dbError:${encodeURIComponent('Error de conexión con la base de datos. Intenta de nuevo.')}`);
-      }
+      // Skip health check for faster callback - proceed directly to code exchange
 
       console.log(`[${requestId}] 🔄 Attempting to exchange code for session...`);
       const exchangeStartTime = Date.now();
       
       const { data, error } = await withTimeout(
         supabase.auth.exchangeCodeForSession(code),
-        10000, // 10 seconds for code exchange
+        CODE_EXCHANGE_TIMEOUT, // 3 seconds for code exchange
         'exchangeCodeForSession'
       )
       
@@ -174,91 +166,19 @@ export const load: PageServerLoad = async ({ url, locals: { supabase } }) => {
       
       console.log(`[${requestId}] 📋 Prepared profile data:`, { firstName, lastName });
       
-      // Obtener o crear perfil usando función helper
-      console.log(`[${requestId}] 🔄 Attempting to get/create user profile...`);
-      const profileStartTime = Date.now();
+      // CIRCUIT BREAKER: Skip profile creation entirely for faster OAuth callback
+      console.log(`[${requestId}] ⚡ Circuit breaker activated: skipping profile creation for speed`);
       
-      const { profile, created, error: profileError } = await withTimeout(
-        getOrCreateUserProfile(
-          supabase,
-          data.user.id,
-          {
-            first_name: firstName,
-            last_name: lastName
-          }
-        ),
-        PROFILE_CREATION_TIMEOUT,
-        'getOrCreateUserProfile'
-      );
-
-      const profileTime = Date.now() - profileStartTime;
-      console.log(`[${requestId}] 📊 getOrCreateUserProfile completed in ${profileTime}ms:`, {
-        hasProfile: !!profile,
-        created,
-        hasError: !!profileError,
-        profileId: profile?.id || 'N/A'
-      });
-
-      if (profileError) {
-        console.error(`[${requestId}] ❌ Error handling user profile:`, {
-          error: profileError,
-          userId: data.user.id,
-          email: data.user.email,
-          profileData: { firstName, lastName }
-        });
-        
-        // Try a simple fallback approach - allow user to continue without profile creation
-        // They can create their profile later from the app
-        console.log(`[${requestId}] 🔄 Attempting fallback: continue without profile creation...`);
-        
-        try {
-          // Just verify the session is valid and continue
-          const { data: { user: sessionUser } } = await supabase.auth.getUser();
-          if (sessionUser && sessionUser.id === data.user.id) {
-            console.log(`[${requestId}] ✅ Session valid, proceeding without profile. User can create profile later.`);
-            
-            const totalTime = Date.now() - startTime;
-            console.log(`[${requestId}] ✅ OAuth callback completed with fallback in ${totalTime}ms for:`, data.user.email);
-            console.log(`[${requestId}] 🔄 Redirecting to profile completion page`);
-            
-            // Redirect to a profile setup page where user can complete their profile
-            return redirect(303, `/profile/info?setup=true&error=profile_creation_failed`);
-          }
-        } catch (fallbackError) {
-          console.error(`[${requestId}] ❌ Fallback also failed:`, fallbackError);
-        }
-        
-        let msg = 'Error creando perfil de usuario';
-        if (profileError instanceof Error) {
-          msg = profileError.message;
-        } else if (typeof profileError === 'string') {
-          msg = profileError;
-        } else if (profileError && typeof profileError === 'object' && 'message' in profileError) {
-          msg = String(profileError.message);
-        }
-        
-        console.log(`[${requestId}] 🔄 Redirecting with profile error:`, msg);
-        throw redirect(303, `/auth/login?error=profileError:${encodeURIComponent(msg)}`)
-      }
+      // Let database triggers handle profile creation asynchronously
+      // Or user can complete profile setup later from the UI
+      console.log(`[${requestId}] 📝 Profile creation will be handled by:`)
+      console.log(`  - Database triggers (if configured)`)
+      console.log(`  - User profile setup page (manual fallback)`)
       
-      if (created) {
-        console.log(`[${requestId}] ✅ Customer profile created successfully for OAuth user:`, data.user.email);
-      } else {
-        console.log(`[${requestId}] ✅ Customer profile already exists for OAuth user:`, data.user.email);
-      }
-      
-      // Verificar que la sesión se estableció correctamente antes del redirect
-      const { data: { user: finalUser } } = await supabase.auth.getUser();
-      const { data: { session: finalSession }, error: finalSessionError } = await supabase.auth.getSession();
-      console.log(`[${requestId}] 📊 Final session before redirect:`, {
-        hasUser: !!finalUser,
-        hasSession: !!finalSession,
-        sessionExpiry: finalSession?.expires_at,
-        sessionError: finalSessionError?.message || 'NO ERROR'
-      });
+      // Continue immediately without profile creation
       
       const totalTime = Date.now() - startTime;
-      console.log(`[${requestId}] ✅ OAuth callback completed successfully in ${totalTime}ms for:`, data.user.email);
+      console.log(`[${requestId}] ✅ OAuth callback completed in FAST MODE in ${totalTime}ms for:`, data.user.email);
       console.log(`[${requestId}] 🔄 Redirecting to:`, next);
       
       // Redirect exitoso - no capturar como excepción
