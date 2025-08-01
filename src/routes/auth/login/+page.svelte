@@ -28,6 +28,7 @@
 				showRetryButton = true;
 				// Clean PKCE state for retry
 				cleanPKCEState();
+				console.log('🧹 PKCE state cleaned due to error');
 			} else if (decodedError.includes('oauthError:')) {
 				error = decodedError.replace('oauthError:', '');
 				showRetryButton = true;
@@ -83,8 +84,45 @@
 
 			console.log('🔄 Iniciando login con Google...');
 
+			// AGGRESSIVE PKCE state cleanup for production
+			console.log('🧹 Limpieza agresiva de estado PKCE para producción...');
+			
 			// Clean any existing PKCE state before starting new OAuth flow
 			cleanPKCEState();
+			
+			// Additional production-specific cleanup
+			if (typeof window !== 'undefined') {
+				// Force clear all Supabase-related storage
+				const keysToRemove = [];
+				
+				// localStorage cleanup
+				for (let i = 0; i < localStorage.length; i++) {
+					const key = localStorage.key(i);
+					if (key && (key.includes('supabase') || key.includes('sb-') || key.includes('auth'))) {
+						keysToRemove.push(key);
+					}
+				}
+				keysToRemove.forEach(key => {
+					localStorage.removeItem(key);
+					console.log(`🧹 Removed localStorage: ${key}`);
+				});
+				
+				// sessionStorage cleanup
+				const sessionKeysToRemove = [];
+				for (let i = 0; i < sessionStorage.length; i++) {
+					const key = sessionStorage.key(i);
+					if (key && (key.includes('supabase') || key.includes('sb-') || key.includes('auth'))) {
+						sessionKeysToRemove.push(key);
+					}
+				}
+				sessionKeysToRemove.forEach(key => {
+					sessionStorage.removeItem(key);
+					console.log(`🧹 Removed sessionStorage: ${key}`);
+				});
+				
+				// Wait a moment for cleanup to complete
+				await new Promise(resolve => setTimeout(resolve, 100));
+			}
 
 			// Use helper function for redirect URL
 			const redirectUrl = getOAuthRedirectUrl();

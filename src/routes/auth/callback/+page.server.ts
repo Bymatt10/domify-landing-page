@@ -128,11 +128,13 @@ export const load: PageServerLoad = async ({ url, locals: { supabase } }) => {
           console.error(`[${requestId}] ❌ Exchange attempt ${exchangeAttempts} failed:`, error.message);
           
           // If it's a PKCE state error, try to clean state and retry
-          if (error.message.includes('invalid flow state') || error.message.includes('no valid flow state')) {
-            console.log(`[${requestId}] 🔄 PKCE state error detected, cleaning state and retrying...`);
+          if (error.message.includes('invalid flow state') || error.message.includes('no valid flow state') || 
+              error.message.includes('code verifier') || error.message.includes('pkce')) {
+            console.log(`[${requestId}] 🔄 PKCE state error detected:`, error.message);
+            console.log(`[${requestId}] 🔄 Attempting retry with delay...`);
             
-            // Wait a moment before retry
-            await new Promise(resolve => setTimeout(resolve, 500));
+            // Wait longer before retry for PKCE issues
+            await new Promise(resolve => setTimeout(resolve, 1000));
             continue;
           }
           
