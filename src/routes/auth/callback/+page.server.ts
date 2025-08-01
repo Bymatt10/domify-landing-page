@@ -273,9 +273,18 @@ export const load: PageServerLoad = async ({ url, locals: { supabase } }) => {
     }
   }
 
-  // If there's an error or no code, redirect to login
-  console.log(`[${requestId}] ❌ No OAuth code found, redirecting to login`);
-  throw redirect(303, '/auth/login?error=No se pudo autenticar al usuario.')
+      // If there's an error or no code, redirect to login
+    console.log(`[${requestId}] ❌ No OAuth code found, redirecting to login`);
+    console.log(`[${requestId}] 🔍 Debug info:`, {
+      url: url.toString(),
+      searchParams: Object.fromEntries(url.searchParams.entries()),
+      hasCode: !!url.searchParams.get('code'),
+      hasError: !!url.searchParams.get('error'),
+      hasState: !!url.searchParams.get('state'),
+      origin: url.origin,
+      pathname: url.pathname
+    });
+    throw redirect(303, '/auth/login?error=No se pudo autenticar al usuario.')
   
   } catch (globalError) {
     // Catch any unhandled errors at the top level
