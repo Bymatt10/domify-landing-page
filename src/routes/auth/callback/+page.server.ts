@@ -46,15 +46,13 @@ export const load: PageServerLoad = async ({ url, locals: { supabase } }) => {
   const startTime = Date.now();
   const requestId = Math.random().toString(36).substring(7);
   
-  // Wrap the entire callback in a timeout to prevent 502 errors
-  return await withTimeout(
-    (async () => {
-      try {
+  // Execute callback without timeout wrapper - let redirects work naturally
+  try {
     // Validate environment first to prevent configuration-related 502 errors
     const envValidation = validateOAuthEnvironment();
     if (!envValidation.valid) {
       console.error(`[${requestId}] ❌ Environment validation failed:`, envValidation.missing);
-      throw redirect(303, `/auth/login?error=configError:${encodeURIComponent('Error de configuración del servidor. Contacta soporte.')}`);
+      throw redirect(302, `/auth/login?error=configError:${encodeURIComponent('Error de configuración del servidor. Contacta soporte.')}`);
     }
 
     const code = url.searchParams.get('code')
@@ -77,7 +75,7 @@ export const load: PageServerLoad = async ({ url, locals: { supabase } }) => {
     // Handle OAuth errors from Google/Facebook
     if (error) {
       console.error(`[${requestId}] ❌ OAuth Error:`, { error, errorDescription });
-      throw redirect(303, `/auth/login?error=oauthError:${encodeURIComponent(errorDescription || error)}`)
+      throw redirect(302, `/auth/login?error=oauthError:${encodeURIComponent(errorDescription || error)}`)
     }
 
     // Validate code format - OAuth codes should be substantial
@@ -98,6 +96,31 @@ export const load: PageServerLoad = async ({ url, locals: { supabase } }) => {
         CODE_EXCHANGE_TIMEOUT, // 3 seconds for code exchange
         'exchangeCodeForSession'
       )
+      
+      // CRITICAL: Ensure session is properly set in cookies after OAuth
+      if (data?.session) {
+        console.log(`[${requestId}] 🍪 Setting session in cookies for user:`, data.user.email);
+        
+        // Force set the session to ensure it's properly stored in cookies
+        const { error: sessionError } = await supabase.auth.setSession(data.session);
+        if (sessionError) {
+          console.error(`[${requestId}] ❌ Error setting session:`, sessionError);
+        } else {
+          console.log(`[${requestId}] ✅ Session successfully set in cookies`);
+        }
+        
+        // Wait a moment for session to be persisted
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Verify session was set correctly
+        const { data: { session: verifySession } } = await supabase.auth.getSession();
+        console.log(`[${requestId}] 🔍 Session verification:`, {
+          hasSession: !!verifySession,
+          sessionUserId: verifySession?.user?.id,
+          expectedUserId: data.user.id,
+          sessionExpiry: verifySession?.expires_at
+        });
+      }
       
       const exchangeTime = Date.now() - exchangeStartTime;
       console.log(`[${requestId}] 📊 exchangeCodeForSession completed in ${exchangeTime}ms:`, {
@@ -127,16 +150,16 @@ export const load: PageServerLoad = async ({ url, locals: { supabase } }) => {
         
         if (msg.includes('invalid_code') || msg.includes('code has expired')) {
           console.error(`[${requestId}] ❌ Invalid/expired code:`, msg);
-          throw redirect(303, `/auth/login?error=expiredCode:${encodeURIComponent('Código OAuth expirado. Por favor, intenta de nuevo.')}`)
+          throw redirect(302, `/auth/login?error=expiredCode:${encodeURIComponent('Código OAuth expirado. Por favor, intenta de nuevo.')}`)
         }
         
         if (error.status === 422 || error.status === 400) {
           console.error(`[${requestId}] ❌ OAuth configuration error:`, msg);
-          throw redirect(303, `/auth/login?error=configError:${encodeURIComponent('Error de configuración OAuth. Contacta soporte.')}`)
+          throw redirect(302, `/auth/login?error=configError:${encodeURIComponent('Error de configuración OAuth. Contacta soporte.')}`)
         }
         
         console.log(`[${requestId}] 🔄 Redirecting with OAuth error:`, msg);
-        throw redirect(303, `/auth/login?error=oauthError:${encodeURIComponent(msg)}`)
+        throw redirect(302, `/auth/login?error=oauthError:${encodeURIComponent(msg)}`)
       }
       
       if (!data?.user) {
@@ -181,14 +204,27 @@ export const load: PageServerLoad = async ({ url, locals: { supabase } }) => {
       console.log(`[${requestId}] ✅ OAuth callback completed in FAST MODE in ${totalTime}ms for:`, data.user.email);
       console.log(`[${requestId}] 🔄 Redirecting to:`, next);
       
-      // Redirect exitoso - no capturar como excepción
-      return redirect(303, next);
+      // Final session check before redirect
+      const { data: { session: finalSession } } = await supabase.auth.getSession();
+      if (!finalSession) {
+        console.error(`[${requestId}] ❌ No session found before redirect! This will cause layout issues`);
+        // Try to set session one more time
+        if (data?.session) {
+          await supabase.auth.setSession(data.session);
+          console.log(`[${requestId}] 🔄 Retried setting session before redirect`);
+        }
+      } else {
+        console.log(`[${requestId}] ✅ Session confirmed before redirect for user:`, finalSession.user.email);
+      }
+      
+      // Use 302 redirect with proper cache headers to ensure session is maintained
+      throw redirect(302, next + (next.includes('?') ? '&' : '?') + 'oauth_success=true');
       
     } catch (e) {
       // Solo manejar errores reales, no redirects exitosos
       if (e && typeof e === 'object' && 'status' in e && 'location' in e) {
         const redirectData = e as { status?: number; location?: string };
-        if (redirectData.status === 303 && redirectData.location) {
+        if ((redirectData.status === 303 || redirectData.status === 302) && redirectData.location) {
           console.log(`[${requestId}] ✅ Valid redirect detected, allowing redirect to:`, redirectData.location);
           throw e; // Re-lanzar el redirect
         }
@@ -239,26 +275,24 @@ export const load: PageServerLoad = async ({ url, locals: { supabase } }) => {
   } catch (globalError) {
     // Catch any unhandled errors at the top level
     const totalTime = Date.now() - startTime;
+    
+    // If it's a redirect, re-throw it immediately (don't log as error)
+    if (globalError && typeof globalError === 'object' && 'status' in globalError && 'location' in globalError) {
+      const redirectData = globalError as { status?: number; location?: string };
+      if ((redirectData.status === 302 || redirectData.status === 303) && redirectData.location) {
+        console.log(`[GLOBAL] ✅ Valid redirect detected after ${totalTime}ms, redirecting to:`, redirectData.location);
+        throw globalError; // Re-throw the redirect
+      }
+    }
+    
     console.error(`[GLOBAL] 💥 Unhandled error in OAuth callback after ${totalTime}ms:`, {
       error: globalError,
       stack: globalError instanceof Error ? globalError.stack : null,
       url: url.toString()
     });
     
-    // If it's a redirect, re-throw it
-    if (globalError && typeof globalError === 'object' && 'status' in globalError && 'location' in globalError) {
-      throw globalError;
-    }
-    
     // Otherwise, redirect with error
     const msg = globalError instanceof Error ? globalError.message : 'Error crítico del servidor';
     throw redirect(303, `/auth/login?error=serverError:${encodeURIComponent(msg)}`);
   }
-    })(),
-    CALLBACK_TIMEOUT,
-    'OAuth callback'
-  ).catch((timeoutError) => {
-    console.error(`[${requestId}] ⏰ CALLBACK TIMEOUT after ${CALLBACK_TIMEOUT}ms:`, timeoutError);
-    throw redirect(303, '/auth/login?error=timeout:La autenticación tardó demasiado tiempo. Por favor, intenta de nuevo.');
-  });
 } 

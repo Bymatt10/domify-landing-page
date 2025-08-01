@@ -71,6 +71,15 @@
 			}
 		});
 
+		// Check for OAuth success and force a session refresh
+		const urlParams = new URLSearchParams(window.location.search);
+		if (urlParams.get('oauth_success') === 'true') {
+			console.log('🔄 [Layout] OAuth success detected, forcing session refresh');
+			setTimeout(() => {
+				invalidateAll();
+			}, 100);
+		}
+
 		return () => {
 			subscription.unsubscribe();
 		};
