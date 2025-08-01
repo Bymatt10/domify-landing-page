@@ -38,6 +38,16 @@ export default defineConfig(({ mode }) => {
 	preview: {
 		port: 4000,
 		host: '0.0.0.0'
+	},
+	build: {
+		// Ensure environment variables are available in production build
+		rollupOptions: {
+			external: []
+		}
+	},
+	ssr: {
+		// Don't externalize environment variables in SSR
+		noExternal: ['dotenv']
 	}
 	};
 });

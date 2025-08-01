@@ -13,6 +13,12 @@ function validateOAuthEnvironment() {
   
   if (missing.length > 0) {
     console.error('❌ Missing required environment variables:', missing);
+    console.error('Available env vars:', {
+      NODE_ENV: process.env.NODE_ENV,
+      hasSupabaseUrl: !!process.env.PUBLIC_SUPABASE_URL,
+      hasAnonKey: !!process.env.PUBLIC_SUPABASE_ANON_KEY,
+      supabaseUrlLength: process.env.PUBLIC_SUPABASE_URL?.length || 0
+    });
     return { valid: false, missing };
   }
   
@@ -26,11 +32,10 @@ function validateOAuthEnvironment() {
   return { valid: true, missing: [] };
 }
 
-// Timeout configurations - optimized for serverless/edge environments
-const CALLBACK_TIMEOUT = 8000; // 8 seconds - safe for most serverless platforms
-const PROFILE_CREATION_TIMEOUT = 4000; // 4 seconds for profile operations
-const CODE_EXCHANGE_TIMEOUT = 3000; // 3 seconds for code exchange
-const HEALTH_CHECK_TIMEOUT = 1000; // 1 second for health check
+// Timeout configurations - optimized for production (Cloudflare) vs development
+const isProduction = process.env.NODE_ENV === 'production';
+const CODE_EXCHANGE_TIMEOUT = isProduction ? 2000 : 3000; // Even faster for production
+const PROFILE_CREATION_TIMEOUT = isProduction ? 2000 : 4000; // Faster for production
 
 // Helper function to create a timeout promise
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number, operation: string): Promise<T> {
