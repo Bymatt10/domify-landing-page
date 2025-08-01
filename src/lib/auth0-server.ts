@@ -1,6 +1,6 @@
 import { auth } from 'express-openid-connect';
 
-// Auth0 configuration for server-side
+// Auth0 configuration for Single Page Application
 export const auth0Config = {
   authRequired: false,
   auth0Logout: true,
@@ -8,7 +8,6 @@ export const auth0Config = {
   baseURL: process.env.AUTH0_BASE_URL || 'https://domify.app',
   clientID: process.env.AUTH0_CLIENT_ID || '9gkLh80Ec4dSJaI72k3C0pYEwlFll5xO',
   issuerBaseURL: process.env.AUTH0_ISSUER_BASE_URL || 'https://dev-00zfnpqelho1o4f0.us.auth0.com',
-  clientSecret: process.env.AUTH0_CLIENT_SECRET,
   authorizationParams: {
     response_type: 'code',
     scope: 'openid profile email'

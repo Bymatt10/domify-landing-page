@@ -3,6 +3,7 @@
 	import { page } from '$app/stores';
 	import { invalidateAll } from '$app/navigation';
 	import { onMount } from 'svelte';
+	import { loginWithGoogle, loginWithFacebook, handleRedirectCallback } from '$lib/auth0';
 
 	let email = '';
 	let password = '';
@@ -13,6 +14,16 @@
 	// Handle Auth0 redirect callback
 	onMount(async () => {
 		try {
+			// Check if this is a callback from Auth0
+			const isCallback = await handleRedirectCallback();
+			if (isCallback) {
+				console.log('✅ Auth0 callback handled successfully');
+				// Redirect to home or intended page
+				const redirectTo = $page.url.searchParams.get('redirectTo') || '/';
+				window.location.href = redirectTo;
+				return;
+			}
+
 			// Check for errors
 			const urlError = $page.url.searchParams.get('error');
 			if (urlError) {
@@ -54,8 +65,8 @@
 
 			console.log('🔄 Iniciando login con Google via Auth0...');
 			
-			// Redirect to Auth0 login
-			window.location.href = '/auth/login';
+			await loginWithGoogle();
+			// User will be redirected to Auth0
 		} catch (e) {
 			console.error('💥 Error en login de Google:', e);
 			error = e instanceof Error ? e.message : 'Error inesperado al conectar con Google';
@@ -71,8 +82,8 @@
 			
 			console.log('🔄 Iniciando login con Facebook via Auth0...');
 			
-			// Redirect to Auth0 login with Facebook connection
-			window.location.href = '/auth/login?connection=facebook';
+			await loginWithFacebook();
+			// User will be redirected to Auth0
 		} catch (e) {
 			console.error('💥 Error en login de Facebook:', e);
 			error = e instanceof Error ? e.message : 'Error inesperado al conectar con Facebook';

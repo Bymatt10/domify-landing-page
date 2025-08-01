@@ -1,9 +1,9 @@
 import { Auth0Client } from 'auth0';
 
-// Auth0 configuration
+// Auth0 configuration for Single Page Application
 const auth0Config = {
-  domain: process.env.AUTH0_DOMAIN || 'your-domain.auth0.com',
-  clientId: process.env.AUTH0_CLIENT_ID || 'your-client-id',
+  domain: process.env.AUTH0_ISSUER_BASE_URL?.replace('https://', '') || 'dev-00zfnpqelho1o4f0.us.auth0.com',
+  clientId: process.env.AUTH0_CLIENT_ID || '9gkLh80Ec4dSJaI72k3C0pYEwlFll5xO',
   redirectUri: typeof window !== 'undefined' 
     ? `${window.location.origin}/auth/callback`
     : 'https://domify.app/auth/callback',
