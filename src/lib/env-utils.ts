@@ -276,4 +276,49 @@ export function getServerConfig() {
 		nodeEnv: process.env.NODE_ENV || 'development',
 		isProduction: process.env.NODE_ENV === 'production'
 	};
+}
+
+export function getGoogleSheetsCredentials(): string | null {
+	if (import.meta.env.GOOGLE_SHEETS_CREDENTIALS) {
+		return import.meta.env.GOOGLE_SHEETS_CREDENTIALS;
+	}
+	
+	if (typeof process !== 'undefined' && process.env.GOOGLE_SHEETS_CREDENTIALS) {
+		return process.env.GOOGLE_SHEETS_CREDENTIALS;
+	}
+	
+	try {
+		// @ts-ignore - This will be replaced by SvelteKit at build time
+		if (typeof GOOGLE_SHEETS_CREDENTIALS !== 'undefined' && GOOGLE_SHEETS_CREDENTIALS) {
+			// @ts-ignore
+			return GOOGLE_SHEETS_CREDENTIALS;
+		}
+	} catch (e) {
+		// Ignore errors
+	}
+	
+	return null;
+}
+
+export function getAdminEmail(): string {
+	if (import.meta.env.ADMIN_EMAIL) {
+		return import.meta.env.ADMIN_EMAIL;
+	}
+	
+	if (typeof process !== 'undefined' && process.env.ADMIN_EMAIL) {
+		return process.env.ADMIN_EMAIL;
+	}
+	
+	try {
+		// @ts-ignore - This will be replaced by SvelteKit at build time
+		if (typeof ADMIN_EMAIL !== 'undefined' && ADMIN_EMAIL) {
+			// @ts-ignore
+			return ADMIN_EMAIL;
+		}
+	} catch (e) {
+		// Ignore errors
+	}
+	
+	// Default fallback
+	return 'admin@domify.app';
 } 

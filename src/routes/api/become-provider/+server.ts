@@ -1,5 +1,8 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
 import { ExceptionHandler, ValidationException, validateRequired } from '$lib/exceptions';
+import { googleSheetsService } from '$lib/google-sheets';
+import { sendNewApplicationNotificationEmail } from '$lib/email-service';
+import { getAdminEmail } from '$lib/env-utils';
 
 export const POST: RequestHandler = async ({ request, locals: { supabase, supabaseAdmin } }) => {
 	try {
@@ -109,6 +112,45 @@ export const POST: RequestHandler = async ({ request, locals: { supabase, supaba
 			// console.log removed
 		} else {
 			// console.log removed
+		}
+
+		// 5. Obtener nombres de categorías para Google Sheets
+		let categoryNames: string[] = [];
+		try {
+			const { data: categoryData } = await supabaseAdmin
+				.from('categories')
+				.select('name')
+				.in('id', applicationData.categories);
+
+			if (categoryData) {
+				categoryNames = categoryData.map(cat => cat.name);
+			}
+		} catch (error) {
+			console.warn('⚠️ Error getting category names:', error);
+		}
+
+		// 6. Agregar a Google Sheets (opcional, no bloquea la respuesta)
+		try {
+			await googleSheetsService.addProviderApplication(application, categoryNames);
+		} catch (error) {
+			console.warn('⚠️ Error adding to Google Sheets (non-blocking):', error);
+		}
+
+		// 7. Enviar email de notificación al admin (opcional, no bloquea la respuesta)
+		try {
+			const adminEmail = getAdminEmail();
+			await sendNewApplicationNotificationEmail(adminEmail, {
+				applicationId: application.id,
+				providerName: `${applicationData.first_name} ${applicationData.last_name}`,
+				providerEmail: application.email,
+				providerPhone: application.phone,
+				providerType: applicationData.provider_type,
+				headline: application.headline,
+				hourlyRate: application.hourly_rate,
+				categories: categoryNames
+			});
+		} catch (error) {
+			console.warn('⚠️ Error sending notification email (non-blocking):', error);
 		}
 
 		const successResponse = ExceptionHandler.createSuccessResponse(

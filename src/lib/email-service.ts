@@ -263,4 +263,239 @@ export async function sendProviderWelcomeEmail(
         console.error('Error sending provider welcome email:', error);
         return false;
     }
+}
+
+// Plantilla para email de notificación de nueva solicitud
+export function createNewApplicationNotificationEmail(data: {
+    applicationId: string;
+    providerName: string;
+    providerEmail: string;
+    providerPhone: string;
+    providerType: string;
+    headline: string;
+    hourlyRate: number;
+    categories: string[];
+    sheetsUrl: string;
+}): string {
+    return `
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Nueva Solicitud de Proveedor - Domify</title>
+        <style>
+            body {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                line-height: 1.6;
+                color: #333;
+                max-width: 600px;
+                margin: 0 auto;
+                padding: 20px;
+                background-color: #f8fafc;
+            }
+            .container {
+                background-color: #ffffff;
+                border-radius: 12px;
+                padding: 30px;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            }
+            .header {
+                text-align: center;
+                margin-bottom: 30px;
+                padding-bottom: 20px;
+                border-bottom: 2px solid #e5e7eb;
+            }
+            .logo {
+                font-size: 28px;
+                font-weight: bold;
+                color: #1f2937;
+                margin-bottom: 10px;
+            }
+            .subtitle {
+                color: #6b7280;
+                font-size: 16px;
+            }
+            .alert {
+                background-color: #fef3c7;
+                border: 1px solid #f59e0b;
+                border-radius: 8px;
+                padding: 20px;
+                margin-bottom: 25px;
+            }
+            .alert-title {
+                color: #92400e;
+                font-weight: bold;
+                font-size: 18px;
+                margin-bottom: 10px;
+            }
+            .info-grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 20px;
+                margin-bottom: 25px;
+            }
+            .info-item {
+                background-color: #f9fafb;
+                padding: 15px;
+                border-radius: 8px;
+                border-left: 4px solid #3b82f6;
+            }
+            .info-label {
+                font-weight: bold;
+                color: #374151;
+                font-size: 14px;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
+            .info-value {
+                color: #1f2937;
+                font-size: 16px;
+                margin-top: 5px;
+            }
+            .categories {
+                background-color: #eff6ff;
+                border: 1px solid #dbeafe;
+                border-radius: 8px;
+                padding: 15px;
+                margin-bottom: 25px;
+            }
+            .categories-title {
+                font-weight: bold;
+                color: #1e40af;
+                margin-bottom: 10px;
+            }
+            .category-tag {
+                display: inline-block;
+                background-color: #3b82f6;
+                color: white;
+                padding: 4px 12px;
+                border-radius: 20px;
+                font-size: 14px;
+                margin: 2px 4px;
+            }
+            .cta-button {
+                display: inline-block;
+                background-color: #10b981;
+                color: white;
+                text-decoration: none;
+                padding: 15px 30px;
+                border-radius: 8px;
+                font-weight: bold;
+                font-size: 16px;
+                margin: 20px 0;
+                text-align: center;
+                transition: background-color 0.3s;
+            }
+            .cta-button:hover {
+                background-color: #059669;
+            }
+            .footer {
+                text-align: center;
+                margin-top: 30px;
+                padding-top: 20px;
+                border-top: 1px solid #e5e7eb;
+                color: #6b7280;
+                font-size: 14px;
+            }
+            @media (max-width: 600px) {
+                .info-grid {
+                    grid-template-columns: 1fr;
+                }
+                .container {
+                    padding: 20px;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <div class="logo">🏠 Domify</div>
+                <div class="subtitle">Marketplace de Servicios Profesionales</div>
+            </div>
+            
+            <div class="alert">
+                <div class="alert-title">🚨 Nueva Solicitud de Proveedor</div>
+                <p>Se ha recibido una nueva solicitud para convertirse en proveedor en Domify.</p>
+            </div>
+            
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="info-label">ID de Solicitud</div>
+                    <div class="info-value">${data.applicationId}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Nombre</div>
+                    <div class="info-value">${data.providerName}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Email</div>
+                    <div class="info-value">${data.providerEmail}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Teléfono</div>
+                    <div class="info-value">${data.providerPhone}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Tipo de Proveedor</div>
+                    <div class="info-value">${data.providerType}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Precio por Hora</div>
+                    <div class="info-value">$${data.hourlyRate}</div>
+                </div>
+            </div>
+            
+            <div class="info-item">
+                <div class="info-label">Título del Servicio</div>
+                <div class="info-value">${data.headline}</div>
+            </div>
+            
+            <div class="categories">
+                <div class="categories-title">📂 Categorías de Servicio</div>
+                ${data.categories.map(category => `<span class="category-tag">${category}</span>`).join('')}
+            </div>
+            
+            <div style="text-align: center;">
+                <a href="${data.sheetsUrl}" class="cta-button">
+                    📊 Ver en Google Sheets
+                </a>
+            </div>
+            
+            <div class="footer">
+                <p>Este email fue enviado automáticamente por el sistema de Domify.</p>
+                <p>Fecha: ${new Date().toLocaleString('es-NI')}</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    `;
+}
+
+export async function sendNewApplicationNotificationEmail(
+    adminEmail: string,
+    applicationData: {
+        applicationId: string;
+        providerName: string;
+        providerEmail: string;
+        providerPhone: string;
+        providerType: string;
+        headline: string;
+        hourlyRate: number;
+        categories: string[];
+    }
+): Promise<boolean> {
+    const sheetsUrl = 'https://docs.google.com/spreadsheets/d/1f8-trfDtnOchxvKid3L1r4hoV2IX5R1SXfnwp_QF7rI/edit?usp=sharing';
+    
+    const html = createNewApplicationNotificationEmail({
+        ...applicationData,
+        sheetsUrl
+    });
+
+    return sendEmail({
+        to: adminEmail,
+        subject: `🚨 Nueva Solicitud de Proveedor - ${applicationData.providerName}`,
+        html
+    });
 } 
