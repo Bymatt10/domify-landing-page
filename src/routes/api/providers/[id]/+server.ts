@@ -201,10 +201,10 @@ export const PUT: RequestHandler = async ({ params, request, locals }) => {
         
         // For now, allow demo tokens for testing
         if (!token || token === 'demo-token-12345' || token.includes('demo-token')) {
-            console.log('Using demo token for provider update');
+            // console.log removed
         } else {
             // In a real app, you'd verify the JWT and get user info
-            console.log('Token provided, assuming authorized access for testing');
+            // console.log removed
         }
 
         if (!params.id) {
@@ -380,10 +380,10 @@ export const DELETE: RequestHandler = async ({ params, request, locals }) => {
         
         // For now, allow demo tokens for testing
         if (!token || token === 'demo-token-12345' || token.includes('demo-token')) {
-            console.log('Using demo token for provider deletion');
+            // console.log removed
         } else {
             // In a real app, you'd verify the JWT and get user info
-            console.log('Token provided, assuming authorized access for testing');
+            // console.log removed
         }
 
         if (!params.id) {

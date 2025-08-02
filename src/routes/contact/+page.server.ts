@@ -32,7 +32,7 @@ export const actions: Actions = {
 
 			// Save contact info to database or send email
 			// This is where you would integrate with your email service or database
-			console.log('Contact form submission:', { name, email, phone, subject, message });
+			// console.log removed
 
 			// For now, we'll simulate a successful submission
 			return {

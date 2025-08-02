@@ -12,14 +12,14 @@ function generateTemporaryPassword(): string {
 // Función para procesar la aprobación automática de una aplicación
 async function processApplicationApproval(application: any, supabaseAdmin: any) {
   try {
-    console.log('🔧 Procesando aprobación automática para:', application.headline);
+    // console.log removed
 
     let targetUserId = application.user_id;
     let tempPassword = null;
 
     // Si no hay user_id, buscar usuario existente o crear uno nuevo
     if (!application.user_id && application.email) {
-      console.log('👤 Buscando usuario existente para:', application.email);
+      // console.log removed
       
       // Primero intentar encontrar usuario existente
       const { data: existingUsers, error: searchError } = await supabaseAdmin.auth.admin.listUsers();
@@ -30,7 +30,7 @@ async function processApplicationApproval(application: any, supabaseAdmin: any) 
       }
       
       if (existingUser) {
-        console.log('✅ Usuario existente encontrado:', existingUser.id);
+        // console.log removed
         targetUserId = existingUser.id;
         
         // Actualizar la aplicación con el user_id existente
@@ -43,7 +43,7 @@ async function processApplicationApproval(application: any, supabaseAdmin: any) 
         // Crear nuevo usuario
         tempPassword = generateTemporaryPassword();
         
-        console.log('👤 Creando nuevo usuario para:', application.email);
+        // console.log removed
         
         const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
           email: application.email,
@@ -75,7 +75,7 @@ async function processApplicationApproval(application: any, supabaseAdmin: any) 
             .update({ user_id: targetUserId })
             .eq('id', application.id);
 
-          console.log('✅ Usuario creado:', targetUserId);
+          // console.log removed
         }
       }
     }
@@ -86,7 +86,7 @@ async function processApplicationApproval(application: any, supabaseAdmin: any) 
     }
 
     // Crear perfil de customer primero
-    console.log('👤 Creando perfil de customer para user_id:', targetUserId);
+    // console.log removed
     
     const { data: customerData, error: customerError } = await supabaseAdmin
       .from('customers')
@@ -103,10 +103,10 @@ async function processApplicationApproval(application: any, supabaseAdmin: any) 
     if (customerError) {
       console.error('❌ Error creando customer:', customerError);
     } else {
-      console.log('✅ Customer creado exitosamente:', customerData.id);
+      // console.log removed
     }
 
-    console.log('👔 Creando perfil de proveedor para user_id:', targetUserId);
+    // console.log removed
 
     // Crear el perfil de proveedor
     const { data: profileData, error: profileError } = await supabaseAdmin
@@ -130,7 +130,7 @@ async function processApplicationApproval(application: any, supabaseAdmin: any) 
       return;
     }
 
-    console.log('✅ Perfil creado exitosamente:', profileData.id);
+    // console.log removed
 
     // Obtener y asignar categorías
     const { data: categoryData } = await supabaseAdmin
@@ -139,7 +139,7 @@ async function processApplicationApproval(application: any, supabaseAdmin: any) 
       .eq('application_id', application.id);
 
     if (categoryData && categoryData.length > 0) {
-      console.log('🏷️ Asignando categorías:', categoryData.length);
+      // console.log removed
       
       const categoryAssignments = categoryData.map((item: any) => ({
         provider_profile_id: profileData.id,
@@ -153,7 +153,7 @@ async function processApplicationApproval(application: any, supabaseAdmin: any) 
       if (categoryError) {
         console.error('❌ Error asignando categorías:', categoryError);
       } else {
-        console.log('✅ Categorías asignadas exitosamente');
+        // console.log removed
       }
     }
 
@@ -166,13 +166,13 @@ async function processApplicationApproval(application: any, supabaseAdmin: any) 
           tempPassword,
           'https://domify.com/auth/login' // URL de login
         );
-        console.log('✅ Email de bienvenida enviado');
+        // console.log removed
       } catch (emailError) {
         console.error('❌ Error enviando email:', emailError);
       }
     }
 
-    console.log('🎉 Proceso de aprobación completado exitosamente');
+    // console.log removed
   } catch (error) {
     console.error('❌ Error en processApplicationApproval:', error);
   }

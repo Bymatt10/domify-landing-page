@@ -50,7 +50,7 @@ export const GET: RequestHandler = async ({ locals }) => {
 		};
 
 		// Skip database and auth tests for now to isolate the issue
-		console.log('Health check called successfully');
+		// console.log removed
 
 		return json(healthData);
 	} catch (error) {

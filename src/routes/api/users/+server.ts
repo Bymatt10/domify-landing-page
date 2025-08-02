@@ -57,17 +57,17 @@ export const GET: RequestHandler = async ({ locals, request }) => {
         
         // If no auth header, still allow access for debugging
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            console.log('No auth header provided, allowing access for debugging');
+            // console.log removed
         } else {
             const token = authHeader.substring(7); // Remove 'Bearer ' prefix
             
             // Validate token (in a real app, you'd verify the JWT)
             if (!token || token === 'demo-token-12345' || token.includes('demo-token')) {
-                console.log('Invalid token provided, but allowing access for debugging');
+                // console.log removed
             }
         }
 
-        console.log('Fetching users from marketplace.customers table...');
+        // console.log removed
 
         const { data: users, error } = await locals.supabase
             .from('customers')
@@ -80,8 +80,8 @@ export const GET: RequestHandler = async ({ locals, request }) => {
             return json(errorResponse, { status: errorResponse.error.statusCode });
         }
 
-        console.log('Users found:', users?.length || 0);
-        console.log('Users data:', users);
+        // console.log removed
+        // console.log removed
 
         const successResponse = ExceptionHandler.createSuccessResponse(
             { users: users || [] },
@@ -204,7 +204,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
         // We might not need to do anything else here if the trigger handles it.
 
         // Optional: Log for debugging
-        console.log('User created in auth, profile should be in customers via trigger.');
+        // console.log removed
 
         const { data: customerProfile, error: profileError } = await locals.supabase
             .from('customers')

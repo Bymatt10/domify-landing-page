@@ -13,7 +13,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
         const search = url.searchParams.get('search') || '';
         const offset = (page - 1) * limit;
 
-        console.log('Fetching customers...');
+        // console.log removed
 
         // Usar el cliente de Supabase admin desde locals
         const { supabaseAdmin } = locals;
@@ -37,7 +37,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
             throw new Error(error.message);
         }
 
-        console.log('Customers fetched successfully:', customers?.length || 0);
+        // console.log removed
 
         // Para cada cliente, obtener el email desde auth.users usando el admin client
         const customersWithEmail = await Promise.all((customers || []).map(async (customer: any) => {

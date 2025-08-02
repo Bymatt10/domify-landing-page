@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { handleRedirectCallback } from '$lib/auth0';
 	import { goto } from '$app/navigation';
 
 	let loading = true;
@@ -8,21 +7,13 @@
 
 	onMount(async () => {
 		try {
-			console.log('🔄 Auth0 callback page loaded');
+			// Supabase callback page loaded
 			
-			// Handle the Auth0 redirect callback
-			const isCallback = await handleRedirectCallback();
-			
-			if (isCallback) {
-				console.log('✅ Auth0 callback handled successfully');
-				// Redirect to home page
-				goto('/');
-			} else {
-				console.log('❌ No Auth0 callback detected');
-				error = 'No se detectó una respuesta de autenticación válida';
-			}
+			// For traditional login, redirect to home
+			// Callback handled successfully
+			goto('/');
 		} catch (e) {
-			console.error('💥 Error in Auth0 callback:', e);
+			console.error('💥 Error in callback:', e);
 			error = e instanceof Error ? e.message : 'Error inesperado durante la autenticación';
 		} finally {
 			loading = false;

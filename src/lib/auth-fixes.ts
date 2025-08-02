@@ -90,7 +90,7 @@ export async function safeCreateUserProfile(
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      console.log(`Attempt ${attempt}/${maxRetries} to create profile for user ${userId}`);
+      // console.log removed
       
       const { data: profile, error } = await supabase
         .from('customers')
@@ -111,7 +111,7 @@ export async function safeCreateUserProfile(
         
         // Check if it's a unique constraint violation (user already exists)
         if (error.code === '23505' || error.message.includes('duplicate key')) {
-          console.log('Profile already exists, trying to fetch existing profile...');
+          // console.log removed
           const { data: existingProfile, error: fetchError } = await supabase
             .from('customers')
             .select('*')
@@ -120,7 +120,7 @@ export async function safeCreateUserProfile(
             .maybeSingle();
           
           if (existingProfile) {
-            console.log('Found existing profile, returning it');
+            // console.log removed
             return { profile: existingProfile, error: null };
           }
           
@@ -133,7 +133,7 @@ export async function safeCreateUserProfile(
         // For retryable errors, wait before next attempt  
         if (attempt < maxRetries && isRetryableError(error)) {
           const delay = Math.min(500 * attempt, 1000); // Faster backoff, max 1s
-          console.log(`Waiting ${delay}ms before retry...`);
+          // console.log removed
           await new Promise(resolve => setTimeout(resolve, delay));
           continue;
         }
@@ -142,7 +142,7 @@ export async function safeCreateUserProfile(
         return { profile: null, error };
       }
       
-      console.log(`Profile created successfully on attempt ${attempt}`);
+      // console.log removed
       return { profile, error: null };
       
     } catch (err) {
@@ -152,7 +152,7 @@ export async function safeCreateUserProfile(
       // For exceptions, only retry if it seems like a temporary issue
       if (attempt < maxRetries && isRetryableException(err)) {
         const delay = Math.min(500 * attempt, 1000);
-        console.log(`Waiting ${delay}ms before retry after exception...`);
+        // console.log removed
         await new Promise(resolve => setTimeout(resolve, delay));
         continue;
       }
@@ -214,14 +214,14 @@ export async function getOrCreateUserProfile(
     phone_number?: string;
   }
 ) {
-  console.log(`Starting getOrCreateUserProfile for user ${userId}`);
+  // console.log removed
   
   try {
     // First, try to get existing profile
     const { profile: existingProfile, error: getError } = await safeGetUserProfile(supabase, userId);
     
     if (existingProfile) {
-      console.log(`Found existing profile for user ${userId}`);
+      // console.log removed
       return { profile: existingProfile, created: false, error: null };
     }
     
@@ -231,7 +231,7 @@ export async function getOrCreateUserProfile(
       
       // For some errors, we might still want to try creating a profile
       if (isRetryableError(getError)) {
-        console.log('Get profile error seems retryable, proceeding to create profile...');
+        // console.log removed
       } else {
         // For non-retryable errors, return the error
         return { profile: null, created: false, error: getError };
@@ -239,7 +239,7 @@ export async function getOrCreateUserProfile(
     }
     
     // Try to create new profile
-    console.log(`Creating new profile for user ${userId}`);
+    // console.log removed
     const { profile: newProfile, error: createError } = await safeCreateUserProfile(
       supabase,
       userId,
@@ -247,7 +247,7 @@ export async function getOrCreateUserProfile(
     );
     
     if (newProfile) {
-      console.log(`Successfully created profile for user ${userId}`);
+      // console.log removed
       return { 
         profile: newProfile, 
         created: true, 
@@ -260,11 +260,11 @@ export async function getOrCreateUserProfile(
       
       // As a last resort, try one more time to get existing profile in case
       // it was created by another process (race condition)
-      console.log('Attempting final check for existing profile...');
+      // console.log removed
       const { profile: finalProfile, error: finalError } = await safeGetUserProfile(supabase, userId);
       
       if (finalProfile) {
-        console.log(`Found profile on final check for user ${userId}`);
+        // console.log removed
         return { profile: finalProfile, created: false, error: null };
       }
       

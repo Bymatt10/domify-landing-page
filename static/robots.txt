@@ -4,17 +4,34 @@ Allow: /
 # Sitemap
 Sitemap: https://domify.app/sitemap.xml
 
-# Allow all pages
-Allow: /services/
-Allow: /provider/
-Allow: /about
-Allow: /contact
+# Crawl-delay para ser respetuoso con el servidor
+Crawl-delay: 1
 
-# Disallow admin and private areas
+# Permitir acceso a recursos importantes
+Allow: /api/health
+Allow: /api/categories
+Allow: /api/providers
+
+# Bloquear acceso a rutas administrativas y de autenticación
 Disallow: /admin/
-Disallow: /api/
 Disallow: /auth/
-Disallow: /debug/
+Disallow: /provider/
+Disallow: /api/debug/
+Disallow: /api/auth/
 
-# Crawl delay (optional)
-Crawl-delay: 1 
+# Bloquear archivos de configuración
+Disallow: /*.json$
+Disallow: /*.xml$
+Disallow: /*.txt$
+
+# Permitir acceso a imágenes y recursos estáticos
+Allow: /img/
+Allow: /static/
+Allow: /*.css$
+Allow: /*.js$
+Allow: /*.png$
+Allow: /*.jpg$
+Allow: /*.jpeg$
+Allow: /*.gif$
+Allow: /*.svg$
+Allow: /*.ico$ 

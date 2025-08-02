@@ -141,7 +141,7 @@
 	}
 
 	async function createNewClient() {
-		console.log('Creating new client...', newClientForm);
+		// console.log removed
 		error = '';
 		creatingClient = true;
 		
@@ -215,8 +215,8 @@
 	}
 
 	async function saveEarning() {
-		console.log('Saving earning...', earningForm);
-		console.log('Provider profile:', providerProfile);
+		// console.log removed
+		// console.log removed
 		error = '';
 		success = '';
 
@@ -241,16 +241,7 @@
 			endTime.setHours(10, 0, 0, 0); // 10:00 AM
 
 			// Crear la reserva/ganancia
-			console.log('Creating booking with data:', {
-				provider_profile_id: providerProfile.id,
-				service_id: earningForm.service_id,
-				client_user_id: earningForm.client_user_id,
-				start_time: startTime.toISOString(),
-				end_time: endTime.toISOString(),
-				total_price: earningForm.amount,
-				notes_for_provider: earningForm.notes || null,
-				status: 'completed'
-			});
+			// Creating booking with data
 
 			const { data: newBooking, error: bookingError } = await supabase
 				.from('bookings')
@@ -272,12 +263,12 @@
 				throw bookingError;
 			}
 
-			console.log('Booking created successfully:', newBooking);
+			// console.log removed
 
 			// Recargar datos para actualizar estadísticas
-			console.log('Reloading data...');
+			// console.log removed
 			await loadData();
-			console.log('Data reloaded successfully');
+			// console.log removed
 
 			closeAddEarningModal();
 			success = 'Ganancia registrada exitosamente.';
@@ -411,7 +402,7 @@
 
 						{#if !showAddClientForm}
 							<form on:submit|preventDefault={() => {
-								console.log('Form submitted');
+								// console.log removed
 								saveEarning();
 							}} class="earning-form">
 								<div class="form-group">
@@ -480,9 +471,9 @@
 										{saving ? 'Guardando...' : 'Registrar Ganancia'}
 									</button>
 									<button type="button" class="btn btn-secondary" on:click={() => {
-										console.log('Test button clicked');
-										console.log('Form data:', earningForm);
-										console.log('Provider profile:', providerProfile);
+										// console.log removed
+										// console.log removed
+										// console.log removed
 									}}>
 										Test
 									</button>

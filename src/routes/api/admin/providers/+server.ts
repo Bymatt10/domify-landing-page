@@ -13,7 +13,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
         const search = url.searchParams.get('search') || '';
         const offset = (page - 1) * limit;
 
-        console.log('Fetching providers...');
+        // console.log removed
 
         // Usar el cliente de Supabase admin desde locals
         const { supabaseAdmin } = locals;
@@ -49,7 +49,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
             throw new Error(error.message);
         }
 
-        console.log('Providers fetched successfully:', providers?.length || 0);
+        // console.log removed
 
         // Para cada proveedor, obtener el email desde auth.users y formatear las categorías
         const providersWithEmail = await Promise.all((providers || []).map(async (provider: any) => {

@@ -73,7 +73,7 @@ async function sendWelcomeEmail(email: string, tempPassword: string, providerNam
     });
 
     if (result) {
-      console.log('✅ Email de bienvenida enviado exitosamente a:', email);
+      // console.log removed
     } else {
       console.error('❌ Error enviando email de bienvenida');
     }
@@ -179,7 +179,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
     const offset = (page - 1) * limit;
 
     // Construir query con filtros
-    console.log('Fetching provider applications with filters:', { status, search, category, date });
+    // console.log removed
     
     let queryParams = [`limit=${limit}`, `offset=${offset}`, 'order=created_at.desc'];
     
@@ -264,7 +264,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
       });
     }
     
-    console.log('Applications fetched successfully:', applications.length, 'with filters:', { status, search, category, date });
+    // console.log removed
 
     // Obtener categorías para cada aplicación
     const formattedApplications = await Promise.all((applications || []).map(async (app: any) => {
@@ -715,7 +715,7 @@ export const PUT: RequestHandler = async ({ request, url, locals }) => {
             }
           }
         } else {
-          console.log('Application has no user_id and no email, cannot create user or profile');
+          // console.log removed
         }
       } catch (profileCreationError) {
         console.error('Error in profile creation process:', profileCreationError);

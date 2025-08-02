@@ -69,7 +69,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
         // In development mode, automatically confirm the user
         if (import.meta.env.DEV) {
-            console.log('Development mode: Auto-confirming user:', email);
+            // console.log removed
             
             // Create admin client for user management
             const adminClient = createSupabaseAdminClient(fetch);

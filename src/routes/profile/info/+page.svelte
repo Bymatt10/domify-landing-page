@@ -167,11 +167,11 @@
       return;
     }
     const user = userData.user;
-    console.log('Usuario antes de subir avatar:', user.user_metadata);
+    		// Usuario antes de subir avatar
 
     const fileExt = file.name.split('.').pop();
     const fileName = `${user.id}_${uuidv4()}.${fileExt}`;
-    console.log('user.id:', user.id, 'fileName:', fileName);
+    		// user.id and fileName
     const filePath = fileName;
     uploading = true;
     // Subir a Supabase Storage
@@ -184,7 +184,7 @@
     // Obtener URL pública
     const { data: publicUrlData } = supabase.storage.from('avatars').getPublicUrl(filePath);
     const publicUrl = publicUrlData.publicUrl;
-    console.log('URL pública generada:', publicUrl);
+    		// URL pública generada
     
     // Actualizar perfil del usuario
     const { data: updateData, error: updateError } = await supabase.auth.updateUser({ data: { avatar_url: publicUrl } });
@@ -194,15 +194,15 @@
       return;
     }
     
-    console.log('Usuario después de actualizar avatar:', updateData.user?.user_metadata);
+    		// Usuario después de actualizar avatar
     
     avatar_url = publicUrl;
     uploading = false;
     
     // Forzar la recarga del layout para actualizar el navbar
-    console.log('Invalidando layout para actualizar navbar...');
-    await invalidateAll();
-    console.log('Layout invalidado exitosamente');
+    		// Invalidando layout para actualizar navbar
+		await invalidateAll();
+		// Layout invalidado exitosamente
   }
 </script>
 

@@ -53,7 +53,7 @@
 	function handleImageError(event: Event) {
 		const img = event.target as HTMLImageElement;
 		if (img) {
-			console.log('Error cargando imagen de perfil, ocultando imagen');
+			// Error cargando imagen de perfil, ocultando imagen
 			img.style.display = 'none';
 		}
 	}

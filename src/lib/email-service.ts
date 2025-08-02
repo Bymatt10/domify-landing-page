@@ -23,18 +23,18 @@ const transporter = nodemailer.createTransport({
 });
 
 // Verificar la configuración SMTP al inicializar
-console.log('🔧 SMTP Configuration:');
-console.log('Host:', SMTP_HOST);
-console.log('Port:', SMTP_PORT);
-console.log('User:', SMTP_USER);
-console.log('From Email:', FROM_EMAIL);
+// console.log removed
+// console.log removed
+// console.log removed
+// console.log removed
+// console.log removed
 
 // Verificar la conexión SMTP
 transporter.verify(function (error: Error | null, success: boolean) {
     if (error) {
-        console.log('❌ SMTP Connection Error:', error);
+        // console.log removed
     } else {
-        console.log('✅ SMTP Server is ready to take our messages');
+        // console.log removed
     }
 });
 
@@ -47,9 +47,9 @@ export interface EmailOptions {
 
 export async function sendEmail(options: EmailOptions): Promise<boolean> {
     try {
-        console.log('🚀 Starting SMTP email send...');
-        console.log('To:', options.to);
-        console.log('Subject:', options.subject);
+        // console.log removed
+        // console.log removed
+        // console.log removed
         
         const mailOptions = {
             from: `"Domify" <${FROM_EMAIL}>`,
@@ -59,12 +59,12 @@ export async function sendEmail(options: EmailOptions): Promise<boolean> {
             html: options.html,
         };
 
-        console.log('📧 Sending email via SMTP...');
+        // console.log removed
         const info = await transporter.sendMail(mailOptions);
         
-        console.log('✅ Email sent successfully!');
-        console.log('Message ID:', info.messageId);
-        console.log('Response:', info.response);
+        // console.log removed
+        // console.log removed
+        // console.log removed
         
         return true;
 
@@ -241,7 +241,7 @@ export async function sendProviderWelcomeEmail(
     loginUrl: string
 ): Promise<boolean> {
     try {
-        console.log('📧 Sending provider welcome email to:', email);
+        // console.log removed
         
         const emailHtml = createProviderWelcomeEmail({
             name,
@@ -256,7 +256,7 @@ export async function sendProviderWelcomeEmail(
             html: emailHtml
         });
 
-        console.log('Provider welcome email result:', result);
+        // console.log removed
         return result;
 
     } catch (error) {

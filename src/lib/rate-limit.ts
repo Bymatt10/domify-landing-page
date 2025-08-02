@@ -112,38 +112,38 @@ class RedisStore {
 
 // Configuraciones predefinidas
 export const RATE_LIMIT_CONFIGS = {
-  // Rate limit estricto para autenticación
+  // Rate limit para autenticación (más permisivo para desarrollo)
   auth: {
     windowMs: 15 * 60 * 1000, // 15 minutos
-    maxRequests: 5, // 5 intentos por 15 minutos
+    maxRequests: 50, // 50 intentos por 15 minutos (aumentado de 5)
     keyGenerator: (request: any) => `auth:${request.headers.get('x-forwarded-for') || request.headers.get('cf-connecting-ip') || 'unknown'}`
   },
 
   // Rate limit para APIs generales
   api: {
     windowMs: 60 * 1000, // 1 minuto
-    maxRequests: 100, // 100 requests por minuto
+    maxRequests: 200, // 200 requests por minuto (aumentado de 100)
     keyGenerator: (request: any) => `api:${request.headers.get('x-forwarded-for') || request.headers.get('cf-connecting-ip') || 'unknown'}`
   },
 
   // Rate limit para búsquedas
   search: {
     windowMs: 60 * 1000, // 1 minuto
-    maxRequests: 30, // 30 búsquedas por minuto
+    maxRequests: 100, // 100 búsquedas por minuto (aumentado de 30)
     keyGenerator: (request: any) => `search:${request.headers.get('x-forwarded-for') || request.headers.get('cf-connecting-ip') || 'unknown'}`
   },
 
   // Rate limit para envío de formularios
   forms: {
     windowMs: 5 * 60 * 1000, // 5 minutos
-    maxRequests: 10, // 10 envíos por 5 minutos
+    maxRequests: 50, // 50 envíos por 5 minutos (aumentado de 10)
     keyGenerator: (request: any) => `forms:${request.headers.get('x-forwarded-for') || request.headers.get('cf-connecting-ip') || 'unknown'}`
   },
 
   // Rate limit para webhooks
   webhooks: {
     windowMs: 60 * 1000, // 1 minuto
-    maxRequests: 10, // 10 webhooks por minuto
+    maxRequests: 50, // 50 webhooks por minuto (aumentado de 10)
     keyGenerator: (request: any) => `webhooks:${request.headers.get('x-forwarded-for') || request.headers.get('cf-connecting-ip') || 'unknown'}`
   }
 };

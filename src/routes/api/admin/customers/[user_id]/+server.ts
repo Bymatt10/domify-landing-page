@@ -70,7 +70,7 @@ export const PUT: RequestHandler = async ({ params, request }) => {
 		const { user_id } = params;
 		const updateData = await request.json();
 
-		console.log('🔄 Updating customer:', user_id, updateData);
+		// console.log removed
 
 		// Validar datos de entrada
 		const allowedFields = ['first_name', 'last_name', 'phone_number', 'address'];
@@ -137,7 +137,7 @@ export const PUT: RequestHandler = async ({ params, request }) => {
 			result.email = updateData.email.trim();
 		}
 
-		console.log('✅ Customer updated successfully:', result);
+		// console.log removed
 
 		return json(result);
 
@@ -155,7 +155,7 @@ export const PATCH: RequestHandler = async ({ params, request }) => {
 		const { user_id } = params;
 		const { action } = await request.json();
 
-		console.log('🔄 User action:', action, 'for user:', user_id);
+		// console.log removed
 
 		if (action !== 'activate' && action !== 'deactivate') {
 			return json({ error: 'Invalid action. Use "activate" or "deactivate"' }, { status: 400 });
@@ -188,7 +188,7 @@ export const PATCH: RequestHandler = async ({ params, request }) => {
 			console.warn('⚠️ Failed to update auth status, but customer record updated');
 		}
 
-		console.log(`✅ User ${isActive ? 'activated' : 'deactivated'} successfully:`, updatedCustomer[0]);
+		// console.log removed
 
 		return json({
 			success: true,

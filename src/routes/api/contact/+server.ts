@@ -156,13 +156,6 @@ export const POST: RequestHandler = async ({ request }) => {
 		}
 
 		// Log del contacto (opcional - para analytics)
-		console.log('Contact form submitted:', {
-			name,
-			email,
-			subject,
-			user_id,
-			timestamp: new Date().toISOString()
-		});
 
 		return json({
 			success: true,

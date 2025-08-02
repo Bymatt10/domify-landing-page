@@ -42,7 +42,7 @@ export const GET: RequestHandler = async ({ params, locals, fetch }) => {
 			return json({ error: 'ID de usuario requerido' }, { status: 400 });
 		}
 
-		console.log('Fetching customer details for user_id:', user_id);
+		// console.log removed
 
 		// Obtener detalles del cliente usando query directa
 		const customerData = await directSupabaseQuery(`customers?user_id=eq.${user_id}`);

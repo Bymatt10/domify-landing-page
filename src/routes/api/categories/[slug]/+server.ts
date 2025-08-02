@@ -174,10 +174,10 @@ export const PUT: RequestHandler = async ({ params, request, locals }) => {
         
         // For now, allow demo tokens for testing
         if (!token || token === 'demo-token-12345' || token.includes('demo-token')) {
-            console.log('Using demo token for category update');
+            // console.log removed
         } else {
             // In a real app, you'd verify the JWT and get user info
-            console.log('Token provided, assuming admin access for testing');
+            // console.log removed
         }
 
         if (!params.slug) {
@@ -336,10 +336,10 @@ export const DELETE: RequestHandler = async ({ params, request, locals }) => {
         
         // For now, allow demo tokens for testing
         if (!token || token === 'demo-token-12345' || token.includes('demo-token')) {
-            console.log('Using demo token for category deletion');
+            // console.log removed
         } else {
             // In a real app, you'd verify the JWT and get user info
-            console.log('Token provided, assuming admin access for testing');
+            // console.log removed
         }
 
         if (!params.slug) {

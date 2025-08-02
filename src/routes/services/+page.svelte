@@ -125,18 +125,18 @@
 			.replace(/[^a-z0-9\s]/g, "")
 			.trim();
 		
-		console.log('🔍 Looking for icon for category:', categoryName, '-> normalized:', normalizedName);
+		// Looking for icon for category
 		
 		// Buscar coincidencias exactas primero
 		if (categoryIcons[normalizedName]) {
-			console.log('✅ Exact match found for:', normalizedName);
+			// Exact match found
 			return categoryIcons[normalizedName];
 		}
 		
 		// Buscar coincidencias parciales
 		for (const [key, iconData] of Object.entries(categoryIcons)) {
 			if (normalizedName.includes(key) || key.includes(normalizedName)) {
-				console.log('✅ Partial match found:', key, 'for', normalizedName);
+				// Partial match found
 				return iconData;
 			}
 		}
@@ -163,42 +163,42 @@
 		
 		for (const [keyword, iconKey] of Object.entries(keywords)) {
 			if (normalizedName.includes(keyword)) {
-				console.log('✅ Keyword match found:', keyword, '->', iconKey);
+				// console.log removed
 				return categoryIcons[iconKey];
 			}
 		}
 		
-		console.log('❌ No match found, using default icon for:', normalizedName);
+		// console.log removed
 		return categoryIcons['default'];
 	}
 
 	// Función para filtrar categorías
 	function filterCategories() {
-		console.log('🔍 Filtering categories with query:', searchQuery);
-		console.log('📋 Total categories:', categories.length);
+		// console.log removed
+		// console.log removed
 		
 		if (!searchQuery.trim()) {
 			filteredCategories = categories;
-			console.log('✅ No query, showing all categories:', filteredCategories.length);
+			// console.log removed
 			return;
 		}
 
 		const query = searchQuery.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-		console.log('🔤 Processed query:', query);
+		// console.log removed
 		
 		// Primero buscar coincidencias exactas
 		const exactNameMatches = categories.filter(category => {
 			const name = category.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 			const slug = category.slug.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 			const isExact = name === query || slug === query;
-			if (isExact) console.log('🎯 Exact match found:', category.name);
+			if (isExact) // console.log removed
 			return isExact;
 		});
 
 		// Si hay coincidencias exactas, mostrar solo esas
 		if (exactNameMatches.length > 0) {
 			filteredCategories = exactNameMatches;
-			console.log('✅ Using exact matches:', exactNameMatches.length);
+			// console.log removed
 			return;
 		}
 
@@ -208,14 +208,14 @@
 			const slug = category.slug.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 			const words = name.split(' ');
 			const startsWith = words.some(word => word.startsWith(query)) || slug.startsWith(query);
-			if (startsWith) console.log('🚀 Starts with match:', category.name);
+			if (startsWith) // console.log removed
 			return startsWith;
 		});
 
 		// Si hay coincidencias que empiecen con la consulta, mostrar esas
 		if (startsWithMatches.length > 0) {
 			filteredCategories = startsWithMatches;
-			console.log('✅ Using starts with matches:', startsWithMatches.length);
+			// console.log removed
 			return;
 		}
 
@@ -226,29 +226,29 @@
 			const description = category.description.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 			
 			const hasPartial = name.includes(query) || slug.includes(query) || description.includes(query);
-			if (hasPartial) console.log('🔍 Partial match found:', category.name);
+			if (hasPartial) // console.log removed
 			return hasPartial;
 		});
 
 		filteredCategories = partialMatches;
-		console.log('✅ Using partial matches:', partialMatches.length);
+		// console.log removed
 	}
 
 	// Función para limpiar búsqueda
 	function clearSearch() {
-		console.log('🧹 Clearing search');
+		// console.log removed
 		searchQuery = '';
 		filteredCategories = categories;
-		console.log('✅ Search cleared, showing all categories:', filteredCategories.length);
+		// console.log removed
 	}
 
 	// Función para manejar la búsqueda al presionar Enter
 	function handleSearch() {
-		console.log('🎯 handleSearch called with query:', searchQuery);
-		console.log('📊 Current filtered categories:', filteredCategories.length);
+		// console.log removed
+		// console.log removed
 		
 		if (!searchQuery.trim()) {
-			console.log('🔄 Empty query, scrolling to all services');
+			// console.log removed
 			// Si no hay búsqueda, hacer scroll a todos los servicios
 			const resultsSection = document.querySelector('#results-section');
 			if (resultsSection) {
@@ -290,34 +290,34 @@
 
 	// Función para manejar tecla Enter
 	function handleKeydown(event: KeyboardEvent) {
-		console.log('⌨️ Key pressed:', event.key);
+		// console.log removed
 		if (event.key === 'Enter') {
-			console.log('🎯 Enter key detected, calling handleSearch');
+			// console.log removed
 			event.preventDefault();
 			handleSearch();
 		}
 	}
 
 	onMount(async () => {
-		console.log('🚀 Component mounting, loading categories...');
+		// console.log removed
 		try {
 			const res = await fetch('/api/categories');
-			console.log('📡 API response status:', res.status, res.ok);
+			// console.log removed
 			if (!res.ok) {
 				throw new Error('No se pudieron cargar las categorías de servicios.');
 			}
 			const responseData = await res.json();
-			console.log('📦 Raw API response:', responseData);
+			// console.log removed
 			categories = responseData.data.categories;
 			filteredCategories = categories;
-			console.log('✅ Categories loaded successfully:', categories.length);
-			console.log('📋 First few categories:', categories.slice(0, 3));
+			// console.log removed
+			// console.log removed
 		} catch (e: any) {
 			error = e.message;
 			console.error('❌ Error fetching categories:', e);
 		} finally {
 			loading = false;
-			console.log('🏁 Loading completed, loading state:', loading);
+			// console.log removed
 		}
 	});
 

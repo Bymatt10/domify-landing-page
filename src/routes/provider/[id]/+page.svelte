@@ -90,6 +90,7 @@ function llamar(phone: string) {
     <title>{metaTags.title}</title>
     <meta name="description" content={metaTags.description} />
     <meta name="keywords" content={metaTags.keywords} />
+    <link rel="canonical" href={metaTags.canonical} />
     
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content={metaTags.og.type} />
@@ -97,6 +98,84 @@ function llamar(phone: string) {
     <meta property="og:title" content={metaTags.og.title} />
     <meta property="og:description" content={metaTags.og.description} />
     <meta property="og:image" content={metaTags.og.image} />
+    <meta property="og:site_name" content={metaTags.og.site_name} />
+    <meta property="og:locale" content={metaTags.og.locale} />
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content={metaTags.twitter.card} />
+    <meta name="twitter:url" content={metaTags.twitter.url} />
+    <meta name="twitter:title" content={metaTags.twitter.title} />
+    <meta name="twitter:description" content={metaTags.twitter.description} />
+    <meta name="twitter:image" content={metaTags.twitter.image} />
+    <meta name="twitter:site" content={metaTags.twitter.site} />
+    <meta name="twitter:creator" content={metaTags.twitter.creator} />
+    <meta name="twitter:image:alt" content={metaTags.twitter.image_alt} />
+    
+    <!-- Facebook específico -->
+    <meta property="og:image:width" content={metaTags.og.image_width.toString()} />
+    <meta property="og:image:height" content={metaTags.og.image_height.toString()} />
+    <meta property="og:image:alt" content={metaTags.og.image_alt} />
+    
+    <!-- WhatsApp específico -->
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:secure_url" content={metaTags.whatsapp.image} />
+    
+    <!-- Reddit específico -->
+    <meta name="reddit:title" content={metaTags.reddit.title} />
+    <meta name="reddit:description" content={metaTags.reddit.description} />
+    <meta name="reddit:image" content={metaTags.reddit.image} />
+    
+    <!-- LinkedIn específico -->
+    <meta property="og:image" content={metaTags.linkedin.image} />
+    <meta property="og:title" content={metaTags.linkedin.title} />
+    <meta property="og:description" content={metaTags.linkedin.description} />
+    
+    <!-- Additional SEO -->
+    <meta name="robots" content="index, follow" />
+    <meta name="author" content="Domify" />
+    <meta name="geo.region" content="NI" />
+    <meta name="geo.placename" content="Nicaragua" />
+    
+    <!-- Structured Data -->
+    {#if jsonLd}
+      <script type="application/ld+json">
+        {JSON.stringify(jsonLd)}
+      </script>
+    {/if}
+    
+    <!-- Breadcrumb Structured Data -->
+    <script type="application/ld+json">
+      {JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Inicio",
+            "item": "https://domify.app"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Servicios",
+            "item": "https://domify.app/services"
+          },
+          {
+            "@type": "ListItem",
+            "position": 3,
+            "name": provider?.categories?.[0] || "Servicios",
+            "item": `https://domify.app/services/${provider?.categories?.[0]?.toLowerCase()}`
+          },
+          {
+            "@type": "ListItem",
+            "position": 4,
+            "name": provider?.business_name || "Proveedor",
+            "item": `https://domify.app/provider/${provider?.id}`
+          }
+        ]
+      })}
+    </script>
     
     <!-- Twitter -->
     <meta property="twitter:card" content={metaTags.twitter.card} />

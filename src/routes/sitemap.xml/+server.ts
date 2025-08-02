@@ -30,10 +30,17 @@ export const GET: RequestHandler = async ({ locals: { supabase } }) => {
     // Páginas de categorías de servicios
     const serviceCategories = [
       { url: '/services/ensamblaje', priority: '0.8', changefreq: 'weekly' },
-      { url: '/services/limpieza', priority: '0.8', changefreq: 'weekly' },
+      { url: '/services/limpieza-casas', priority: '0.8', changefreq: 'weekly' },
       { url: '/services/jardineria', priority: '0.8', changefreq: 'weekly' },
-      { url: '/services/montaje', priority: '0.8', changefreq: 'weekly' },
-      { url: '/services/mudanza', priority: '0.8', changefreq: 'weekly' }
+      { url: '/services/electricistas', priority: '0.8', changefreq: 'weekly' },
+      { url: '/services/fontaneros', priority: '0.8', changefreq: 'weekly' },
+      { url: '/services/construccion', priority: '0.8', changefreq: 'weekly' },
+      { url: '/services/pintura', priority: '0.8', changefreq: 'weekly' },
+      { url: '/services/mudanzas', priority: '0.8', changefreq: 'weekly' },
+      { url: '/services/carpinteria', priority: '0.8', changefreq: 'weekly' },
+      { url: '/services/tecnologia', priority: '0.8', changefreq: 'weekly' },
+      { url: '/services/seguridad', priority: '0.8', changefreq: 'weekly' },
+      { url: '/services/albañileria', priority: '0.8', changefreq: 'weekly' }
     ];
 
     // Generar XML del sitemap

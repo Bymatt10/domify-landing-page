@@ -4,6 +4,7 @@
 	import { onMount, onDestroy } from 'svelte';
 	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
 	import { getTemplatesByCategoryName, type ServiceTemplate } from '$lib/service-templates';
+	import { generateCategoryMetaTags, generateCategoryJSONLD, generateBreadcrumbJSONLD } from '$lib/seo-utils';
 	import type { PageData } from './$types';
 
 	export let data: PageData;
@@ -62,10 +63,24 @@
 
 	let category = $page.params.category;
 	
-	// Log when category changes
-	$: if (category) {
-		console.log('🔄 [Category Page] Category changed to:', category);
-	}
+	// Generate SEO data for category
+	$: categorySEOData = data.category ? {
+		name: data.category.name,
+		slug: data.category.slug,
+		description: data.category.description,
+		providers_count: providers.length,
+		average_rate: providers.length > 0 ? providers.reduce((sum, p) => sum + (p.rating || 0), 0) / providers.length : undefined,
+		services: categoryServices.map(s => s.title),
+		parent_category: data.category.parent_category
+	} : null;
+
+	$: metaTags = categorySEOData ? generateCategoryMetaTags(categorySEOData) : null;
+	$: jsonLd = categorySEOData ? generateCategoryJSONLD(categorySEOData) : null;
+	$: breadcrumbData = categorySEOData ? generateBreadcrumbJSONLD([
+		{ name: 'Inicio', url: 'https://domify.app' },
+		{ name: 'Servicios', url: 'https://domify.app/services' },
+		{ name: categorySEOData.name, url: `https://domify.app/services/${categorySEOData.slug}` }
+	]) : null;
 	let providers: Provider[] = [];
 	
 	// Initialize providers from server data if available
@@ -77,7 +92,7 @@
 			photo_url: p.photo_url || '/img/cleaning.png',
 			users: p.users || { id: p.user_id, email: '', role: 'provider' }
 		}));
-		console.log('🔄 [Category Page] Providers initialized from server data:', providers.length);
+		// console.log removed
 	}
 	let loading = !data.preloaded; // Solo loading si no hay preload
 	let error: string | null = null;
@@ -177,17 +192,17 @@
 	let fetchTimeout: ReturnType<typeof setTimeout> | null = null;
 
 	async function fetchProviders() {
-		console.log('🔄 [Category Page] fetchProviders called for category:', category);
+		// console.log removed
 		
 		// Cancelar solicitud anterior si existe
 		if (fetchTimeout) {
-			console.log('🔄 [Category Page] Clearing previous fetch timeout');
+			// console.log removed
 			clearTimeout(fetchTimeout);
 		}
 
 		// Implementar debounce de 300ms para evitar múltiples llamadas
 		fetchTimeout = setTimeout(async () => {
-			console.log('🔄 [Category Page] Executing fetchProviders after debounce');
+			// console.log removed
 			loading = true;
 			error = null;
 
@@ -241,7 +256,7 @@
 
 	function applyFilters() {
 		if (typeof window !== 'undefined') {
-			console.log('🔄 [Category Page] Applying filters, fetching providers...');
+			// console.log removed
 			fetchProviders();
 			showFiltersModal = false;
 		}
@@ -338,7 +353,7 @@
 		hasContactedProvider = true;
 		// Aquí puedes agregar lógica adicional para el contacto
 		// Por ejemplo, abrir WhatsApp, llamar, o mostrar un formulario de contacto
-		console.log('Usuario ha contactado al proveedor:', selectedProvider?.business_name);
+		// console.log removed
 	}
 
 	function toggleReviewForm() {
@@ -667,22 +682,22 @@
 	// 4. After fetching providers, fetch their services - only once
 	let servicesFetched = false;
 	$: if (!loading && providers.length > 0 && !servicesFetched && !initialLoad) {
-		console.log('🔄 [Category Page] Fetching category services for', providers.length, 'providers');
+		// console.log removed
 		servicesFetched = true;
 		fetchCategoryServices();
 	}
 
 	onMount(async () => {
-		console.log('🔄 [Category Page] onMount called for category:', category);
-		console.log('🔄 [Category Page] Data preloaded:', data.preloaded);
-		console.log('🔄 [Category Page] Providers count:', data.providers?.length || 0);
+		// console.log removed
+		// console.log removed
+		// console.log removed
 		
 		// Only fetch if not preloaded from server
 		if (!data.preloaded) {
-			console.log('🔄 [Category Page] No preload, fetching providers from API...');
+			// console.log removed
 			fetchProviders();
 		} else {
-			console.log('🔄 [Category Page] Using preloaded data, skipping API call');
+			// console.log removed
 		}
 		
 		loadCategoryServices();
@@ -703,7 +718,7 @@
 		setTimeout(() => {
 			initialLoad = false;
 			filtersInitialized = true;
-			console.log('🔄 [Category Page] Initial load marked as complete, filters initialized');
+			// console.log removed
 		}, 100);
 	});
 
@@ -762,9 +777,9 @@
 			});
 			
 			if (currentFilterState !== lastFilterState && lastFilterState !== '') {
-				console.log('🔄 [Category Page] Filter state changed, applying filters');
-				console.log('🔄 [Category Page] Previous state:', lastFilterState);
-				console.log('🔄 [Category Page] Current state:', currentFilterState);
+				// console.log removed
+				// console.log removed
+				// console.log removed
 				lastFilterState = currentFilterState;
 				clearTimeout(filterTimeout);
 				filterTimeout = setTimeout(() => {
@@ -773,7 +788,7 @@
 			} else if (lastFilterState === '') {
 				// First time initialization - just save the state, don't apply filters
 				lastFilterState = currentFilterState;
-				console.log('🔄 [Category Page] Initial filter state saved:', currentFilterState);
+				// console.log removed
 			}
 		}
 	}
@@ -2250,4 +2265,5 @@
 			</div>
 		</div>
 	</div>
-{/if} 
+{/if}
+

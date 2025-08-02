@@ -4,7 +4,7 @@
 export function cleanPKCEState() {
   if (typeof window === 'undefined') return;
 
-  console.log('🧹 Limpiando estado de autenticación...');
+  // console.log removed
 
   try {
     // Limpiar localStorage - pero preservar estado PKCE activo si estamos en callback
@@ -19,7 +19,7 @@ export function cleanPKCEState() {
         
         // Durante callback, preservar PKCE keys activos
         if (isInCallback && (key.includes('pkce') || key.includes('code_verifier'))) {
-          console.log(`  ⚠️ Preservando durante callback: ${key}`);
+          // console.log removed
           continue;
         }
         
@@ -35,7 +35,7 @@ export function cleanPKCEState() {
     // Borrar las claves en una pasada separada para evitar problemas de iteración
     lsKeys.forEach(key => {
       localStorage.removeItem(key);
-      console.log(`  ✓ localStorage: ${key} eliminado`);
+      // console.log removed
     });
 
     // Limpiar sessionStorage
@@ -54,7 +54,7 @@ export function cleanPKCEState() {
     // Borrar las claves en una pasada separada
     ssKeys.forEach(key => {
       sessionStorage.removeItem(key);
-      console.log(`  ✓ sessionStorage: ${key} eliminado`);
+      // console.log removed
     });
 
     // Limpiar cookies relacionadas
@@ -74,11 +74,11 @@ export function cleanPKCEState() {
         // Eliminar la cookie en múltiples rutas y dominios para mayor seguridad
         document.cookie = `${cookieName}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; domain=${window.location.hostname}`;
         document.cookie = `${cookieName}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
-        console.log(`  ✓ cookie: ${cookieName} eliminada`);
+        // console.log removed
       }
     });
 
-    console.log('✅ Estado de autenticación limpiado correctamente');
+    // console.log removed
     return true;
   } catch (error) {
     console.error('❌ Error al limpiar estado de autenticación:', error);
@@ -92,7 +92,7 @@ export function cleanPKCEState() {
 export function clearOAuthStateAndRetry() {
   if (typeof window === 'undefined') return;
 
-  console.log('🔄 Limpiando estado OAuth para reintentar...');
+  // console.log removed
   
   const success = cleanPKCEState();
   

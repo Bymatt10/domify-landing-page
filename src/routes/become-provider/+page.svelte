@@ -122,7 +122,7 @@
 			await new Promise(resolve => setTimeout(resolve, 2000));
 			
 			// Aquí iría la lógica real de envío
-			console.log('Solicitud de proveedor enviada:', formData);
+			// Solicitud de proveedor enviada
 			
 			success = true;
 			formData = {

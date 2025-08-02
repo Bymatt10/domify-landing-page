@@ -86,7 +86,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 
         // Si no hay categorías en la base de datos, devolver categorías de ejemplo
         if (!categories || categories.length === 0) {
-            console.log('No categories found in database, returning sample categories');
+            // console.log removed
             const sampleCategories = [
                 {
                     id: 1,
@@ -278,16 +278,16 @@ export const POST: RequestHandler = async ({ request, locals }) => {
         
         // For now, allow demo tokens for testing
         if (!token || token === 'demo-token-12345' || token.includes('demo-token')) {
-            console.log('Using demo token for category creation');
+            // console.log removed
         } else {
             // In a real app, you'd verify the JWT and get user info
             // For now, we'll assume admin access for testing
-            console.log('Token provided, assuming admin access for testing');
+            // console.log removed
         }
 
         const body = await request.json();
         
-        console.log('Received category creation request:', body);
+        // console.log removed
         
         // Validate required fields
         validateRequired(body.name, 'Name');
@@ -295,7 +295,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
         const { name, icon, description } = body;
 
-        console.log('Extracted data:', { name, icon, description });
+        // console.log removed
 
         // Validate name length
         if (name.length > 100) {

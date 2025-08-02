@@ -20,18 +20,18 @@ let transporter: nodemailer.Transporter | null = null;
 
 function createTransporter(): nodemailer.Transporter | null {
 	try {
-		console.log('=== DEBUG: Variables de entorno de email ===');
+		// console.log removed
 		// Use import.meta.env for client-side or $env for server-side
 		const host = import.meta.env.MAILER_SMTP_HOST || process.env.MAILER_SMTP_HOST;
 		const port = import.meta.env.MAILER_SMTP_PORT || process.env.MAILER_SMTP_PORT;
 		const user = import.meta.env.MAILER_SMTP_USER || process.env.MAILER_SMTP_USER;
 		const pass = import.meta.env.MAILER_SMTP_PASS || process.env.MAILER_SMTP_PASS;
 		
-		console.log('MAILER_SMTP_HOST:', host);
-		console.log('MAILER_SMTP_PORT:', port);
-		console.log('MAILER_SMTP_USER:', user ? 'Configurado' : 'No configurado');
-		console.log('MAILER_SMTP_PASS:', pass ? 'Configurado' : 'No configurado');
-		console.log('==========================================');
+		// console.log removed
+		// console.log removed
+		// console.log removed
+		// console.log removed
+		// console.log removed
 
 		if (!host || !port || !user || !pass) {
 			console.error('[EMAIL ERROR] Faltan variables de entorno para Mailtrap SMTP.');
@@ -39,7 +39,7 @@ function createTransporter(): nodemailer.Transporter | null {
 			return null;
 		}
 
-		console.log('Configurando transporter con:', { host, port, user: user.substring(0, 8) + '...' });
+		// console.log removed
 
 		return nodemailer.createTransport({
 			host,
@@ -95,7 +95,7 @@ export async function sendEmail(options: EmailOptions): Promise<EmailResult> {
 
 function sendEmailFallback(options: EmailOptions): EmailResult {
 	const emailContent = `\n=== EMAIL A ENVIAR (FALLBACK) ===\nPara: ${Array.isArray(options.to) ? options.to.join(', ') : options.to}\nAsunto: ${options.subject}\n${options.replyTo ? `Reply-To: ${options.replyTo}` : ''}\nContenido:\n${options.text || options.html || 'Sin contenido'}\n=====================\n`;
-	console.log(emailContent);
+	// console.log removed
 	return {
 		success: false,
 		error: 'No se pudo enviar el email: faltan variables de entorno',
@@ -151,14 +151,14 @@ export interface WelcomeEmailData {
 
 export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<boolean> {
 	try {
-		console.log('📧 ==========================================');
-		console.log('📧 ENVIANDO EMAIL DE BIENVENIDA');
-		console.log('📧 ==========================================');
-		console.log(`�� Para: ${data.email}`);
-		console.log(`📧 Nombre: ${data.name}`);
-		console.log(`📧 Contraseña temporal: ${data.tempPassword}`);
-		console.log(`📧 URL de login: ${data.loginUrl}`);
-		console.log('📧 ==========================================');
+		// console.log removed
+		// console.log removed
+		// console.log removed
+		// console.log removed
+		// console.log removed
+		// console.log removed
+		// console.log removed
+		// console.log removed
 
 		// TODO: Integrar con servicio de email real
 		// Opciones recomendadas:

@@ -174,7 +174,7 @@
         totalPages = data.totalPages || 1;
 
         if (applications.length === 0) {
-          console.log('No applications found for the current filters.');
+          // console.log removed
         }
       } else {
         const errorData = await response.json();

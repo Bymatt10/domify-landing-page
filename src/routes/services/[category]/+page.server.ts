@@ -1,4 +1,5 @@
 import type { PageServerLoad } from './$types';
+import { generateCategoryMetaTags, generateCategoryJSONLD } from '$lib/seo-utils';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
 	const category = params.category;
@@ -161,9 +162,26 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		filteredProviders = sampleProviders;
 	}
 
+	// Generar datos SEO para la categoría
+	const categoryData = {
+		name: category.charAt(0).toUpperCase() + category.slice(1).replace(/-/g, ' '),
+		slug: category,
+		description: `Encuentra los mejores proveedores de ${category.replace(/-/g, ' ')} en Nicaragua. Servicios profesionales verificados con garantía de calidad.`,
+		providers_count: filteredProviders.length,
+		average_rate: filteredProviders.length > 0 ? filteredProviders.reduce((sum, p) => sum + p.average_rating, 0) / filteredProviders.length : undefined,
+		services: categoryMapping[category] || [],
+		parent_category: 'Servicios'
+	};
+
+	// Generar metadatos SEO
+	const seoData = generateCategoryMetaTags(categoryData);
+	const jsonLd = generateCategoryJSONLD(categoryData);
+
 	return {
-		category,
+		category: categoryData,
 		providers: filteredProviders,
-		preloaded: true
+		preloaded: true,
+		seoData,
+		jsonLd
 	};
 }; 

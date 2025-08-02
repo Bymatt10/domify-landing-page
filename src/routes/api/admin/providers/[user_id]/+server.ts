@@ -116,12 +116,12 @@ export const PUT: RequestHandler = async ({ request, params }) => {
 
     // Manejar actualización de categorías si se proporcionaron
     if (updateData.category_ids && Array.isArray(updateData.category_ids)) {
-      console.log('🔄 Updating categories for provider:', updatedProvider.id);
-      console.log('📋 New category IDs:', updateData.category_ids);
+      // console.log removed
+      // console.log removed
       
       try {
         // Primero, eliminar todas las categorías existentes del proveedor
-        console.log('🗑️ Deleting existing categories...');
+        // console.log removed
         const deleteResponse = await fetch(`${SUPABASE_URL}/rest/v1/provider_categories?provider_profile_id=eq.${updatedProvider.id}`, {
           method: 'DELETE',
           headers: {
@@ -135,18 +135,18 @@ export const PUT: RequestHandler = async ({ request, params }) => {
           const deleteError = await deleteResponse.text();
           console.error('❌ Error deleting existing categories:', deleteError);
         } else {
-          console.log('✅ Successfully deleted existing categories');
+          // console.log removed
         }
 
         // Luego, insertar las nuevas categorías
         if (updateData.category_ids.length > 0) {
-          console.log('➕ Inserting new categories...');
+          // console.log removed
           const categoryInserts = updateData.category_ids.map((categoryId: number) => ({
             provider_profile_id: updatedProvider.id,
             category_id: categoryId
           }));
 
-          console.log('📝 Category inserts:', categoryInserts);
+          // console.log removed
 
           const insertResponse = await fetch(`${SUPABASE_URL}/rest/v1/provider_categories`, {
             method: 'POST',
@@ -163,17 +163,17 @@ export const PUT: RequestHandler = async ({ request, params }) => {
             const error = await insertResponse.text();
             console.error('❌ Error inserting new categories:', error);
           } else {
-            console.log('✅ Successfully inserted new categories');
+            // console.log removed
           }
         } else {
-          console.log('ℹ️ No categories to insert (empty array)');
+          // console.log removed
         }
       } catch (categoryError) {
         console.error('❌ Error updating categories:', categoryError);
         // No fallar la actualización principal por errores de categorías
       }
     } else {
-      console.log('ℹ️ No category_ids provided or not an array');
+      // console.log removed
     }
 
     // Si se actualizó el email, incluirlo en la respuesta

@@ -32,7 +32,7 @@ export async function testAdminConnection() {
             return false;
         }
         
-        console.log('✅ Admin connection successful');
+        // console.log removed
         return true;
     } catch (error) {
         console.error('Admin connection test error:', error);

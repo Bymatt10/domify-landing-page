@@ -51,9 +51,9 @@ export const load: PageServerLoad = async ({ url, locals: { supabase } }) => {
   const startTime = Date.now();
   const requestId = Math.random().toString(36).substring(7);
   
-  console.log(`[${requestId}] 🚀 OAuth callback started`);
-  console.log(`[${requestId}] 📍 URL:`, url.toString());
-  console.log(`[${requestId}] 🔧 Supabase client:`, !!supabase);
+  // console.log removed
+  // console.log removed
+  // console.log removed
   
   try {
     // Validate environment first to prevent configuration-related 502 errors
@@ -68,11 +68,11 @@ export const load: PageServerLoad = async ({ url, locals: { supabase } }) => {
     const error = url.searchParams.get('error')
     const errorDescription = url.searchParams.get('error_description')
 
-    console.log(`[${requestId}] === OAuth Callback Debug ===`);
-    console.log(`[${requestId}] Environment validation: ✅ PASSED`);
-    console.log(`[${requestId}] Code received:`, code ? `YES (length: ${code.length})` : 'NO');
-    console.log(`[${requestId}] Next URL:`, next);
-    console.log(`[${requestId}] Full URL:`, url.toString());
+    // console.log removed
+    // console.log removed
+    // console.log removed
+    // console.log removed
+    // console.log removed
     console.log(`[${requestId}] Request headers:`, {
       userAgent: url.searchParams.get('user_agent') || 'not provided',
       referer: url.searchParams.get('referer') || 'not provided'
@@ -105,7 +105,7 @@ export const load: PageServerLoad = async ({ url, locals: { supabase } }) => {
     }
 
     // Handle PKCE state issues in production
-    console.log(`[${requestId}] 🔄 Starting OAuth code exchange...`);
+    // console.log removed
     
     let exchangeAttempts = 0;
     const maxAttempts = 2;
@@ -114,7 +114,7 @@ export const load: PageServerLoad = async ({ url, locals: { supabase } }) => {
     while (exchangeAttempts < maxAttempts) {
       try {
         exchangeAttempts++;
-        console.log(`[${requestId}] 🔄 Attempt ${exchangeAttempts}/${maxAttempts} to exchange code...`);
+        // console.log removed
         
         const exchangeStartTime = Date.now();
         const { data, error } = await withTimeout(
@@ -130,8 +130,8 @@ export const load: PageServerLoad = async ({ url, locals: { supabase } }) => {
           // If it's a PKCE state error, try to clean state and retry
           if (error.message.includes('invalid flow state') || error.message.includes('no valid flow state') || 
               error.message.includes('code verifier') || error.message.includes('pkce')) {
-            console.log(`[${requestId}] 🔄 PKCE state error detected:`, error.message);
-            console.log(`[${requestId}] 🔄 Attempting retry with delay...`);
+            // console.log removed
+            // console.log removed
             
             // Wait longer before retry for PKCE issues
             await new Promise(resolve => setTimeout(resolve, 1000));
@@ -143,18 +143,18 @@ export const load: PageServerLoad = async ({ url, locals: { supabase } }) => {
         }
         
         // Success!
-        console.log(`[${requestId}] ✅ Code exchange successful on attempt ${exchangeAttempts}`);
+        // console.log removed
         
         // CRITICAL: Ensure session is properly set in cookies after OAuth
         if (data?.session) {
-          console.log(`[${requestId}] 🍪 Setting session in cookies for user:`, data.user.email);
+          // console.log removed
           
           // Force set the session to ensure it's properly stored in cookies
           const { error: sessionError } = await supabase.auth.setSession(data.session);
           if (sessionError) {
             console.error(`[${requestId}] ❌ Error setting session:`, sessionError);
           } else {
-            console.log(`[${requestId}] ✅ Session successfully set in cookies`);
+            // console.log removed
           }
           
           // Wait a moment for session to be persisted
@@ -205,10 +205,10 @@ export const load: PageServerLoad = async ({ url, locals: { supabase } }) => {
           || data.user.user_metadata?.family_name
           || 'OAuth';
         
-        console.log(`[${requestId}] 📋 Prepared profile data:`, { firstName, lastName });
+        // console.log removed
         
         // CIRCUIT BREAKER: Skip profile creation entirely for faster OAuth callback
-        console.log(`[${requestId}] ⚡ Circuit breaker activated: skipping profile creation for speed`);
+        // console.log removed
         
         // Let database triggers handle profile creation asynchronously
         // Or user can complete profile setup later from the UI
@@ -219,8 +219,8 @@ export const load: PageServerLoad = async ({ url, locals: { supabase } }) => {
         // Continue immediately without profile creation
         
         const totalTime = Date.now() - startTime;
-        console.log(`[${requestId}] ✅ OAuth callback completed in FAST MODE in ${totalTime}ms for:`, data.user.email);
-        console.log(`[${requestId}] 🔄 Redirecting to:`, next);
+        // console.log removed
+        // console.log removed
         
         // Final session check before redirect
         const { data: { session: finalSession } } = await supabase.auth.getSession();
@@ -229,10 +229,10 @@ export const load: PageServerLoad = async ({ url, locals: { supabase } }) => {
           // Try to set session one more time
           if (data?.session) {
             await supabase.auth.setSession(data.session);
-            console.log(`[${requestId}] 🔄 Retried setting session before redirect`);
+            // console.log removed
           }
         } else {
-          console.log(`[${requestId}] ✅ Session confirmed before redirect for user:`, finalSession.user.email);
+          // console.log removed
         }
         
         // Use 302 redirect with proper cache headers to ensure session is maintained
@@ -252,7 +252,7 @@ export const load: PageServerLoad = async ({ url, locals: { supabase } }) => {
      } catch (error) {
      // Handle redirects properly - don't treat them as errors
      if (error instanceof Response && (error.status === 302 || error.status === 303)) {
-       console.log(`[${requestId}] 🔄 Redirect response (not an error):`, error.status, error.headers.get('location'));
+       // console.log removed
        throw error; // Re-throw redirects as-is
      }
      
@@ -280,7 +280,7 @@ export const load: PageServerLoad = async ({ url, locals: { supabase } }) => {
      // Ensure error message is safe for URL encoding
      const safeErrorMessage = errorMessage.replace(/[^\w\s\-\.]/g, ' ').substring(0, 100);
      
-     console.log(`[${requestId}] 🔄 Redirecting with safe error:`, safeErrorMessage);
+     // console.log removed
      throw redirect(302, `/auth/login?error=callbackError:${encodeURIComponent(safeErrorMessage)}`);
    }
 } 

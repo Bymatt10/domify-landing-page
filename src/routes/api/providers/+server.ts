@@ -123,7 +123,7 @@ export const GET: RequestHandler = async ({ url }) => {
         const categorySlug = url.searchParams.get('category'); // Para compatibilidad con la página de servicios
         const providerType = url.searchParams.get('provider_type');
         
-        console.log('🔍 Fetching providers with filters:', { limit, offset, categoryId, categorySlug, providerType });
+        	// Fetching providers with filters
         
         // Si se proporciona un slug de categoría, obtener el ID correspondiente
         let finalCategoryId = categoryId;
@@ -132,9 +132,9 @@ export const GET: RequestHandler = async ({ url }) => {
                 const categoryResponse = await directSupabaseQuery(`categories?slug=eq.${categorySlug}&select=id`);
                 if (categoryResponse && categoryResponse.length > 0) {
                     finalCategoryId = categoryResponse[0].id.toString();
-                    console.log(`🔄 Mapped category slug '${categorySlug}' to ID: ${finalCategoryId}`);
+                    // Mapped category slug to ID
                 } else {
-                    console.log(`❌ Category slug '${categorySlug}' not found`);
+                    // Category slug not found
                     return json({ 
                         data: { providers: [], total: 0 }, 
                         message: 'Category not found', 
@@ -168,26 +168,25 @@ export const GET: RequestHandler = async ({ url }) => {
         const queryString = queryParams.join('&');
         const allProviders = await directSupabaseQuery(`provider_profiles?${queryString}`);
         
-        console.log(`📊 Found ${allProviders.length} active providers`);
+        // Found active providers
         
         // Si hay filtro por categoría, filtrar por categoría
         let filteredProviders = allProviders;
         if (finalCategoryId) {
-            console.log(`🎯 Filtering by category ID: ${finalCategoryId}`);
+            // Filtering by category ID
             
             // Obtener los provider_profile_ids que pertenecen a esta categoría
             const categoryProviders = await directSupabaseQuery(`provider_categories?category_id=eq.${finalCategoryId}&select=provider_profile_id`);
-            console.log(`🔗 Found ${categoryProviders.length} providers in category ${finalCategoryId}:`, categoryProviders);
             
             if (categoryProviders && categoryProviders.length > 0) {
                 const providerIds = categoryProviders.map((cp: any) => cp.provider_profile_id);
                 filteredProviders = allProviders.filter((provider: any) => 
                     providerIds.includes(provider.id)
                 );
-                console.log(`✅ Filtered to ${filteredProviders.length} providers for category ${finalCategoryId}`);
+                // Filtered to providers for category
             } else {
                 filteredProviders = [];
-                console.log(`❌ No providers found for category ${finalCategoryId}`);
+                // No providers found for category
             }
         }
         
@@ -238,7 +237,7 @@ export const GET: RequestHandler = async ({ url }) => {
             };
         }));
         
-        console.log(`🎉 Returning ${providersWithEmails.length} providers`);
+        // Returning providers
         
         return json({ 
             data: { 

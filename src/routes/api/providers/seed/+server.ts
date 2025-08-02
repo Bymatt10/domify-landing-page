@@ -59,10 +59,10 @@ export const POST: RequestHandler = async ({ request, locals }) => {
         
         // For now, allow demo tokens for testing
         if (!token || token === 'demo-token-12345' || token.includes('demo-token')) {
-            console.log('Using demo token for provider seeding');
+            // console.log removed
         } else {
             // In a real app, you'd verify the JWT and get user info
-            console.log('Token provided, assuming admin access for testing');
+            // console.log removed
         }
 
         // Check if providers already exist

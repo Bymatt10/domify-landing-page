@@ -67,7 +67,7 @@ export async function authenticateUser(event: RequestEvent): Promise<Authenticat
     
     // If the error is "no rows found", try to create the profile automatically
     if (customerError.code === 'PGRST116') {
-      console.log('No customer profile found, creating one automatically...');
+      // console.log removed
       
       try {
         const { data: newCustomerData, error: createError } = await locals.supabase
@@ -85,7 +85,7 @@ export async function authenticateUser(event: RequestEvent): Promise<Authenticat
           throw new AuthenticationException('Failed to create user profile');
         }
 
-        console.log('Customer profile created successfully:', newCustomerData);
+        // console.log removed
         // Use the newly created profile
         const { data: customerData, error: customerError } = await locals.supabase
           .from('customers')

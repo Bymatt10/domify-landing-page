@@ -102,7 +102,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
         const { email, password, first_name, last_name, role = 'provider' } = await request.json();
 
-        console.log('Registration attempt for:', { email, first_name, last_name, role });
+        	// Registration attempt
 
         // Validate required fields
         validateRequired(email, 'Email');
@@ -116,7 +116,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
         const validRoles = ['customer', 'provider', 'admin'];
         const userRole = validRoles.includes(role) ? role : 'customer';
 
-        console.log('Creating user in Supabase Auth...');
+        		// Creating user in Supabase Auth
 
         // Check if we're in development mode
         const isDevelopment = import.meta.env.DEV;
@@ -136,7 +136,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
             }
         });
 
-        console.log('Auth signup result:', { authData, authError });
+        		// Auth signup result
 
         if (authError) {
             console.error('Auth signup error details:', {
@@ -157,11 +157,11 @@ export const POST: RequestHandler = async ({ request, locals }) => {
             return json(errorResponse, { status: 500 });
         }
 
-        console.log('User created in Auth, ID:', authData.user.id);
+        		// User created in Auth
 
         // The customer profile should be created automatically by the trigger
         // We don't need to create it manually anymore
-        console.log('Customer profile should be created automatically by trigger');
+        		// Customer profile should be created automatically by trigger
 
         const responseUser = {
             id: authData.user.id,
@@ -169,7 +169,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
             role: userRole
         };
 
-        console.log('Registration successful, returning user:', responseUser);
+        		// Registration successful
 
         const successResponse = ExceptionHandler.createSuccessResponse(
             { user: responseUser },

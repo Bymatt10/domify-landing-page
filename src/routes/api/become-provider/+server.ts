@@ -4,7 +4,7 @@ import { ExceptionHandler, ValidationException, validateRequired } from '$lib/ex
 export const POST: RequestHandler = async ({ request, locals: { supabase, supabaseAdmin } }) => {
 	try {
 		const applicationData = await request.json();
-		console.log('📝 Datos recibidos:', applicationData);
+		// console.log removed
 
 		// 1. Validar campos requeridos
 		validateRequired(applicationData.first_name, 'Nombre');
@@ -21,7 +21,7 @@ export const POST: RequestHandler = async ({ request, locals: { supabase, supaba
 			throw new ValidationException('Debe seleccionar al menos una categoría');
 		}
 
-		console.log('✅ Validaciones pasadas');
+		// console.log removed
 
 		// 2. Preparar datos adicionales para almacenar en application_data
 		const additionalData = {
@@ -34,7 +34,7 @@ export const POST: RequestHandler = async ({ request, locals: { supabase, supaba
 			availability: applicationData.availability || {}
 		};
 
-		console.log('📊 Datos adicionales preparados:', additionalData);
+		// console.log removed
 
 		// 3. Intentar con supabaseAdmin primero, luego con supabase regular
 		let application;
@@ -57,7 +57,7 @@ export const POST: RequestHandler = async ({ request, locals: { supabase, supaba
 			.single();
 
 		if (adminError) {
-			console.log('❌ Error con supabaseAdmin:', adminError);
+			// console.log removed
 			
 			// Intentar con supabase regular
 			const { data: regularResult, error: regularError } = await supabase
@@ -76,15 +76,15 @@ export const POST: RequestHandler = async ({ request, locals: { supabase, supaba
 				.single();
 
 			if (regularError) {
-				console.log('❌ Error con supabase regular:', regularError);
+				// console.log removed
 				throw new Error('No se pudo guardar la aplicación: ' + regularError.message);
 			}
 
 			application = regularResult;
-			console.log('✅ Inserción exitosa con supabase regular');
+			// console.log removed
 		} else {
 			application = adminResult;
-			console.log('✅ Inserción exitosa con supabaseAdmin');
+			// console.log removed
 		}
 
 		// 4. Vincular categorías
@@ -93,22 +93,22 @@ export const POST: RequestHandler = async ({ request, locals: { supabase, supaba
 			category_id: categoryId
 		}));
 
-		console.log('🔗 Vinculando categorías:', categoryLinks);
+		// console.log removed
 
 		const { error: categoryError } = await supabaseAdmin.from('provider_application_categories').insert(categoryLinks);
 
 		if (categoryError) {
-			console.log('❌ Error vinculando categorías:', categoryError);
+			// console.log removed
 			// Intentar con supabase regular
 			const { error: categoryErrorRegular } = await supabase.from('provider_application_categories').insert(categoryLinks);
 			
 			if (categoryErrorRegular) {
-				console.log('❌ Error vinculando categorías con supabase regular:', categoryErrorRegular);
+				// console.log removed
 				throw new Error('No se pudieron guardar las categorías: ' + categoryErrorRegular.message);
 			}
-			console.log('✅ Categorías vinculadas con supabase regular');
+			// console.log removed
 		} else {
-			console.log('✅ Categorías vinculadas con supabaseAdmin');
+			// console.log removed
 		}
 
 		const successResponse = ExceptionHandler.createSuccessResponse(

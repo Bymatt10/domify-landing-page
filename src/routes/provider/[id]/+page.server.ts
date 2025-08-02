@@ -1,5 +1,6 @@
 import type { ServerLoad } from '@sveltejs/kit';
 import { error } from '@sveltejs/kit';
+import { generateProviderMetaTags, generateProviderJSONLD } from '$lib/seo-utils';
 
 export const load: ServerLoad = async ({ params, locals }) => {
   const { supabase } = locals;
@@ -39,34 +40,25 @@ export const load: ServerLoad = async ({ params, locals }) => {
       ? reviews.reduce((sum: number, review: any) => sum + review.rating, 0) / reviews.length 
       : provider.average_rating || 0;
 
-    // Preparar datos para SEO
-    const seoData = {
-      title: `${provider.business_name} - ${categories.join(', ')} en Nicaragua | Domify`,
-      description: provider.bio || `Contrata a ${provider.business_name} para servicios de ${categories.join(', ')} en Nicaragua. Tarifa: $${provider.hourly_rate}/hora. ${reviews.length} reseñas.`,
-      keywords: [
-        provider.business_name,
-        ...categories,
-        'servicios',
-        'Nicaragua',
-        'domify',
-        'proveedor',
-        'profesional'
-      ].join(', '),
-      image: provider.portfolio?.[0]?.image_url || '/img/default-provider.jpg',
-      url: `https://domify.app/provider/${id}`,
-      type: 'profile',
-      provider: {
-        name: provider.business_name,
-        location: provider.location,
-        hourlyRate: provider.hourly_rate,
-        rating: averageRating,
-        reviewCount: reviews.length,
-        categories: categories,
-        services: services.map((s: any) => s.title),
-        isVerified: provider.is_verified,
-        isElite: provider.is_elite || false
-      }
+    // Preparar datos para SEO usando las utilidades
+    const providerSEOData = {
+      name: provider.business_name,
+      business_name: provider.business_name,
+      bio: provider.bio,
+      location: provider.location,
+      hourly_rate: provider.hourly_rate,
+      average_rating: averageRating,
+      review_count: reviews.length,
+      categories: categories,
+      services: services.map((s: any) => s.title),
+      is_verified: provider.is_verified,
+      is_elite: provider.is_elite || false,
+      portfolio: provider.portfolio
     };
+
+    // Generar metadatos SEO
+    const seoData = generateProviderMetaTags(providerSEOData, id);
+    const jsonLd = generateProviderJSONLD(providerSEOData, id);
 
     return {
       provider,
@@ -74,7 +66,8 @@ export const load: ServerLoad = async ({ params, locals }) => {
       services,
       reviews,
       averageRating,
-      seoData
+      seoData,
+      jsonLd
     };
 
   } catch (err) {
