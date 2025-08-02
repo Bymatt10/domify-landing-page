@@ -10,24 +10,39 @@
     loading = true;
     error = '';
     success = '';
-    // Validar email o teléfono
-    const isEmail = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(identifier);
-    if (!isEmail && !/^\+?\d{8,15}$/.test(identifier)) {
-      error = 'Ingresa un correo electrónico o número de teléfono válido.';
+    
+    try {
+      // Validar email
+      const isEmail = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(identifier);
+      if (!isEmail) {
+        error = 'Ingresa un correo electrónico válido.';
+        return;
+      }
+
+      // Llamar al endpoint de reset password
+      const response = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email: identifier })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        error = result.error?.message || 'Error enviando email de recuperación';
+      } else {
+        success = result.message || 'Se ha enviado un enlace de recuperación a tu correo electrónico.';
+        // Limpiar el campo después del éxito
+        identifier = '';
+      }
+    } catch (err) {
+      console.error('Error en reset password:', err);
+      error = 'Error de conexión. Intenta nuevamente.';
+    } finally {
       loading = false;
-      return;
     }
-    // Lógica: solo email por ahora
-    const { error: resetError } = await supabase.auth.resetPasswordForEmail(identifier, {
-      redirectTo: 'https://domify.app/auth/verify-otp'
-    });
-    if (resetError) {
-      error = resetError.message;
-    } else {
-      success = 'Te hemos enviado un código a tu correo electrónico.';
-      setTimeout(() => goto('/auth/verify-otp?identifier=' + encodeURIComponent(identifier)), 1500);
-    }
-    loading = false;
   }
 </script>
 
