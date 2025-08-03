@@ -3,6 +3,7 @@
   import AdminSidebar from '$lib/components/AdminSidebar.svelte';
 
   let currentUser: any = null;
+  let sidebarComponent: any = null;
 
   onMount(async () => {
     // Get current user info
@@ -10,11 +11,18 @@
     if (response.ok) {
       currentUser = await response.json();
     }
+
+    // Exponer la función de refrescar badge globalmente
+    (window as any).refreshAdminBadge = () => {
+      if (sidebarComponent && sidebarComponent.refreshBadge) {
+        sidebarComponent.refreshBadge();
+      }
+    };
   });
 </script>
 
 <div class="min-h-screen bg-secondary-50">
-  <AdminSidebar {currentUser} />
+  <AdminSidebar bind:this={sidebarComponent} {currentUser} />
   
   <!-- Main Content -->
   <main class="lg:ml-64 transition-all duration-300 ease-in-out">

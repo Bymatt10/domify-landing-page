@@ -76,12 +76,58 @@ export const GET: RequestHandler = async ({ url, locals }) => {
         const { data: categories, error, count } = await locals.supabase
             .from('categories')
             .select('*')
-            .order('name', { ascending: true })
             .range(offset, offset + limit - 1);
 
         if (error) {
             const errorResponse = ExceptionHandler.handle(error);
             return json(errorResponse, { status: errorResponse.error.statusCode });
+        }
+
+        // Ordenar categorías con las más básicas primero
+        if (categories && categories.length > 0) {
+            const priorityCategories = [
+                'fontaneros', 'plomeros', 'plomeria',
+                'jardineria', 'jardinería',
+                'electricistas', 'electricidad',
+                'cerrajeros', 'cerrajería',
+                'carpinteria', 'carpintería',
+                'mudanzas', 'mudanza'
+            ];
+
+            categories.sort((a, b) => {
+                const aName = a.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                const bName = b.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                const aSlug = a.slug.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                const bSlug = b.slug.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+                // Verificar si alguna categoría está en la lista de prioridad
+                const aPriority = priorityCategories.find(priority => 
+                    aName.includes(priority) || aSlug.includes(priority)
+                );
+                const bPriority = priorityCategories.find(priority => 
+                    bName.includes(priority) || bSlug.includes(priority)
+                );
+
+                // Si ambas están en prioridad, mantener el orden original de la lista de prioridad
+                if (aPriority && bPriority) {
+                    const aIndex = priorityCategories.indexOf(aPriority);
+                    const bIndex = priorityCategories.indexOf(bPriority);
+                    return aIndex - bIndex;
+                }
+
+                // Si solo a está en prioridad, a va primero
+                if (aPriority && !bPriority) {
+                    return -1;
+                }
+
+                // Si solo b está en prioridad, b va primero
+                if (!aPriority && bPriority) {
+                    return 1;
+                }
+
+                // Si ninguna está en prioridad, ordenar alfabéticamente
+                return aName.localeCompare(bName);
+            });
         }
 
         // Si no hay categorías en la base de datos, devolver categorías de ejemplo
@@ -90,14 +136,6 @@ export const GET: RequestHandler = async ({ url, locals }) => {
             const sampleCategories = [
                 {
                     id: 1,
-                    name: 'Electricistas',
-                    description: 'Instalaciones y reparaciones eléctricas profesionales',
-                    icon: '⚡',
-                    slug: 'electricistas',
-                    created_at: new Date().toISOString()
-                },
-                {
-                    id: 2,
                     name: 'Fontaneros / Plomeros',
                     description: 'Reparación e instalación de sistemas de agua',
                     icon: '🚰',
@@ -105,7 +143,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
                     created_at: new Date().toISOString()
                 },
                 {
-                    id: 3,
+                    id: 2,
                     name: 'Jardinería',
                     description: 'Cuidado y diseño de áreas verdes',
                     icon: '🌳',
@@ -113,47 +151,23 @@ export const GET: RequestHandler = async ({ url, locals }) => {
                     created_at: new Date().toISOString()
                 },
                 {
+                    id: 3,
+                    name: 'Electricistas',
+                    description: 'Instalaciones y reparaciones eléctricas profesionales',
+                    icon: '⚡',
+                    slug: 'electricistas',
+                    created_at: new Date().toISOString()
+                },
+                {
                     id: 4,
-                    name: 'Limpieza de Casas',
-                    description: 'Limpieza general y profunda del hogar',
-                    icon: '🏠',
-                    slug: 'limpieza-casas',
+                    name: 'Cerrajeros',
+                    description: 'Servicios de cerrajería y seguridad',
+                    icon: '🔑',
+                    slug: 'cerrajeros',
                     created_at: new Date().toISOString()
                 },
                 {
                     id: 5,
-                    name: 'Ensamblaje de Muebles',
-                    description: 'Montaje y ensamblaje profesional de muebles',
-                    icon: '🔧',
-                    slug: 'ensamblaje',
-                    created_at: new Date().toISOString()
-                },
-                {
-                    id: 6,
-                    name: 'Construcción',
-                    description: 'Servicios de construcción y remodelación',
-                    icon: '🏗️',
-                    slug: 'construccion',
-                    created_at: new Date().toISOString()
-                },
-                {
-                    id: 7,
-                    name: 'Pintura',
-                    description: 'Servicios de pintura interior y exterior',
-                    icon: '🎨',
-                    slug: 'pintura',
-                    created_at: new Date().toISOString()
-                },
-                {
-                    id: 8,
-                    name: 'Mudanzas',
-                    description: 'Servicios de mudanza y traslado',
-                    icon: '🚚',
-                    slug: 'mudanzas',
-                    created_at: new Date().toISOString()
-                },
-                {
-                    id: 9,
                     name: 'Carpintería',
                     description: 'Trabajos de carpintería y ebanistería',
                     icon: '🪚',
@@ -161,7 +175,47 @@ export const GET: RequestHandler = async ({ url, locals }) => {
                     created_at: new Date().toISOString()
                 },
                 {
+                    id: 6,
+                    name: 'Mudanzas',
+                    description: 'Servicios de mudanza y traslado',
+                    icon: '🚚',
+                    slug: 'mudanzas',
+                    created_at: new Date().toISOString()
+                },
+                {
+                    id: 7,
+                    name: 'Limpieza de Casas',
+                    description: 'Limpieza general y profunda del hogar',
+                    icon: '🏠',
+                    slug: 'limpieza-casas',
+                    created_at: new Date().toISOString()
+                },
+                {
+                    id: 8,
+                    name: 'Ensamblaje de Muebles',
+                    description: 'Montaje y ensamblaje profesional de muebles',
+                    icon: '🔧',
+                    slug: 'ensamblaje',
+                    created_at: new Date().toISOString()
+                },
+                {
+                    id: 9,
+                    name: 'Construcción',
+                    description: 'Servicios de construcción y remodelación',
+                    icon: '🏗️',
+                    slug: 'construccion',
+                    created_at: new Date().toISOString()
+                },
+                {
                     id: 10,
+                    name: 'Pintura',
+                    description: 'Servicios de pintura interior y exterior',
+                    icon: '🎨',
+                    slug: 'pintura',
+                    created_at: new Date().toISOString()
+                },
+                {
+                    id: 11,
                     name: 'Tecnología',
                     description: 'Servicios de tecnología y computación',
                     icon: '💻',
@@ -169,7 +223,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
                     created_at: new Date().toISOString()
                 },
                 {
-                    id: 11,
+                    id: 12,
                     name: 'Seguridad',
                     description: 'Sistemas de seguridad y vigilancia',
                     icon: '🔒',
@@ -177,7 +231,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
                     created_at: new Date().toISOString()
                 },
                 {
-                    id: 12,
+                    id: 13,
                     name: 'Albañilería',
                     description: 'Trabajos de albañilería y mampostería',
                     icon: '🧱',

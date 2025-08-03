@@ -178,151 +178,25 @@
         }
       } else {
         const errorData = await response.json();
-        error = errorData.error?.message || 'Error al cargar aplicaciones. Mostrando datos de ejemplo.';
+        error = errorData.error?.message || 'Error al cargar aplicaciones.';
         
-        console.warn('Failed to load applications, using mock data');
-        applications = getMockApplications();
-        totalApplications = applications.length;
+        // No mostrar datos de ejemplo, solo mostrar el error
+        applications = [];
+        totalApplications = 0;
         totalPages = 1;
       }
     } catch (err) {
       console.error('Error loading applications:', err);
-      applications = getMockApplications();
-      totalApplications = applications.length;
-      totalPages = Math.ceil(totalApplications / limit);
-      error = 'No se pudieron cargar las aplicaciones reales. Mostrando datos de ejemplo.';
+      applications = [];
+      totalApplications = 0;
+      totalPages = 1;
+      error = 'No se pudieron cargar las aplicaciones.';
     } finally {
       loading = false;
     }
   }
 
-  function getMockApplications(): ProviderApplication[] {
-    return [
-      {
-        id: 1,
-        user_id: '123e4567-e89b-12d3-a456-426614174000',
-        status: 'submitted',
-        headline: 'Plomero Profesional',
-        bio: 'Experto en reparación de tuberías, instalación de sanitarios y mantenimiento general. Con más de 5 años de experiencia.',
-        hourly_rate: 450,
-        location: 'Managua, Nicaragua',
-        phone: '8456-7890',
-        experience_years: 5,
-        certifications: ['Certificación en Plomería', 'OSHA Safety'],
-        categories: [1, 3],
-        availability: { monday: true, tuesday: true, wednesday: true },
-        created_at: '2024-01-15T10:30:00Z',
-        updated_at: '2024-01-15T10:30:00Z',
-        user: {
-          id: '123e4567-e89b-12d3-a456-426614174000',
-          email: 'plomero@example.com',
-          raw_user_meta_data: {
-            first_name: 'Carlos',
-            last_name: 'López'
-          }
-        }
-      },
-      {
-        id: 2,
-        user_id: '456e7890-e89b-12d3-a456-426614174001',
-        status: 'in_review',
-        headline: 'Electricista Certificado',
-        bio: 'Especialista en instalaciones eléctricas residenciales y comerciales. Licenciado y asegurado.',
-        hourly_rate: 500,
-        location: 'León, Nicaragua',
-        phone: '8234-5678',
-        experience_years: 8,
-        certifications: ['Licencia Eléctrica', 'Certificación Industrial'],
-        categories: [2],
-        availability: { monday: true, wednesday: true, friday: true },
-        created_at: '2024-01-12T14:20:00Z',
-        updated_at: '2024-01-14T09:15:00Z',
-        user: {
-          id: '456e7890-e89b-12d3-a456-426614174001',
-          email: 'electricista@example.com',
-          raw_user_meta_data: {
-            first_name: 'María',
-            last_name: 'García'
-          }
-        }
-      },
-      {
-        id: 3,
-        user_id: '789e0123-e89b-12d3-a456-426614174002',
-        status: 'approved',
-        headline: 'Carpintero Experto',
-        bio: 'Fabricación de muebles personalizados, reparación y restauración de madera. Trabajo de alta calidad garantizado.',
-        hourly_rate: 600,
-        location: 'Granada, Nicaragua',
-        phone: '8345-6789',
-        experience_years: 12,
-        certifications: ['Maestro Carpintero', 'Diseño de Muebles'],
-        categories: [1, 4],
-        availability: { tuesday: true, thursday: true, saturday: true },
-        created_at: '2024-01-10T08:45:00Z',
-        updated_at: '2024-01-13T16:30:00Z',
-        reviewed_at: '2024-01-13T16:30:00Z',
-        user: {
-          id: '789e0123-e89b-12d3-a456-426614174002',
-          email: 'carpintero@example.com',
-          raw_user_meta_data: {
-            first_name: 'Luis',
-            last_name: 'Martínez'
-          }
-        }
-      },
-      {
-        id: 4,
-        user_id: '012e3456-e89b-12d3-a456-426614174003',
-        status: 'submitted',
-        headline: 'Técnico en Aire Acondicionado',
-        bio: 'Instalación, mantenimiento y reparación de sistemas de aire acondicionado residencial y comercial.',
-        hourly_rate: 550,
-        location: 'Masaya, Nicaragua',
-        phone: '8567-8901',
-        experience_years: 6,
-        certifications: ['Certificación HVAC', 'Refrigeración'],
-        categories: [2, 3],
-        availability: { monday: true, tuesday: true, thursday: true, friday: true },
-        created_at: '2024-01-18T11:15:00Z',
-        updated_at: '2024-01-18T11:15:00Z',
-        user: {
-          id: '012e3456-e89b-12d3-a456-426614174003',
-          email: 'hvac@example.com',
-          raw_user_meta_data: {
-            first_name: 'Ana',
-            last_name: 'Rodríguez'
-          }
-        }
-      },
-      {
-        id: 5,
-        user_id: '345e6789-e89b-12d3-a456-426614174004',
-        status: 'rejected',
-        headline: 'Jardinero',
-        bio: 'Servicios de jardinería y paisajismo para hogares y empresas.',
-        hourly_rate: 300,
-        location: 'Estelí, Nicaragua',
-        phone: '8678-9012',
-        experience_years: 3,
-        certifications: ['Curso de Jardinería'],
-        categories: [5],
-        availability: { saturday: true, sunday: true },
-        rejection_reason: 'Documentación incompleta',
-        reviewed_at: '2024-01-16T13:45:00Z',
-        created_at: '2024-01-14T07:30:00Z',
-        updated_at: '2024-01-16T13:45:00Z',
-        user: {
-          id: '345e6789-e89b-12d3-a456-426614174004',
-          email: 'jardinero@example.com',
-          raw_user_meta_data: {
-            first_name: 'Pedro',
-            last_name: 'Hernández'
-          }
-        }
-      }
-    ];
-  }
+
 
   async function updateApplicationStatus(applicationId: number, newStatus: string, rejectionReason?: string) {
     updatingStatus.add(applicationId);
@@ -340,9 +214,13 @@
         })
       });
 
-      if (response.ok) {
-        await loadApplications();
-      } else {
+      			if (response.ok) {
+				await loadApplications();
+				// Refrescar el badge del sidebar
+				if (typeof window !== 'undefined' && (window as any).refreshAdminBadge) {
+					(window as any).refreshAdminBadge();
+				}
+			} else {
         const errorData = await response.json();
         alert(`Error: ${errorData.error?.message || 'No se pudo actualizar el estado'}`);
       }
@@ -519,7 +397,7 @@
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
         </svg>
-        <span>Total: {totalApplications} aplicaciones</span>
+        <span>Total: {totalApplications > 999 ? '999+' : totalApplications} aplicaciones</span>
       </div>
     </div>
   </div>
@@ -772,7 +650,7 @@
       <div class="bg-white rounded-xl shadow-sm border border-secondary-200 p-4">
         <div class="flex items-center justify-between">
           <div class="text-sm text-secondary-600">
-            Mostrando {(currentPage - 1) * limit + 1} - {Math.min(currentPage * limit, totalApplications)} de {totalApplications} aplicaciones
+            Mostrando {(currentPage - 1) * limit + 1} - {Math.min(currentPage * limit, totalApplications)} de {totalApplications > 999 ? '999+' : totalApplications} aplicaciones
           </div>
           
           <div class="flex items-center space-x-2">

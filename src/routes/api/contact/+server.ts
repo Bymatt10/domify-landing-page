@@ -20,7 +20,7 @@ export const POST: RequestHandler = async ({ request }) => {
 			});
 		}
 
-		const { name, email, subject, message, user_id } = await request.json();
+		const { name, email, subject, message, user_id, category_request } = await request.json();
 
 		// Validaciones
 		if (!name || !email || !subject || !message) {
@@ -57,7 +57,14 @@ export const POST: RequestHandler = async ({ request }) => {
 
 		// Crear el contenido del email
 		const emailContent = `
-			<h2>Nuevo Mensaje de Contacto - Domify</h2>
+			<h2>${category_request ? 'Nueva Solicitud de Categoría' : 'Nuevo Mensaje de Contacto'} - Domify</h2>
+			
+			${category_request ? `
+			<div style="background-color: #fff3cd; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107;">
+				<h3 style="color: #856404; margin-top: 0;">⚠️ Solicitud de Nueva Categoría</h3>
+				<p style="color: #856404; margin-bottom: 0;">Un usuario ha solicitado agregar una nueva categoría de servicios a la plataforma.</p>
+			</div>
+			` : ''}
 			
 			<div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
 				<h3 style="color: #2c3e50; margin-top: 0;">Información del Remitente:</h3>
@@ -80,7 +87,7 @@ export const POST: RequestHandler = async ({ request }) => {
 			<hr style="border: none; border-top: 1px solid #ecf0f1; margin: 30px 0;">
 			
 			<div style="background-color: #ecf0f1; padding: 15px; border-radius: 8px; font-size: 14px; color: #7f8c8d;">
-				<p><strong>Nota:</strong> Este mensaje fue enviado desde el formulario de contacto de Domify.</p>
+				<p><strong>Nota:</strong> Este mensaje fue enviado desde ${category_request ? 'la página de servicios' : 'el formulario de contacto'} de Domify.</p>
 				<p>Para responder, simplemente responde a este email o contacta directamente a: ${email}</p>
 			</div>
 		`;
@@ -99,9 +106,9 @@ export const POST: RequestHandler = async ({ request }) => {
 		// Enviar email principal usando SMTP
 		const mailOptions = {
 			from: `"Domify Contact Form" <contact@domify.app>`,
-			to: 'domusdeveloper1@gmail.com', // Cambiado a tu email personal para recibir los mensajes
+			to: category_request ? 'info@domify.app' : 'domusdeveloper1@gmail.com', // Email específico para solicitudes de categoría
 			replyTo: email,
-			subject: `[Contacto Domify] ${subject}`,
+			subject: category_request ? `[Nueva Categoría] ${subject}` : `[Contacto Domify] ${subject}`,
 			html: emailContent
 		};
 

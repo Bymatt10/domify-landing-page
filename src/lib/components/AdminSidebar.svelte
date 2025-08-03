@@ -1,10 +1,13 @@
 <script lang="ts">
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
+  import { onMount } from 'svelte';
 
   export let currentUser: any = null;
 
   let isMobileMenuOpen = false;
+  let pendingApplicationsCount = 0;
+  let loadingBadge = true;
 
   const menuItems = [
     {
@@ -16,7 +19,7 @@
       label: 'Aplicaciones',
       href: '/admin/provider-applications',
       icon: '📝',
-      badge: 5
+      badge: 0
     },
     {
       label: 'Proveedores',
@@ -34,6 +37,30 @@
       icon: '🏷️'
     }
   ];
+
+  onMount(async () => {
+    await loadPendingApplicationsCount();
+  });
+
+  async function loadPendingApplicationsCount() {
+    try {
+      const response = await fetch('/api/provider-applications/stats');
+      if (response.ok) {
+        const data = await response.json();
+        pendingApplicationsCount = data.pending || 0;
+      }
+    } catch (error) {
+      console.error('Error loading pending applications count:', error);
+      pendingApplicationsCount = 0;
+    } finally {
+      loadingBadge = false;
+    }
+  }
+
+  // Función para refrescar el contador (puede ser llamada desde otros componentes)
+  export function refreshBadge() {
+    loadPendingApplicationsCount();
+  }
 
   function isActive(href: string) {
     return $page.url.pathname === href;
@@ -124,9 +151,16 @@
             <span class="font-medium text-xs">{item.label}</span>
           </div>
           
-          {#if item.badge}
+          {#if item.label === 'Aplicaciones' && (pendingApplicationsCount > 0 || loadingBadge)}
             <span class="px-1 py-0.5 text-xs font-bold text-white bg-red-500 rounded-full min-w-[16px] text-center leading-none">
-              {item.badge}
+              {#if loadingBadge}
+                <svg class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              {:else}
+                {pendingApplicationsCount > 999 ? '999+' : pendingApplicationsCount}
+              {/if}
             </span>
           {/if}
         </button>
