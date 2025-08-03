@@ -85,7 +85,7 @@
 				<!-- Logo Icon -->
 				<img src="/icon-domify.png" alt="Domify logo" class="w-11 h-11 rounded-lg object-contain" />
 				<!-- Brand Name -->
-				<span class="font-lexend text-gray-900 text-2xl font-bold tracking-tight hover:text-primary-700 transition-colors duration-200">Svelt</span>
+				<span class="font-lexend text-gray-900 text-2xl font-bold tracking-tight hover:text-primary-700 transition-colors duration-200">Domify</span>
 			</a>
 
 			<!-- Desktop: links a la derecha -->
