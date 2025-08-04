@@ -168,18 +168,18 @@ export class GoogleSheetsService {
 		}
 	}
 
-	public async getApplicationsFromSheet(): Promise<any[]> {
+	public async getApplicationsFromSheet(spreadsheetId?: string, range: string = 'A:Z'): Promise<any[]> {
 		try {
 			if (!this.sheets) {
 				console.warn('⚠️ Google Sheets not initialized.');
 				return [];
 			}
 
-			const spreadsheetId = '1f8-trfDtnOchxvKid3L1r4hoV2IX5R1SXfnwp_QF7rI';
-			const range = 'A:P'; // Ajustar según las columnas de tu sheet
+			// Usar el spreadsheet ID proporcionado o el predeterminado
+			const targetSpreadsheetId = spreadsheetId || '1f8-trfDtnOchxvKid3L1r4hoV2IX5R1SXfnwp_QF7rI';
 
 			const response = await this.sheets.spreadsheets.values.get({
-				spreadsheetId,
+				spreadsheetId: targetSpreadsheetId,
 				range
 			});
 
@@ -205,7 +205,16 @@ export class GoogleSheetsService {
 				categories: row[14] || '',
 				status: row[15] || '',
 				createdAt: row[16] || '',
-				reviewStatus: row[17] || ''
+				reviewStatus: row[17] || '',
+				// Campos adicionales para importación masiva
+				businessName: row[18] || '',
+				portfolio: row[19] || '',
+				references: row[20] || '',
+				certifications: row[21] || '',
+				documentsId: row[22] || '',
+				licenses: row[23] || '',
+				insurances: row[24] || '',
+				adminNotes: row[25] || ''
 			}));
 
 			return applications;

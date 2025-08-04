@@ -498,4 +498,230 @@ export async function sendNewApplicationNotificationEmail(
         subject: `🚨 Nueva Solicitud de Proveedor - ${applicationData.providerName}`,
         html
     });
+}
+
+export async function sendBulkImportNotificationEmail(data: {
+	totalProcessed: number;
+	successCount: number;
+	failedCount: number;
+	spreadsheetId: string;
+	details: Array<{
+		email: string;
+		status: 'created' | 'updated' | 'skipped' | 'error';
+		message: string;
+	}>;
+}): Promise<boolean> {
+	try {
+		const successRate = ((data.successCount / data.totalProcessed) * 100).toFixed(1);
+		
+		const detailsHtml = data.details.map(detail => `
+			<tr>
+				<td>${detail.email}</td>
+				<td>
+					<span style="
+						color: ${detail.status === 'created' ? 'green' : 
+								detail.status === 'skipped' ? 'orange' : 
+								detail.status === 'error' ? 'red' : 'blue'};
+						font-weight: bold;
+					">
+						${detail.status.toUpperCase()}
+					</span>
+				</td>
+				<td>${detail.message}</td>
+			</tr>
+		`).join('');
+
+		const emailContent = `
+			<!DOCTYPE html>
+			<html lang="es">
+			<head>
+				<meta charset="UTF-8">
+				<meta name="viewport" content="width=device-width, initial-scale=1.0">
+				<title>Importación Masiva Completada</title>
+				<style>
+					body {
+						font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+						line-height: 1.6;
+						color: #333;
+						max-width: 800px;
+						margin: 0 auto;
+						padding: 20px;
+						background-color: #f8fafc;
+					}
+					.container {
+						background: white;
+						border-radius: 10px;
+						padding: 30px;
+						box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+					}
+					.header {
+						text-align: center;
+						margin-bottom: 30px;
+						padding-bottom: 20px;
+						border-bottom: 2px solid #e5e7eb;
+					}
+					.logo {
+						font-size: 2em;
+						font-weight: bold;
+						color: #3b82f6;
+						margin-bottom: 10px;
+					}
+					.subtitle {
+						color: #6b7280;
+						font-size: 1.1em;
+					}
+					.summary {
+						background: #f0f9ff;
+						border: 1px solid #0ea5e9;
+						border-radius: 8px;
+						padding: 20px;
+						margin: 20px 0;
+					}
+					.summary h3 {
+						margin-top: 0;
+						color: #0369a1;
+					}
+					.summary ul {
+						list-style: none;
+						padding: 0;
+					}
+					.summary li {
+						padding: 8px 0;
+						border-bottom: 1px solid #e0f2fe;
+					}
+					.summary li:last-child {
+						border-bottom: none;
+					}
+					table {
+						width: 100%;
+						border-collapse: collapse;
+						margin: 20px 0;
+						background: white;
+						border-radius: 8px;
+						overflow: hidden;
+						box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+					}
+					th {
+						background: #374151;
+						color: white;
+						padding: 12px;
+						text-align: left;
+						font-weight: 600;
+					}
+					td {
+						padding: 12px;
+						border-bottom: 1px solid #e5e7eb;
+					}
+					tr:hover {
+						background: #f9fafb;
+					}
+					.cta-button {
+						display: inline-block;
+						background: #3b82f6;
+						color: white;
+						padding: 12px 24px;
+						text-decoration: none;
+						border-radius: 6px;
+						font-weight: 600;
+						margin: 20px 0;
+					}
+					.cta-button:hover {
+						background: #2563eb;
+					}
+					.warning {
+						background: #fef2f2;
+						border: 1px solid #fecaca;
+						border-radius: 8px;
+						padding: 15px;
+						margin: 20px 0;
+					}
+					.warning h4 {
+						color: #dc2626;
+						margin: 0 0 10px 0;
+					}
+					.warning p {
+						color: #dc2626;
+						margin: 0;
+					}
+					.footer {
+						text-align: center;
+						margin-top: 30px;
+						padding-top: 20px;
+						border-top: 1px solid #e5e7eb;
+						color: #6b7280;
+					}
+				</style>
+			</head>
+			<body>
+				<div class="container">
+					<div class="header">
+						<div class="logo">📊 Domify</div>
+						<div class="subtitle">Importación Masiva de Proveedores</div>
+					</div>
+					
+					<h2>📊 Importación Masiva Completada</h2>
+					<p>Se ha completado la importación masiva de proveedores desde Google Sheets.</p>
+					
+					<div class="summary">
+						<h3>📈 Resumen</h3>
+						<ul>
+							<li><strong>Total procesados:</strong> ${data.totalProcessed}</li>
+							<li><strong>Exitosos:</strong> ${data.successCount}</li>
+							<li><strong>Fallidos:</strong> ${data.failedCount}</li>
+							<li><strong>Tasa de éxito:</strong> ${successRate}%</li>
+						</ul>
+					</div>
+					
+					<h3>📋 Detalles de la Importación</h3>
+					<table>
+						<thead>
+							<tr>
+								<th>Email</th>
+								<th>Estado</th>
+								<th>Mensaje</th>
+							</tr>
+						</thead>
+						<tbody>
+							${detailsHtml}
+						</tbody>
+					</table>
+					
+					<p><strong>📊 Spreadsheet ID:</strong> ${data.spreadsheetId}</p>
+					<p><strong>📅 Fecha de Importación:</strong> ${new Date().toLocaleString('es-NI')}</p>
+					
+					<div style="text-align: center;">
+						<a href="https://admin.domify.app/providers" class="cta-button">
+							👥 Ver Proveedores en Panel de Administración
+						</a>
+					</div>
+					
+					${data.failedCount > 0 ? `
+						<div class="warning">
+							<h4>⚠️ Atención</h4>
+							<p>Algunos proveedores no pudieron ser importados. Revisa los errores en la tabla anterior.</p>
+						</div>
+					` : ''}
+					
+					<div class="footer">
+						<p>Este email fue enviado automáticamente por el sistema de Domify.</p>
+						<p>Fecha: ${new Date().toLocaleString('es-NI')}</p>
+					</div>
+				</div>
+			</body>
+			</html>
+		`;
+
+		// Obtener email del admin desde las variables de entorno
+		const adminEmail = process.env.ADMIN_EMAIL || 'admin@domify.app';
+
+		return sendEmail({
+			to: adminEmail,
+			subject: `📊 Importación Masiva: ${data.successCount}/${data.totalProcessed} proveedores importados - Domify`,
+			html: emailContent
+		});
+
+	} catch (error) {
+		console.error('❌ Error enviando email de notificación de importación masiva:', error);
+		return false;
+	}
 } 

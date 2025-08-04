@@ -19,7 +19,13 @@
       label: 'Aplicaciones',
       href: '/admin/provider-applications',
       icon: '📝',
-      badge: 0
+      badge: pendingApplicationsCount,
+      loadingBadge
+    },
+    {
+      label: 'Importación Masiva',
+      href: '/admin/bulk-import',
+      icon: '📊'
     },
     {
       label: 'Proveedores',
