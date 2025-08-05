@@ -22,6 +22,9 @@ Disallow: /api/auth/
 # Bloquear archivos de configuración
 Disallow: /*.json$
 Disallow: /*.xml$
+# Allow ads.txt and app-ads.txt for Google AdSense
+Allow: /ads.txt
+Allow: /app-ads.txt
 Disallow: /*.txt$
 
 # Permitir acceso a imágenes y recursos estáticos
