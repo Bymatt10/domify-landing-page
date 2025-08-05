@@ -8,18 +8,23 @@ const SMTP_USER = getSmtpUser();
 const SMTP_PASS = getSmtpPass();
 const FROM_EMAIL = getFromEmail();
 
-// Configurar el transporter de nodemailer con SendGrid SMTP
+// Configurar el transporter de nodemailer con Mailcow SMTP
 const transporter = nodemailer.createTransport({
     host: SMTP_HOST,
     port: parseInt(SMTP_PORT),
-    secure: false, // true para 465, false para otros puertos
+    secure: parseInt(SMTP_PORT) === 465, // true para 465 (SSL), false para otros puertos
     auth: {
         user: SMTP_USER,
         pass: SMTP_PASS,
     },
     tls: {
-        rejectUnauthorized: false
-    }
+        rejectUnauthorized: false, // Necesario para certificados autofirmados
+        ciphers: 'SSLv3'
+    },
+    // Configuración adicional para Mailcow
+    requireTLS: true,
+    logger: false, // Desactivar logs detallados en producción
+    debug: false // Desactivar debug en producción
 });
 
 // Verificar la configuración SMTP al inicializar
@@ -32,11 +37,45 @@ const transporter = nodemailer.createTransport({
 // Verificar la conexión SMTP
 transporter.verify(function (error: Error | null, success: boolean) {
     if (error) {
-        // console.log removed
+        console.error('❌ Error verificando conexión SMTP con Mailcow:', error);
     } else {
-        // console.log removed
+        console.log('✅ Conexión SMTP con Mailcow verificada correctamente');
     }
 });
+
+// Función para probar el envío de email con Mailcow
+export async function testMailcowConnection(): Promise<boolean> {
+    try {
+        console.log('🧪 Probando conexión con Mailcow...');
+        
+        const testEmail = {
+            to: FROM_EMAIL, // Enviar a nosotros mismos como prueba
+            subject: '🧪 Prueba de configuración Mailcow - Domify',
+            html: `
+                <h2>Prueba de configuración Mailcow</h2>
+                <p>Este es un email de prueba para verificar que la configuración de Mailcow está funcionando correctamente.</p>
+                <p><strong>Fecha:</strong> ${new Date().toLocaleString('es-NI')}</p>
+                <p><strong>Servidor SMTP:</strong> ${SMTP_HOST}:${SMTP_PORT}</p>
+                <p><strong>Usuario:</strong> ${SMTP_USER}</p>
+                <hr>
+                <p><small>Si recibes este email, la configuración de Mailcow está funcionando correctamente.</small></p>
+            `
+        };
+
+        const result = await sendEmail(testEmail);
+        
+        if (result) {
+            console.log('✅ Email de prueba enviado correctamente con Mailcow');
+            return true;
+        } else {
+            console.error('❌ Error enviando email de prueba con Mailcow');
+            return false;
+        }
+    } catch (error) {
+        console.error('❌ Error en prueba de Mailcow:', error);
+        return false;
+    }
+}
 
 export interface EmailOptions {
     to: string;
