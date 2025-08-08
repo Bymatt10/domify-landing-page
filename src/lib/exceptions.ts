@@ -139,6 +139,14 @@ export class ExceptionHandler {
   static handleSupabaseError(error: any): ErrorResponse {
     const { code, message, details } = error;
 
+    // Manejar error de email inválido específicamente
+    if (message?.includes('Invalid email') || 
+        (message?.includes('email') && message?.includes('invalid'))) {
+      return this.createErrorResponse(
+        new ValidationException('Por favor usa un email válido. Los dominios como example.com no son válidos para registro.')
+      );
+    }
+
     switch (code) {
       case 'PGRST116':
         return this.createErrorResponse(
@@ -257,8 +265,7 @@ export const handleAuthError = (error: any): ErrorResponse => {
   }
 
   if (error?.message?.includes('Email not confirmed') || 
-      error?.message?.includes('email') ||
-      error?.message?.includes('confirmation')) {
+      (error?.message?.includes('email') && error?.message?.includes('confirmation'))) {
     return ExceptionHandler.createErrorResponse(
       new AuthenticationException('Please confirm your email before signing in', { 
         needsConfirmation: true 
@@ -269,6 +276,14 @@ export const handleAuthError = (error: any): ErrorResponse => {
   if (error?.message?.includes('User already registered')) {
     return ExceptionHandler.createErrorResponse(
       new ConflictException('User already exists')
+    );
+  }
+
+  // Manejar error de email inválido específicamente
+  if (error?.message?.includes('Invalid email') || 
+      (error?.message?.includes('email') && error?.message?.includes('invalid'))) {
+    return ExceptionHandler.createErrorResponse(
+      new ValidationException('Por favor usa un email válido. Los dominios como example.com no son válidos para registro.')
     );
   }
 

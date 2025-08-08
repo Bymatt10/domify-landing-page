@@ -1365,13 +1365,13 @@
 												{/if}
 											</div>
 
-											<!-- Precio -->
-											<div class="text-right">
+											<!-- Precio - OCULTO -->
+											<!-- <div class="text-right">
 												<div class="text-2xl font-bold text-primary-600">
 													C${provider.hourly_rate}
 												</div>
 												<div class="text-sm text-secondary-600">por hora</div>
-											</div>
+											</div> -->
 										</div>
 
 										<!-- Descripción -->
@@ -1807,13 +1807,13 @@
 										</p>
 									{/if}
 									
-									<!-- Precio -->
-									<div class="bg-primary-50 rounded-xl p-4 mb-4">
+									<!-- Precio - OCULTO -->
+									<!-- <div class="bg-primary-50 rounded-xl p-4 mb-4">
 										<div class="text-3xl font-bold text-primary-600 mb-1">
 											C${selectedProvider.hourly_rate}
 										</div>
 										<div class="text-sm text-primary-700">por hora</div>
-									</div>
+									</div> -->
 								</div>
 							</div>
 							

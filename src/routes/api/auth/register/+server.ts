@@ -130,9 +130,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
                     first_name,
                     last_name,
                     role: userRole
-                },
-                // In development, disable email confirmation
-                emailRedirectTo: isDevelopment ? undefined : 'https://domify.app/auth/callback'
+                }
             }
         });
 
@@ -143,8 +141,11 @@ export const POST: RequestHandler = async ({ request, locals }) => {
                 message: authError.message,
                 status: authError.status,
                 name: authError.name,
-                stack: authError.stack
+                code: authError.code,
+                stack: authError.stack,
+                fullError: JSON.stringify(authError, null, 2)
             });
+            
             const errorResponse = handleAuthError(authError);
             return json(errorResponse, { status: errorResponse.error.statusCode });
         }

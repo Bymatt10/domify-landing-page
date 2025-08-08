@@ -4,7 +4,43 @@ import { generateCategoryMetaTags, generateCategoryJSONLD } from '$lib/seo-utils
 export const load: PageServerLoad = async ({ params, locals }) => {
 	const category = params.category;
 	
-	// Datos de ejemplo para mostrar cómo se vería la página con contenido
+	// Consultar proveedores reales de la base de datos
+	let providers = [];
+	
+	try {
+		// Obtener proveedores activos con sus perfiles
+		const { data: providerProfiles, error } = await locals.supabase
+			.from('provider_profiles')
+			.select(`
+				id,
+				user_id,
+				business_name,
+				headline,
+				bio,
+				hourly_rate,
+				location,
+				phone,
+				is_active,
+				created_at,
+				users!inner(
+					id,
+					email,
+					role
+				)
+			`)
+			.eq('is_active', true)
+			.order('created_at', { ascending: false });
+
+		if (error) {
+			console.error('Error fetching providers:', error);
+		} else {
+			providers = providerProfiles || [];
+		}
+	} catch (error) {
+		console.error('Error in provider query:', error);
+	}
+
+	// Datos de ejemplo como fallback si no hay proveedores reales
 	const sampleProviders = [
 		{
 			id: '1',
@@ -137,14 +173,14 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 	];
 
 	// Filtrar proveedores según la categoría
-	let filteredProviders = sampleProviders;
+	let filteredProviders = providers.length > 0 ? providers : sampleProviders;
 	
 	// Mapeo de categorías a tipos de servicios
 	const categoryMapping: Record<string, string[]> = {
 		'ensamblaje': ['ensamblaje', 'muebles', 'montaje'],
 		'limpieza-casas': ['limpieza', 'limpieza residencial'],
 		'jardineria': ['jardinería', 'paisajismo'],
-		'electricistas': ['electricidad', 'instalaciones eléctricas'],
+		'electricistas': ['electricidad', 'instalaciones eléctricas', 'electricista'],
 		'fontaneros': ['plomería', 'fontanería'],
 		'construccion': ['construcción', 'remodelación'],
 		'pintura': ['pintura', 'pintor'],
@@ -155,11 +191,32 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		'albañileria': ['albañilería', 'mampostería']
 	};
 
-	// Si es una categoría específica, filtrar proveedores
-	if (category && categoryMapping[category]) {
-		// Para este ejemplo, mostrar todos los proveedores
-		// En una implementación real, filtrarías por categoría
-		filteredProviders = sampleProviders;
+	// Si es una categoría específica y hay proveedores reales, filtrar por categoría
+	if (category && categoryMapping[category] && providers.length > 0) {
+		// Obtener proveedores que pertenecen a esta categoría
+		const { data: categoryProviders, error: categoryError } = await locals.supabase
+			.from('provider_categories')
+			.select(`
+				provider_profile_id,
+				categories!inner(
+					id,
+					name,
+					slug
+				)
+			`)
+			.in('categories.slug', [category]);
+
+		if (categoryError) {
+			console.error('Error fetching category providers:', categoryError);
+		} else if (categoryProviders && categoryProviders.length > 0) {
+			const categoryProviderIds = categoryProviders.map(cp => cp.provider_profile_id);
+			filteredProviders = providers.filter(provider => 
+				categoryProviderIds.includes(provider.id)
+			);
+		} else {
+			// Si no hay proveedores en esta categoría específica, mostrar todos
+			filteredProviders = providers;
+		}
 	}
 
 	// Generar datos SEO para la categoría
@@ -168,7 +225,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		slug: category,
 		description: `Encuentra los mejores proveedores de ${category.replace(/-/g, ' ')} en Nicaragua. Servicios profesionales verificados con garantía de calidad.`,
 		providers_count: filteredProviders.length,
-		average_rate: filteredProviders.length > 0 ? filteredProviders.reduce((sum, p) => sum + p.average_rating, 0) / filteredProviders.length : undefined,
+		average_rate: filteredProviders.length > 0 ? filteredProviders.reduce((sum, p) => sum + (p.rating || 0), 0) / filteredProviders.length : undefined,
 		services: categoryMapping[category] || [],
 		parent_category: 'Servicios'
 	};

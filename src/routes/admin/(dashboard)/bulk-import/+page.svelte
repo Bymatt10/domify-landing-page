@@ -309,28 +309,28 @@
 	function loadExampleData() {
 		simpleProvidersData = JSON.stringify([
 			{
-				nombre: 'TRANSARES -Transporte y extracción de aguas residuales de sumideros, fosa séptica, trampas de grasas y PTAR.',
-				telefono: '86358233',
-				direccion: 'Colonia Centroamérica, Casa #87, Managua, Nicaragua',
-				servicios: 'Transporte y extracción de aguas residuales, Sumideros, Fosa séptica, Trampas de grasas, PTAR',
-				email: 'transares387@outlook.com',
+				nombre: 'Electricista Asiel Multiservicios',
+				telefono: '+505 5854 1522',
+				direccion: 'Museo de Acahualinca 2 cuadras al norte 1 cuadra al este, Managua 10000, Nicaragua',
+				servicios: 'Instalación eléctrica residencial y comercial, Reparación y mantenimiento de instalaciones eléctricas, Instalación y reparación de enchufes, interruptores y luminarias, Instalación de sistemas de iluminación LED, Montaje y mantenimiento de tableros eléctricos, Diagnóstico y solución de fallas eléctricas, Instalación de sistemas de seguridad eléctricos, Instalación de sistemas de energía renovable, Cableado estructurado para redes y telecomunicaciones, Asesoría en eficiencia energética',
+				email: '',
 				horarios: 'Lunes a Sábado 8:00 AM - 5:00 PM',
-				precio_hora: 488,
-				experiencia: 6,
-				tipo: 'Empresa',
-				categorias: 'Fontaneria'
+				precio_hora: 0,
+				experiencia: 5,
+				tipo: 'Individual',
+				categorias: 'Electricista'
 			},
 			{
-				nombre: 'Plomeria Murillo',
-				telefono: '57589832',
-				direccion: 'Colonia Centroamérica, Casa #84, Managua, Nicaragua',
-				servicios: 'Plomería, Fontanería, Reparaciones de tuberías, Instalaciones sanitarias',
-				email: 'plomeria.murillo231@outlook.com',
+				nombre: 'ElectroNic',
+				telefono: '+505 5738 3145',
+				direccion: 'Campestre El Madroño, Esquina opuesta al, Managua, Nicaragua',
+				servicios: 'Instalación eléctrica residencial y comercial, Reparación y mantenimiento de instalaciones eléctricas, Instalación y reparación de enchufes, interruptores y luminarias, Instalación de sistemas de iluminación LED, Montaje y mantenimiento de tableros eléctricos, Diagnóstico y solución de fallas eléctricas, Instalación de sistemas de seguridad eléctricos, Instalación de sistemas de energía renovable, Cableado estructurado para redes y telecomunicaciones, Asesoría en eficiencia energética',
+				email: '',
 				horarios: 'Lunes a Sábado 8:00 AM - 2:00 PM',
-				precio_hora: 312,
-				experiencia: 10,
+				precio_hora: 0,
+				experiencia: 5,
 				tipo: 'Individual',
-				categorias: 'Fontaneria'
+				categorias: 'Electricista'
 			}
 		], null, 2);
 	}

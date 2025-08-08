@@ -55,17 +55,31 @@ export const POST: RequestHandler = async ({ request, locals: { supabaseAdmin } 
 			const provider = providers[i] as SimpleProvider;
 			const rowNumber = i + 1;
 
+			// Generar email automáticamente si está vacío
+			let providerEmail = provider.email;
+			if (!providerEmail || providerEmail.trim() === '') {
+				// Generar email basado en el nombre del negocio
+				const businessName = provider.nombre.toLowerCase()
+					.replace(/[^a-z0-9\s]/g, '') // Remover caracteres especiales
+					.replace(/\s+/g, '.') // Reemplazar espacios con puntos
+					.replace(/\.+/g, '.') // Remover puntos múltiples
+					.replace(/^\.|\.$/g, ''); // Remover puntos al inicio y final
+				
+				providerEmail = `${businessName}@domify.app`;
+				console.log(`📧 Email generado automáticamente: ${providerEmail}`);
+			}
+
 			try {
 				// Validar datos mínimos requeridos
-				if (!provider.email || !provider.nombre || !provider.telefono) {
+				if (!provider.nombre || !provider.telefono) {
 					result.failed++;
 					result.errors.push({
 						row: rowNumber,
-						email: provider.email || 'Sin email',
-						error: 'Faltan campos obligatorios (email, nombre, teléfono)'
+						email: providerEmail,
+						error: 'Faltan campos obligatorios (nombre, teléfono)'
 					});
 					result.details.push({
-						email: provider.email || 'Sin email',
+						email: providerEmail,
 						status: 'error',
 						message: 'Faltan campos obligatorios'
 					});
@@ -73,7 +87,7 @@ export const POST: RequestHandler = async ({ request, locals: { supabaseAdmin } 
 				}
 
 				// Verificar si el usuario ya existe
-				console.log(`🔍 Verificando si existe usuario: ${provider.email}`);
+				console.log(`🔍 Verificando si existe usuario: ${providerEmail}`);
 				const { data: allUsers, error: listError } = await supabaseAdmin.auth.admin.listUsers();
 
 				if (listError) {
@@ -81,27 +95,27 @@ export const POST: RequestHandler = async ({ request, locals: { supabaseAdmin } 
 				}
 
 				// Buscar el usuario específico en la lista completa
-				const existingUser = allUsers?.users?.find(user => user.email === provider.email);
+				const existingUser = allUsers?.users?.find(user => user.email === providerEmail);
 				console.log(`📊 Usuarios totales: ${allUsers?.users?.length || 0}, Usuario encontrado: ${existingUser ? 'SÍ' : 'NO'}`);
 
 				if (existingUser) {
-					console.log(`⏭️ Usuario ya existe: ${provider.email}`);
+					console.log(`⏭️ Usuario ya existe: ${providerEmail}`);
 					result.details.push({
-						email: provider.email,
+						email: providerEmail,
 						status: 'skipped',
 						message: 'Usuario ya existe'
 					});
 					continue;
 				}
 
-				console.log(`✅ Usuario no existe, procediendo a crear: ${provider.email}`);
+				console.log(`✅ Usuario no existe, procediendo a crear: ${providerEmail}`);
 
 				let userId: string;
 
 				// Crear usuario si se solicita
 				if (createAccounts) {
 					const { data: user, error: userError } = await supabaseAdmin.auth.admin.createUser({
-						email: provider.email,
+						email: providerEmail,
 						password: generateTemporaryPassword(),
 						email_confirm: true,
 						user_metadata: {
@@ -119,7 +133,7 @@ export const POST: RequestHandler = async ({ request, locals: { supabaseAdmin } 
 					userId = user.user.id;
 
 					// Crear perfil del proveedor
-					const { error: profileError } = await supabaseAdmin
+					const { data: profileData, error: profileError } = await supabaseAdmin
 						.from('provider_profiles')
 						.insert({
 							user_id: userId,
@@ -130,11 +144,15 @@ export const POST: RequestHandler = async ({ request, locals: { supabaseAdmin } 
 							hourly_rate: provider.precio_hora,
 							location: provider.direccion,
 							is_active: true
-						});
+						})
+						.select('id')
+						.single();
 
 					if (profileError) {
 						throw new Error(`Error creando perfil: ${profileError.message}`);
 					}
+
+					const profileId = profileData.id;
 
 					// Procesar categorías
 					if (provider.categorias) {
@@ -148,13 +166,21 @@ export const POST: RequestHandler = async ({ request, locals: { supabaseAdmin } 
 
 						if (categories && categories.length > 0) {
 							const categoryLinks = categories.map(cat => ({
-								provider_profile_id: userId,
+								provider_profile_id: profileId,
 								category_id: cat.id
 							}));
 
-							await supabaseAdmin
+							const { error: categoryError } = await supabaseAdmin
 								.from('provider_categories')
 								.insert(categoryLinks);
+
+							if (categoryError) {
+								console.error('Error linking categories:', categoryError);
+							} else {
+								console.log(`✅ Categorías vinculadas para ${providerEmail}:`, categories.map(c => c.name));
+							}
+						} else {
+							console.log(`⚠️ No se encontraron categorías para: ${categoryNames.join(', ')}`);
 						}
 					}
 
@@ -168,7 +194,7 @@ export const POST: RequestHandler = async ({ request, locals: { supabaseAdmin } 
 							hourly_rate: provider.precio_hora,
 							location: provider.direccion,
 							phone: provider.telefono,
-							email: provider.email,
+							email: providerEmail,
 							status: 'approved',
 							application_data: {
 								first_name: provider.nombre.split(' ')[0] || provider.nombre,
@@ -189,22 +215,23 @@ export const POST: RequestHandler = async ({ request, locals: { supabaseAdmin } 
 
 				result.success++;
 				result.details.push({
-					email: provider.email,
+					email: providerEmail,
 					status: 'created',
 					message: createAccounts ? 'Proveedor y cuenta creados exitosamente' : 'Proveedor procesado exitosamente'
 				});
 
-				console.log(`✅ Proveedor procesado: ${provider.email}`);
+				console.log(`✅ Proveedor procesado: ${providerEmail}`);
 
 			} catch (error) {
+				const errorEmail = providerEmail || provider.email || 'Sin email';
 				result.failed++;
 				result.errors.push({
 					row: rowNumber,
-					email: provider.email || 'Sin email',
+					email: errorEmail,
 					error: error instanceof Error ? error.message : 'Error desconocido'
 				});
 				result.details.push({
-					email: provider.email || 'Sin email',
+					email: errorEmail,
 					status: 'error',
 					message: error instanceof Error ? error.message : 'Error desconocido'
 				});
@@ -212,7 +239,7 @@ export const POST: RequestHandler = async ({ request, locals: { supabaseAdmin } 
 			}
 		}
 
-		// Enviar notificación por email
+		// Enviar notificación por email (opcional, no debe fallar la importación)
 		if (result.success > 0 || result.failed > 0) {
 			try {
 				await sendBulkImportNotificationEmail({
@@ -222,8 +249,10 @@ export const POST: RequestHandler = async ({ request, locals: { supabaseAdmin } 
 					details: result.details,
 					importType: 'simple_providers'
 				});
+				console.log('✅ Email de notificación enviado correctamente');
 			} catch (emailError) {
 				console.error('❌ Error enviando email de notificación:', emailError);
+				console.log('⚠️ La importación se completó pero no se pudo enviar el email de notificación');
 			}
 		}
 

@@ -220,7 +220,7 @@ export const GET: RequestHandler = async ({ url }) => {
                 business_name: provider.business_name || provider.headline || 'Sin nombre',
                 photo_url: provider.photo_url || '/img/cleaning.png',
                 rating: provider.average_rating || 0,
-                hourly_rate: provider.hourly_rate || 500,
+                hourly_rate: provider.hourly_rate !== null && provider.hourly_rate !== undefined ? provider.hourly_rate : 500,
                 description: provider.bio || 'Sin descripción',
                 total_reviews: provider.total_reviews || 0,
                 provider_type: provider.provider_type || 'individual',
