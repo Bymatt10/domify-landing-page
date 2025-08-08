@@ -49,6 +49,11 @@
 		return imageUrl;
 	}
 
+	// Función para obtener la imagen por defecto del proveedor
+	function getDefaultProviderAvatar(): string {
+		return '/img/avatars/307ce493-b254-4b2d-8ba4-d12c080d6651.jpg';
+	}
+
 	// Función para manejar errores de imagen
 	function handleImageError(event: Event) {
 		const img = event.target as HTMLImageElement;
@@ -72,6 +77,11 @@
 		isMenuOpen = !isMenuOpen;
 	}
 
+	function closeMenu() {
+		isMenuOpen = false;
+		isDropdownOpen = false;
+	}
+
 	function getInitial(user: any) {
 		const name = user?.user_metadata?.first_name || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email || '';
 		return name.charAt(0).toUpperCase();
@@ -91,19 +101,21 @@
 			<!-- Desktop: links a la derecha -->
 			<div class="flex items-center gap-4">
 				<div class="hidden 2xl:flex items-center gap-6">
-					<a href="/" class="text-gray-900 text-base font-medium hover:text-primary-600 transition-colors duration-200 whitespace-nowrap">Inicio</a>
-					<a href="/services" class="text-gray-900 text-base font-medium hover:text-primary-600 transition-colors duration-200 whitespace-nowrap">Servicios</a>
-					<a href="/about" class="text-gray-900 text-base font-medium hover:text-primary-600 transition-colors duration-200 whitespace-nowrap">Quiénes somos</a>
-					<a href="/contact" class="text-gray-900 text-base font-medium hover:text-primary-600 transition-colors duration-200 whitespace-nowrap">Contacto</a>
+					<a href="/" on:click={closeMenu} class="text-gray-900 text-base font-medium hover:text-primary-600 transition-colors duration-200 whitespace-nowrap">Inicio</a>
+					<a href="/services" on:click={closeMenu} class="text-gray-900 text-base font-medium hover:text-primary-600 transition-colors duration-200 whitespace-nowrap">Servicios</a>
+					<a href="/about" on:click={closeMenu} class="text-gray-900 text-base font-medium hover:text-primary-600 transition-colors duration-200 whitespace-nowrap">Quiénes somos</a>
+					<a href="/contact" on:click={closeMenu} class="text-gray-900 text-base font-medium hover:text-primary-600 transition-colors duration-200 whitespace-nowrap">Contacto</a>
 					{#if session}
 						{#if finalIsAdmin}
-							<a href="/admin" class="text-gray-900 text-base font-medium hover:text-primary-600 transition-colors duration-200 whitespace-nowrap">Panel Admin</a>
+							<a href="/admin" on:click={closeMenu} class="text-gray-900 text-base font-medium hover:text-primary-600 transition-colors duration-200 whitespace-nowrap">Panel Admin</a>
 						{/if}
 						<div class="flex items-center gap-4" role="group" aria-label="Menú de usuario">
 							<div class="relative" tabIndex="0" on:blur={() => isDropdownOpen = false}>
 								<button class="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors duration-200" on:click={() => isDropdownOpen = !isDropdownOpen} aria-haspopup="true" aria-expanded={isDropdownOpen}>
 									{#if getProfileImageUrl(user)}
 										<img src={getProfileImageUrl(user)} alt="Avatar" class="w-8 h-8 rounded-full object-cover" on:error={handleImageError} />
+									{:else if (isProvider)}
+										<img src={getDefaultProviderAvatar()} alt="Avatar por defecto" class="w-8 h-8 rounded-full object-cover" />
 									{:else if (user?.user_metadata?.first_name || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email)}
 										<div class="w-8 h-8 rounded-full bg-primary-600 text-white flex items-center justify-center text-sm font-medium">{getInitial(user)}</div>
 									{:else}
@@ -114,25 +126,25 @@
 								</button>
 								{#if isDropdownOpen}
 									<div class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
-										<a href="/" class="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M3 12l9-9 9 9v8a2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-8z" stroke="currentColor" stroke-width="2" fill="none"/></svg> Inicio</a>
-										<a href="/profile" class="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200"><svg width="16" height="16" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2" fill="none"/><path d="M4 20c0-4 4-7 8-7s8 3 8 7" stroke="currentColor" stroke-width="2" fill="none"/></svg> Mi perfil</a>
+										<a href="/" on:click={closeMenu} class="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M3 12l9-9 9 9v8a2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-8z" stroke="currentColor" stroke-width="2" fill="none"/></svg> Inicio</a>
+										<a href="/profile" on:click={closeMenu} class="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200"><svg width="16" height="16" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2" fill="none"/><path d="M4 20c0-4 4-7 8-7s8 3 8 7" stroke="currentColor" stroke-width="2" fill="none"/></svg> Mi perfil</a>
 										{#if finalIsAdmin}
-											<a href="/admin" class="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200"><svg width="16" height="16" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2" fill="none"/><path d="M7 7h10v10H7z" stroke="currentColor" stroke-width="2" fill="none"/></svg> Panel Admin</a>
+											<a href="/admin" on:click={closeMenu} class="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200"><svg width="16" height="16" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2" fill="none"/><path d="M7 7h10v10H7z" stroke="currentColor" stroke-width="2" fill="none"/></svg> Panel Admin</a>
 										{/if}
 										{#if isProvider}
-											<a href="/provider" class="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M3 3h18v18H3z" stroke="currentColor" stroke-width="2" fill="none"/><path d="M9 9h6v6H9z" stroke="currentColor" stroke-width="2" fill="none"/></svg> Dashboard Proveedor</a>
+											<a href="/provider" on:click={closeMenu} class="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M3 3h18v18H3z" stroke="currentColor" stroke-width="2" fill="none"/><path d="M9 9h6v6H9z" stroke="currentColor" stroke-width="2" fill="none"/></svg> Dashboard Proveedor</a>
 										{/if}
-										<a href="/ayuda" class="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200"><svg width="16" height="16" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/><path d="M9 9a3 3 0 0 1 6 0c0 2-3 3-3 5" stroke="currentColor" stroke-width="2" fill="none"/><circle cx="12" cy="17" r="1" fill="currentColor"/></svg> Ayuda en línea</a>
+										<a href="/ayuda" on:click={closeMenu} class="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200"><svg width="16" height="16" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/><path d="M9 9a3 3 0 0 1 6 0c0 2-3 3-3 5" stroke="currentColor" stroke-width="2" fill="none"/><circle cx="12" cy="17" r="1" fill="currentColor"/></svg> Ayuda en línea</a>
 										<div class="border-t border-gray-200 my-1"></div>
-										<button on:click={handleLogout} class="flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors duration-200 w-full text-left"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M16 17l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" stroke="currentColor" stroke-width="2" fill="none"/></svg> Cerrar sesión</button>
+										<button on:click={() => { handleLogout(); closeMenu(); }} class="flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors duration-200 w-full text-left"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M16 17l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" stroke="currentColor" stroke-width="2" fill="none"/></svg> Cerrar sesión</button>
 									</div>
 								{/if}
 							</div>
 						</div>
 					{:else}
 						<div class="flex gap-4" role="group" aria-label="Botones de autenticación">
-							<a href="/auth/login" class="btn-secondary">Iniciar Sesión</a>
-							<a href="/auth/signup" class="btn-primary">Registrarse</a>
+							<a href="/auth/login" on:click={closeMenu} class="btn-secondary">Iniciar Sesión</a>
+							<a href="/auth/signup" on:click={closeMenu} class="btn-primary">Registrarse</a>
 						</div>
 					{/if}
 				</div>
@@ -157,19 +169,21 @@
 			role="navigation"
 			aria-label="Menú principal"
 		>
-			<a href="/" class="block px-4 py-2 text-gray-900 hover:text-primary-600 hover:bg-gray-50 transition-colors duration-200">Inicio</a>
-			<a href="/services" class="block px-4 py-2 text-gray-900 hover:text-primary-600 hover:bg-gray-50 transition-colors duration-200">Servicios</a>
-			<a href="/about" class="block px-4 py-2 text-gray-900 hover:text-primary-600 hover:bg-gray-50 transition-colors duration-200">Quiénes somos</a>
-			<a href="/contact" class="block px-4 py-2 text-gray-900 hover:text-primary-600 hover:bg-gray-50 transition-colors duration-200">Contacto</a>
+			<a href="/" on:click={closeMenu} class="block px-4 py-2 text-gray-900 hover:text-primary-600 hover:bg-gray-50 transition-colors duration-200">Inicio</a>
+			<a href="/services" on:click={closeMenu} class="block px-4 py-2 text-gray-900 hover:text-primary-600 hover:bg-gray-50 transition-colors duration-200">Servicios</a>
+			<a href="/about" on:click={closeMenu} class="block px-4 py-2 text-gray-900 hover:text-primary-600 hover:bg-gray-50 transition-colors duration-200">Quiénes somos</a>
+			<a href="/contact" on:click={closeMenu} class="block px-4 py-2 text-gray-900 hover:text-primary-600 hover:bg-gray-50 transition-colors duration-200">Contacto</a>
 			{#if session}
 				{#if finalIsAdmin}
-					<a href="/admin" class="block px-4 py-2 text-gray-900 hover:text-primary-600 hover:bg-gray-50 transition-colors duration-200">Panel Admin</a>
+					<a href="/admin" on:click={closeMenu} class="block px-4 py-2 text-gray-900 hover:text-primary-600 hover:bg-gray-50 transition-colors duration-200">Panel Admin</a>
 				{/if}
 				<div class="px-4 py-2" role="group" aria-label="Menú de usuario">
 					<div class="relative" tabIndex="0" on:blur={() => isDropdownOpen = false}>
 						<button class="flex items-center gap-3 w-full p-2 rounded-lg hover:bg-gray-50 transition-colors duration-200" on:click={() => isDropdownOpen = !isDropdownOpen} aria-haspopup="true" aria-expanded={isDropdownOpen}>
 							{#if getProfileImageUrl(user)}
 								<img src={getProfileImageUrl(user)} alt="Avatar" class="w-8 h-8 rounded-full object-cover" on:error={handleImageError} />
+							{:else if (isProvider)}
+								<img src={getDefaultProviderAvatar()} alt="Avatar por defecto" class="w-8 h-8 rounded-full object-cover" />
 							{:else if (user?.user_metadata?.first_name || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email)}
 								<div class="w-8 h-8 rounded-full bg-primary-600 text-white flex items-center justify-center text-sm font-medium">{getInitial(user)}</div>
 							{:else}
@@ -180,25 +194,25 @@
 						</button>
 						{#if isDropdownOpen}
 							<div class="mt-2 bg-white rounded-lg shadow-lg border border-gray-200 py-1">
-								<a href="/" class="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M3 12l9-9 9 9v8a2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-8z" stroke="currentColor" stroke-width="2" fill="none"/></svg> Inicio</a>
-								<a href="/profile" class="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200"><svg width="16" height="16" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2" fill="none"/><path d="M4 20c0-4 4-7 8-7s8 3 8 7" stroke="currentColor" stroke-width="2" fill="none"/></svg> Mi perfil</a>
+								<a href="/" on:click={closeMenu} class="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M3 12l9-9 9 9v8a2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-8z" stroke="currentColor" stroke-width="2" fill="none"/></svg> Inicio</a>
+								<a href="/profile" on:click={closeMenu} class="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200"><svg width="16" height="16" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2" fill="none"/><path d="M4 20c0-4 4-7 8-7s8 3 8 7" stroke="currentColor" stroke-width="2" fill="none"/></svg> Mi perfil</a>
 								{#if finalIsAdmin}
-									<a href="/admin" class="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200"><svg width="16" height="16" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2" fill="none"/><path d="M7 7h10v10H7z" stroke="currentColor" stroke-width="2" fill="none"/></svg> Panel Admin</a>
+									<a href="/admin" on:click={closeMenu} class="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200"><svg width="16" height="16" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2" fill="none"/><path d="M7 7h10v10H7z" stroke="currentColor" stroke-width="2" fill="none"/></svg> Panel Admin</a>
 								{/if}
 								{#if isProvider}
-									<a href="/provider" class="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M3 3h18v18H3z" stroke="currentColor" stroke-width="2" fill="none"/><path d="M9 9h6v6H9z" stroke="currentColor" stroke-width="2" fill="none"/></svg> Dashboard Proveedor</a>
+									<a href="/provider" on:click={closeMenu} class="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M3 3h18v18H3z" stroke="currentColor" stroke-width="2" fill="none"/><path d="M9 9h6v6H9z" stroke="currentColor" stroke-width="2" fill="none"/></svg> Dashboard Proveedor</a>
 								{/if}
-								<a href="/ayuda" class="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200"><svg width="16" height="16" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/><path d="M9 9a3 3 0 0 1 6 0c0 2-3 3-3 5" stroke="currentColor" stroke-width="2" fill="none"/><circle cx="12" cy="17" r="1" fill="currentColor"/></svg> Ayuda en línea</a>
+								<a href="/ayuda" on:click={closeMenu} class="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200"><svg width="16" height="16" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/><path d="M9 9a3 3 0 0 1 6 0c0 2-3 3-3 5" stroke="currentColor" stroke-width="2" fill="none"/><circle cx="12" cy="17" r="1" fill="currentColor"/></svg> Ayuda en línea</a>
 								<div class="border-t border-gray-200 my-1"></div>
-								<button on:click={handleLogout} class="flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors duration-200 w-full text-left"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M16 17l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" stroke="currentColor" stroke-width="2" fill="none"/></svg> Cerrar sesión</button>
+								<button on:click={() => { handleLogout(); closeMenu(); }} class="flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors duration-200 w-full text-left"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M16 17l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" stroke="currentColor" stroke-width="2" fill="none"/></svg> Cerrar sesión</button>
 							</div>
 						{/if}
 					</div>
 				</div>
 			{:else}
 				<div class="px-4 py-2 space-y-2">
-					<a href="/auth/login" class="btn-secondary block text-center">Iniciar Sesión</a>
-					<a href="/auth/signup" class="btn-primary block text-center">Registrarse</a>
+					<a href="/auth/login" on:click={closeMenu} class="btn-secondary block text-center">Iniciar Sesión</a>
+					<a href="/auth/signup" on:click={closeMenu} class="btn-primary block text-center">Registrarse</a>
 				</div>
 			{/if}
 		</div>

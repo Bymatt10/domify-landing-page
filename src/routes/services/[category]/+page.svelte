@@ -1298,16 +1298,18 @@
 												<img 
 													src={provider.photo_url} 
 													alt={provider.business_name}
-																			loading="lazy"
-																			decoding="async"
+													loading="lazy"
+													decoding="async"
 													class="w-full h-full object-cover"
 												/>
 											{:else}
-												<div class="w-full h-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center">
-													<span class="text-white text-2xl font-bold">
-														{provider.business_name.charAt(0)}
-													</span>
-												</div>
+												<img 
+													src="/img/avatars/307ce493-b254-4b2d-8ba4-d12c080d6651.jpg" 
+													alt="Avatar por defecto"
+													loading="lazy"
+													decoding="async"
+													class="w-full h-full object-cover"
+												/>
 											{/if}
 										</div>
 									</div>
@@ -1769,11 +1771,11 @@
 												class="w-full h-full object-cover"
 											/>
 										{:else}
-											<div class="w-full h-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center">
-												<span class="text-white text-3xl font-bold">
-													{selectedProvider.business_name.charAt(0)}
-												</span>
-											</div>
+											<img 
+												src="/img/avatars/307ce493-b254-4b2d-8ba4-d12c080d6651.jpg" 
+												alt="Avatar por defecto"
+												class="w-full h-full object-cover"
+											/>
 										{/if}
 									</div>
 									

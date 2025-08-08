@@ -21,12 +21,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 				location,
 				phone,
 				is_active,
-				created_at,
-				users!inner(
-					id,
-					email,
-					role
-				)
+				created_at
 			`)
 			.eq('is_active', true)
 			.order('created_at', { ascending: false });
@@ -34,7 +29,23 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		if (error) {
 			console.error('Error fetching providers:', error);
 		} else {
-			providers = providerProfiles || [];
+			// Procesar los proveedores para agregar información faltante
+			providers = (providerProfiles || []).map((provider: any) => ({
+				...provider,
+				description: provider.bio || 'Sin descripción',
+				rating: 0,
+				average_rating: 0,
+				photo_url: '/img/avatars/307ce493-b254-4b2d-8ba4-d12c080d6651.jpg', // Usar la imagen por defecto
+				total_reviews: 0,
+				provider_type: provider.provider_type || 'individual',
+				users: {
+					id: provider.user_id,
+					email: 'provider@domify.app',
+					role: 'provider'
+				},
+				portfolio: [],
+				reviews: []
+			}));
 		}
 	} catch (error) {
 		console.error('Error in provider query:', error);
@@ -173,7 +184,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 	];
 
 	// Filtrar proveedores según la categoría
-	let filteredProviders = providers.length > 0 ? providers : sampleProviders;
+	let filteredProviders = providers;
 	
 	// Mapeo de categorías a tipos de servicios
 	const categoryMapping: Record<string, string[]> = {
@@ -191,8 +202,8 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		'albañileria': ['albañilería', 'mampostería']
 	};
 
-	// Si es una categoría específica y hay proveedores reales, filtrar por categoría
-	if (category && categoryMapping[category] && providers.length > 0) {
+	// Si es una categoría específica, filtrar por categoría
+	if (category && providers.length > 0) {
 		// Obtener proveedores que pertenecen a esta categoría
 		const { data: categoryProviders, error: categoryError } = await locals.supabase
 			.from('provider_categories')
@@ -204,7 +215,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 					slug
 				)
 			`)
-			.in('categories.slug', [category]);
+			.eq('categories.slug', category);
 
 		if (categoryError) {
 			console.error('Error fetching category providers:', categoryError);
@@ -213,9 +224,11 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 			filteredProviders = providers.filter(provider => 
 				categoryProviderIds.includes(provider.id)
 			);
+			console.log(`✅ Filtrados ${filteredProviders.length} proveedores para categoría ${category}`);
 		} else {
-			// Si no hay proveedores en esta categoría específica, mostrar todos
-			filteredProviders = providers;
+			// Si no hay proveedores en esta categoría específica, mostrar lista vacía
+			filteredProviders = [];
+			console.log(`⚠️ No se encontraron proveedores para la categoría ${category}`);
 		}
 	}
 

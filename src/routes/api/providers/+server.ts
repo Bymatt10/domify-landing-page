@@ -218,7 +218,7 @@ export const GET: RequestHandler = async ({ url }) => {
             return {
                 id: provider.id,
                 business_name: provider.business_name || provider.headline || 'Sin nombre',
-                photo_url: provider.photo_url || '/img/cleaning.png',
+                				photo_url: provider.photo_url || '/img/avatars/307ce493-b254-4b2d-8ba4-d12c080d6651.jpg',
                 rating: provider.average_rating || 0,
                 hourly_rate: provider.hourly_rate !== null && provider.hourly_rate !== undefined ? provider.hourly_rate : 500,
                 description: provider.bio || 'Sin descripción',
