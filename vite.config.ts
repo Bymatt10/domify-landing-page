@@ -46,8 +46,8 @@ export default defineConfig(({ mode }) => {
 		}
 	},
 	ssr: {
-		// Don't externalize environment variables in SSR
-		noExternal: ['dotenv']
+		// Don't externalize environment variables or libraries needing SSR processing
+		noExternal: ['dotenv', 'lucide-svelte']
 	}
 	};
 });

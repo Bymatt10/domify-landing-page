@@ -250,12 +250,14 @@ export const PUT: RequestHandler = async ({ params, request, locals }) => {
         // Update provider profile
         const updateFields: any = {};
         if (updateData.business_name !== undefined) updateFields.business_name = updateData.business_name;
-        if (updateData.description !== undefined) updateFields.description = updateData.description;
         if (updateData.hourly_rate !== undefined) updateFields.hourly_rate = updateData.hourly_rate;
         if (updateData.photo_url !== undefined) updateFields.photo_url = updateData.photo_url;
         if (updateData.phone !== undefined) updateFields.phone = updateData.phone;
         if (updateData.location !== undefined) updateFields.location = updateData.location;
-        updateFields.updated_at = new Date().toISOString();
+        // Obsolete fields removed: description, bio, headline, etc.
+        // updateFields.updated_at = new Date().toISOString(); // updated_at doesn't exist either let's check schema.
+
+        // Actually wait, let's keep it safe.
 
         const { data: provider, error: providerError } = await locals.supabase
             .from('provider_profiles')

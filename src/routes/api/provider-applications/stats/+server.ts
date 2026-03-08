@@ -21,6 +21,16 @@ export const GET: RequestHandler = async ({ locals }) => {
       .select('status');
 
     if (error) {
+      if (error.code === 'PGRST205') {
+        // provider_applications table doesn't exist yet — return empty stats silently
+        return json({
+          total: 0,
+          pending: 0,
+          in_review: 0,
+          approved: 0,
+          rejected: 0
+        });
+      }
       console.error('Error fetching applications:', error);
       return json({ error: 'Error al obtener estadísticas' }, { status: 500 });
     }

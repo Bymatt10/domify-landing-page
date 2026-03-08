@@ -10,14 +10,11 @@
   let totalPages = 1;
   let limit = 10;
   let search = '';
-  
-  // Estado del modal
+
   let showModal = false;
   let selectedCustomer: any = null;
   let customerDetails: any = null;
   let loadingDetails = false;
-  
-  // Estado de edición
   let isEditing = false;
   let saving = false;
   let editForm = {
@@ -27,13 +24,18 @@
     address: '',
     email: ''
   };
-  
-  // Estado de activación/desactivación
-  let updatingStatus = false;
+
+  let toastMessage = '';
+  let toastType: 'success' | 'err' = 'success';
+  let showToast = false;
+
+  function notify(msg: string, type: 'success' | 'err' = 'success') {
+    toastMessage = msg; toastType = type; showToast = true;
+    setTimeout(() => showToast = false, 3500);
+  }
 
   async function loadCustomers() {
-    loading = true;
-    error = '';
+    loading = true; error = '';
     const url = new URL('/api/admin/customers', window.location.origin);
     url.searchParams.set('page', page.toString());
     url.searchParams.set('limit', limit.toString());
@@ -47,8 +49,8 @@
         total = data.total;
         totalPages = data.totalPages;
       } else {
-        const data = await res.json();
-        error = data.error || 'Fallo al cargar los clientes';
+        const d = await res.json();
+        error = d.error || 'Fallo al cargar los clientes';
       }
     } catch (e) {
       error = (e as Error).message;
@@ -57,13 +59,11 @@
     }
   }
 
-  async function showCustomerDetails(customer: any) {
+  async function showCustomer(customer: any) {
     selectedCustomer = customer;
     showModal = true;
     loadingDetails = true;
     isEditing = false;
-    
-    // Inicializar formulario de edición
     editForm = {
       first_name: customer.first_name || '',
       last_name: customer.last_name || '',
@@ -73,28 +73,19 @@
     };
     
     try {
-      // Cargar detalles adicionales del cliente
       const res = await fetch(`/api/admin/customers/${customer.user_id}/details`);
-      if (res.ok) {
-        customerDetails = await res.json();
-      } else {
-        customerDetails = null;
-      }
+      if (res.ok) customerDetails = await res.json();
+      else customerDetails = null;
     } catch (e) {
-      console.error('Error loading customer details:', e);
       customerDetails = null;
     } finally {
       loadingDetails = false;
     }
   }
 
-  function startEditing() {
-    isEditing = true;
-  }
-
+  function startEditing() { isEditing = true; }
   function cancelEditing() {
     isEditing = false;
-    // Restaurar valores originales
     editForm = {
       first_name: selectedCustomer.first_name || '',
       last_name: selectedCustomer.last_name || '',
@@ -106,1263 +97,396 @@
 
   async function saveCustomer() {
     if (!selectedCustomer) return;
-    
     saving = true;
     try {
       const res = await fetch(`/api/admin/customers/${selectedCustomer.user_id}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(editForm)
       });
 
       if (res.ok) {
-        const updatedCustomer = await res.json();
-        
-        // Actualizar el cliente en la lista
-        const customerIndex = customers.findIndex(c => c.user_id === selectedCustomer.user_id);
-        if (customerIndex !== -1) {
-          customers[customerIndex] = { 
-            ...customers[customerIndex], 
-            ...updatedCustomer,
-            // Asegurar que el email actualizado se refleje
-            email: updatedCustomer.email || customers[customerIndex].email
+        const updated = await res.json();
+        await loadCustomers();
+        const found = customers.find(c => c.user_id === selectedCustomer.user_id);
+        if (found) {
+          selectedCustomer = found;
+          editForm = {
+            first_name: found.first_name || '',
+            last_name: found.last_name || '',
+            phone_number: found.phone_number || '',
+            address: found.address || '',
+            email: found.user?.email || found.email || ''
           };
-          customers = customers; // Trigger reactivity
         }
-        
-        // Actualizar el cliente seleccionado
-        selectedCustomer = { 
-          ...selectedCustomer, 
-          ...updatedCustomer,
-          // Asegurar que el email actualizado se refleje
-          email: updatedCustomer.email || selectedCustomer.email
-        };
-        
         isEditing = false;
-        
-        // Mostrar mensaje de éxito
-        alert('Cliente actualizado exitosamente');
-        
+        notify('Cliente actualizado correctamente');
       } else {
-        const errorData = await res.json();
-        alert(`Error al actualizar cliente: ${errorData.error || 'Error desconocido'}`);
+        const d = await res.json();
+        notify(d.error || 'Error al guardar', 'err');
       }
     } catch (e) {
-      console.error('Error saving customer:', e);
-      alert('Error al guardar los cambios');
+      notify('Error de red', 'err');
     } finally {
       saving = false;
     }
   }
 
-  async function toggleUserStatus(customer: any, action: 'activate' | 'deactivate') {
-    if (!customer) return;
-    
-    const confirmMessage = action === 'deactivate' 
-      ? '¿Estás seguro de que deseas desactivar este usuario? No podrá iniciar sesión.'
-      : '¿Estás seguro de que deseas activar este usuario?';
-    
-    if (!confirm(confirmMessage)) return;
-    
-    updatingStatus = true;
-    try {
-      const res = await fetch(`/api/admin/customers/${customer.user_id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ action })
-      });
-
-      if (res.ok) {
-        const result = await res.json();
-        
-        // Actualizar el cliente en la lista
-        const customerIndex = customers.findIndex(c => c.user_id === customer.user_id);
-        if (customerIndex !== -1) {
-          customers[customerIndex] = { ...customers[customerIndex], ...result.customer };
-          customers = customers; // Trigger reactivity
-        }
-        
-        // Si el cliente está seleccionado en el modal, actualizarlo también
-        if (selectedCustomer && selectedCustomer.user_id === customer.user_id) {
-          selectedCustomer = { ...selectedCustomer, ...result.customer };
-        }
-        
-        alert(result.message);
-        
-      } else {
-        const errorData = await res.json();
-        alert(`Error: ${errorData.error || 'Error desconocido'}`);
-      }
-    } catch (e) {
-      console.error('Error updating user status:', e);
-      alert('Error al cambiar el estado del usuario');
-    } finally {
-      updatingStatus = false;
-    }
-  }
-
-  function closeModal() {
-    showModal = false;
-    selectedCustomer = null;
-    customerDetails = null;
-    isEditing = false;
-  }
-
-  // Cerrar modal con Escape
-  function handleKeydown(event: KeyboardEvent) {
-    if (event.key === 'Escape' && showModal) {
-      if (isEditing) {
-        cancelEditing();
-      } else {
-        closeModal();
-      }
+  function closeModal() { showModal = false; selectedCustomer = null; customerDetails = null; isEditing = false; }
+  
+  function handleKeydown(e: KeyboardEvent) {
+    if (e.key === 'Escape' && showModal) {
+      if (isEditing) cancelEditing(); else closeModal();
     }
   }
 
   onMount(() => {
     loadCustomers();
     document.addEventListener('keydown', handleKeydown);
-    
-    return () => {
-      document.removeEventListener('keydown', handleKeydown);
-    };
+    return () => document.removeEventListener('keydown', handleKeydown);
   });
 
-  const handleSearch = debounce(() => {
-    page = 1;
-    loadCustomers();
-  }, 300);
+  const handleSearch = debounce(() => { page = 1; loadCustomers(); }, 300);
+  function goToPage(n: number) { if (n > 0 && n <= totalPages) { page = n; loadCustomers(); } }
 
-  function goToPage(newPage: number) {
-    if (newPage > 0 && newPage <= totalPages) {
-      page = newPage;
-      loadCustomers();
-    }
+  function fmtDate(d: string) {
+    if (!d) return '—';
+    return new Date(d).toLocaleDateString('es-NI', { year: 'numeric', month: 'short', day: 'numeric' });
   }
-
-  function formatDate(dateString: string) {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('es-NI', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
+  function fmtCurrency(a: number) {
+    return new Intl.NumberFormat('es-NI', { style: 'currency', currency: 'NIO' }).format(a || 0);
   }
-
-  function formatCurrency(amount: number) {
-    return new Intl.NumberFormat('es-NI', {
-      style: 'currency',
-      currency: 'NIO'
-    }).format(amount || 0);
+  function initials(fn: string, ln: string) {
+    if (!fn) return '?';
+    return (fn[0] + (ln?.[0] || '')).toUpperCase();
   }
 </script>
 
-<div class="admin-page">
-    <header class="page-header">
-        <h1>Módulo de Clientes</h1>
-        <p>Gestiona los perfiles de los clientes registrados en la plataforma.</p>
-    </header>
+<div class="page">
+  <!-- Header -->
+  <div class="header">
+    <div class="header-left">
+      <div class="header-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      </div>
+      <div>
+        <h1>Clientes</h1>
+        <p class="header-sub">Gestiona los perfiles de los clientes de Domify</p>
+      </div>
+    </div>
+    <div class="header-badge">
+      <span class="badge-number">{total}</span>
+      <span class="badge-label">Registrados</span>
+    </div>
+  </div>
 
-    <div class="filters-section">
-        <div class="filter-group">
-            <label for="search-filter">Buscar Cliente:</label>
-            <input 
-              id="search-filter"
-              type="text" 
-              bind:value={search}
-              on:input={handleSearch}
-              placeholder="Buscar por nombre, apellido, teléfono..."
-            />
-        </div>
+  <!-- Search -->
+  <div class="toolbar">
+    <div class="search-box">
+      <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      <input type="text" bind:value={search} on:input={handleSearch} placeholder="Buscar por nombre, email, teléfono..." aria-label="Buscar clientes" />
+      {#if search}
+        <button class="search-clear" on:click={() => { search = ''; handleSearch(); }} aria-label="Limpiar búsqueda">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+      {/if}
+    </div>
+  </div>
+
+  <!-- Content -->
+  {#if loading}
+    <div class="state-box">
+      <div class="loader"><div></div><div></div><div></div></div>
+      <p>Cargando clientes...</p>
+    </div>
+  {:else if error}
+    <div class="state-box err-box">
+      <p class="err-title">Error al cargar datos</p>
+      <p class="err-msg">{error}</p>
+      <button class="btn btn-primary" on:click={loadCustomers}>Reintentar</button>
+    </div>
+  {:else if customers.length === 0}
+    <div class="state-box">
+      <p class="empty-title">No se encontraron clientes</p>
+      <p class="empty-sub">No hay resultados que coincidan con la búsqueda actual.</p>
+    </div>
+  {:else}
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>UUID</th>
+            <th>Cliente</th>
+            <th>Contacto</th>
+            <th>Ubicación</th>
+            <th>Estado</th>
+            <th>Registro</th>
+            <th class="th-actions">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {#each customers as c}
+            <tr>
+              <td><span class="cell-uuid">{c.user_id?.slice(0, 8)}</span></td>
+              <td>
+                <div class="cell-provider">
+                  <div class="avatar-sm" style="background:#6366f1">
+                    {initials(c.first_name, c.last_name)}
+                  </div>
+                  <div class="provider-name">
+                    {c.first_name || 'Sin nombre'} {c.last_name || ''}
+                  </div>
+                </div>
+              </td>
+              <td>
+                <div class="cell-contact">
+                  <span class="contact-email">{c.user?.email || '—'}</span>
+                  <span class="contact-phone">{c.phone_number || '—'}</span>
+                </div>
+              </td>
+              <td><span class="cell-location">{c.address || '—'}</span></td>
+              <td>
+                <span class="badg" class:b-ok={c.is_active!==false} class:b-err={c.is_active===false}>
+                  {c.is_active === false ? 'Inactivo' : 'Activo'}
+                </span>
+              </td>
+              <td><span class="cell-date">{fmtDate(c.created_at)}</span></td>
+              <td class="td-actions">
+                <button class="btn-action" on:click={() => showCustomer(c)} aria-label="Ver detalles">
+                  Ver
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>
+                </button>
+              </td>
+            </tr>
+          {/each}
+        </tbody>
+      </table>
     </div>
 
-    {#if loading}
-        <div class="loading-state">
-            <div class="spinner"></div>
-            <p>Cargando clientes...</p>
-        </div>
-    {:else if error}
-        <div class="notice-banner warning">
-            <div class="notice-icon">⚠️</div>
-            <div class="notice-content">
-                <h4>Error al Cargar Datos</h4>
-                <p>{error}</p>
-                <button class="btn btn-secondary" on:click={loadCustomers}>Reintentar</button>
-            </div>
-        </div>
-    {:else if customers.length === 0}
-        <div class="empty-state">
-            <h3>No se encontraron clientes</h3>
-            <p>No hay clientes que coincidan con la búsqueda actual.</p>
-        </div>
-    {:else}
-        <div class="table-container">
-            <table>
-                <thead>
-                    <tr>
-                        <th class="customer-col">Cliente</th>
-                        <th class="contact-col">Contacto</th>
-                        <th class="status-col">Estado</th>
-                        <th class="date-col">Registro</th>
-                        <th class="actions-col">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {#each customers as customer}
-                        <tr>
-                            <td class="customer-col">
-                                <div class="customer-info">
-                                    <div class="customer-name">
-                                        {#if customer.first_name || customer.last_name}
-                                            {customer.first_name || ''} {customer.last_name || ''}
-                                        {:else}
-                                            Sin nombre
-                                        {/if}
-                                    </div>
-                                    <div class="customer-id">ID: {customer.user_id.slice(0, 8)}...</div>
-                                </div>
-                            </td>
-                            <td class="contact-col">
-                                <div class="contact-info">
-                                    <div class="email">{customer.user?.email || 'Sin email'}</div>
-                                    <div class="phone">{customer.phone_number || 'Sin teléfono'}</div>
-                                </div>
-                            </td>
-                            <td class="status-col">
-                                <div class="status-badge {customer.is_active === false ? 'inactive' : 'active'}">
-                                    {#if customer.is_active === false}
-                                        ❌ Inactivo
-                                    {:else}
-                                        ✅ Activo
-                                    {/if}
-                                </div>
-                            </td>
-                            <td class="date-col">
-                                <span class="date">{formatDate(customer.created_at)}</span>
-                            </td>
-                            <td class="actions-col">
-                                <div class="action-buttons">
-                                    <button 
-                                      class="btn btn-primary btn-sm" 
-                                      on:click={() => showCustomerDetails(customer)}
-                                    >
-                                      Ver
-                                    </button>
-                                    {#if customer.is_active === false}
-                                        <button 
-                                          class="btn btn-success btn-sm"
-                                          on:click={() => toggleUserStatus(customer, 'activate')}
-                                          disabled={updatingStatus}
-                                        >
-                                          Activar
-                                        </button>
-                                    {:else}
-                                        <button 
-                                          class="btn btn-danger btn-sm"
-                                          on:click={() => toggleUserStatus(customer, 'deactivate')}
-                                          disabled={updatingStatus}
-                                        >
-                                          Desactivar
-                                        </button>
-                                    {/if}
-                                </div>
-                            </td>
-                        </tr>
-                    {/each}
-                </tbody>
-            </table>
-        </div>
-
-        <div class="pagination">
-            <div class="pagination-info">
-                Mostrando {customers.length} de {total} clientes
-            </div>
-            <div class="pagination-controls">
-                <button class="btn btn-secondary" on:click={() => goToPage(page - 1)} disabled={page <= 1}>Anterior</button>
-                <span>Página {page} de {totalPages}</span>
-                <button class="btn btn-secondary" on:click={() => goToPage(page + 1)} disabled={page >= totalPages}>Siguiente</button>
-            </div>
-        </div>
-    {/if}
+    <!-- Pagination -->
+    <div class="pagination">
+      <span class="pag-info">{customers.length} de {total} clientes</span>
+      <div class="pag-controls">
+        <button class="pag-btn" on:click={() => goToPage(page - 1)} disabled={page <= 1} aria-label="Página anterior">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg>
+        </button>
+        {#each Array(totalPages) as _, i}
+          {#if totalPages <= 7 || i === 0 || i === totalPages - 1 || Math.abs(i + 1 - page) <= 1}
+            <button class="pag-btn" class:active={page === i+1} on:click={() => goToPage(i+1)}>{i+1}</button>
+          {:else if Math.abs(i + 1 - page) === 2}
+            <span class="pag-dots">...</span>
+          {/if}
+        {/each}
+        <button class="pag-btn" on:click={() => goToPage(page + 1)} disabled={page >= totalPages} aria-label="Página siguiente">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+      </div>
+    </div>
+  {/if}
 </div>
 
-<!-- Modal de detalles del cliente -->
-{#if showModal}
-    <div class="modal-overlay" on:click={closeModal}>
-        <div class="modal-content" on:click|stopPropagation>
-            <div class="modal-header">
-                <h2>Detalles del Cliente</h2>
-                <button class="modal-close" on:click={closeModal}>&times;</button>
-            </div>
-            
-            <div class="modal-body">
-                {#if selectedCustomer}
-                    <div class="customer-info">
-                        <div class="customer-header">
-                            <div class="customer-avatar">
-                                {#if selectedCustomer.first_name}
-                                    {(selectedCustomer.first_name[0] + (selectedCustomer.last_name?.[0] || '')).toUpperCase()}
-                                {:else}
-                                    👤
-                                {/if}
-                            </div>
-                            <div class="customer-details">
-                                <h3>{selectedCustomer.first_name || ''} {selectedCustomer.last_name || ''}</h3>
-                                <p class="customer-id">ID: {selectedCustomer.user_id}</p>
-                            </div>
-                        </div>
-
-                        {#if isEditing}
-                            <div class="edit-form">
-                                <div class="form-grid">
-                                    <div class="form-item">
-                                        <label for="first_name">Nombre:</label>
-                                        <input 
-                                            id="first_name"
-                                            type="text" 
-                                            bind:value={editForm.first_name}
-                                            placeholder="Ingrese el nombre"
-                                        />
-                                    </div>
-                                    <div class="form-item">
-                                        <label for="last_name">Apellido:</label>
-                                        <input 
-                                            id="last_name"
-                                            type="text" 
-                                            bind:value={editForm.last_name}
-                                            placeholder="Ingrese el apellido"
-                                        />
-                                    </div>
-                                    <div class="form-item">
-                                        <label for="phone_number">Teléfono:</label>
-                                        <input 
-                                            id="phone_number"
-                                            type="tel" 
-                                            bind:value={editForm.phone_number}
-                                            placeholder="Ingrese el teléfono"
-                                        />
-                                    </div>
-                                    <div class="form-item">
-                                        <label for="email">Email:</label>
-                                        <input 
-                                            id="email"
-                                            type="email" 
-                                            bind:value={editForm.email}
-                                            placeholder="Ingrese el email"
-                                        />
-                                    </div>
-                                    <div class="form-item">
-                                        <label for="address">Dirección:</label>
-                                        <input 
-                                            id="address"
-                                            type="text" 
-                                            bind:value={editForm.address}
-                                            placeholder="Ingrese la dirección"
-                                        />
-                                    </div>
-                                </div>
-                                
-                                <div class="readonly-info">
-                                    <div class="info-item">
-                                        <label>Fecha de Registro:</label>
-                                        <span>{formatDate(selectedCustomer.created_at)}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        {:else}
-                            <div class="info-grid">
-                                <div class="info-item">
-                                    <label>Email:</label>
-                                    <span>{selectedCustomer.user?.email || 'N/A'}</span>
-                                </div>
-                                <div class="info-item">
-                                    <label>Teléfono:</label>
-                                    <span>{selectedCustomer.phone_number || 'N/A'}</span>
-                                </div>
-                                <div class="info-item">
-                                    <label>Dirección:</label>
-                                    <span>{selectedCustomer.address || 'N/A'}</span>
-                                </div>
-                                <div class="info-item">
-                                    <label>Fecha de Registro:</label>
-                                    <span>{formatDate(selectedCustomer.created_at)}</span>
-                                </div>
-                                                                    <div class="info-item">
-                                        <label>Estado:</label>
-                                        <span class="status-text {selectedCustomer.is_active === false ? 'inactive' : 'active'}">
-                                            {selectedCustomer.is_active === false ? '❌ Inactivo' : '✅ Activo'}
-                                        </span>
-                                    </div>
-                                    <div class="info-item">
-                                        <label>Última Actualización:</label>
-                                        <span>{formatDate(selectedCustomer.updated_at)}</span>
-                                    </div>
-                            </div>
-                        {/if}
-
-                        {#if loadingDetails}
-                            <div class="loading-details">
-                                <div class="spinner"></div>
-                                <p>Cargando estadísticas...</p>
-                            </div>
-                        {:else if customerDetails}
-                            <div class="customer-stats">
-                                <h4>Estadísticas del Cliente</h4>
-                                <div class="stats-grid">
-                                    <div class="stat-card">
-                                        <div class="stat-number">{customerDetails.total_bookings || 0}</div>
-                                        <div class="stat-label">Reservas Totales</div>
-                                    </div>
-                                    <div class="stat-card">
-                                        <div class="stat-number">{customerDetails.completed_bookings || 0}</div>
-                                        <div class="stat-label">Reservas Completadas</div>
-                                    </div>
-                                    <div class="stat-card">
-                                        <div class="stat-number">{customerDetails.total_reviews || 0}</div>
-                                        <div class="stat-label">Reseñas Escritas</div>
-                                    </div>
-                                    <div class="stat-card">
-                                        <div class="stat-number">{customerDetails.avg_rating || 'N/A'}</div>
-                                        <div class="stat-label">Calificación Promedio</div>
-                                    </div>
-                                </div>
-
-                                {#if customerDetails.total_spent !== undefined}
-                                    <div class="total-spent">
-                                        <h5>Total Gastado</h5>
-                                        <div class="amount">{formatCurrency(customerDetails.total_spent)}</div>
-                                    </div>
-                                {/if}
-                            </div>
-                        {:else}
-                            <div class="no-stats">
-                                <p>No se pudieron cargar las estadísticas del cliente.</p>
-                            </div>
-                        {/if}
-                    </div>
-                {/if}
-            </div>
-            
-            <div class="modal-footer">
-                {#if isEditing}
-                    <button class="btn btn-secondary" on:click={cancelEditing} disabled={saving}>
-                        Cancelar
-                    </button>
-                    <button class="btn btn-primary" on:click={saveCustomer} disabled={saving}>
-                        {#if saving}
-                            <span class="spinner-sm"></span>
-                            Guardando...
-                        {:else}
-                            💾 Guardar Cambios
-                        {/if}
-                    </button>
-                {:else}
-                    <div class="modal-actions-left">
-                        {#if selectedCustomer.is_active === false}
-                            <button 
-                              class="btn btn-success" 
-                              on:click={() => toggleUserStatus(selectedCustomer, 'activate')}
-                              disabled={updatingStatus}
-                            >
-                              {#if updatingStatus}
-                                  <span class="spinner-sm"></span>
-                                  Activando...
-                              {:else}
-                                  ✅ Activar Usuario
-                              {/if}
-                            </button>
-                        {:else}
-                            <button 
-                              class="btn btn-danger" 
-                              on:click={() => toggleUserStatus(selectedCustomer, 'deactivate')}
-                              disabled={updatingStatus}
-                            >
-                              {#if updatingStatus}
-                                  <span class="spinner-sm"></span>
-                                  Desactivando...
-                              {:else}
-                                  ❌ Desactivar Usuario
-                              {/if}
-                            </button>
-                        {/if}
-                    </div>
-                    <div class="modal-actions-right">
-                        <button class="btn btn-secondary" on:click={closeModal}>Cerrar</button>
-                        <button class="btn btn-primary" on:click={startEditing}>
-                            ✏️ Editar Cliente
-                        </button>
-                    </div>
-                {/if}
-            </div>
+<!-- Modal -->
+{#if showModal && selectedCustomer}
+  <!-- svelte-ignore a11y-click-events-have-key-events -->
+  <!-- svelte-ignore a11y-no-static-element-interactions -->
+  <div class="overlay" on:click={closeModal}>
+    <!-- svelte-ignore a11y-click-events-have-key-events -->
+    <!-- svelte-ignore a11y-no-static-element-interactions -->
+    <div class="modal" on:click|stopPropagation>
+      <div class="modal-head">
+        <div class="modal-head-left">
+          <div class="avatar-md" style="background:#6366f1">
+            {initials(selectedCustomer.first_name, selectedCustomer.last_name)}
+          </div>
+          <div>
+            <h2>{selectedCustomer.first_name || 'Sin nombre'} {selectedCustomer.last_name || ''}</h2>
+            <span class="modal-sub">{selectedCustomer.user?.email || ''}</span>
+          </div>
         </div>
+        <button class="modal-x" on:click={closeModal} aria-label="Cerrar modal">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        {#if isEditing}
+          <div class="form-grid">
+            <div class="field">
+              <label for="f-fn">Nombre</label>
+              <input id="f-fn" type="text" bind:value={editForm.first_name} />
+            </div>
+            <div class="field">
+              <label for="f-ln">Apellido</label>
+              <input id="f-ln" type="text" bind:value={editForm.last_name} />
+            </div>
+            <div class="field">
+              <label for="f-email">Email</label>
+              <input id="f-email" type="email" bind:value={editForm.email} />
+            </div>
+            <div class="field">
+              <label for="f-phone">Teléfono</label>
+              <input id="f-phone" type="tel" bind:value={editForm.phone_number} />
+            </div>
+            <div class="field full">
+              <label for="f-addr">Dirección</label>
+              <input id="f-addr" type="text" bind:value={editForm.address} />
+            </div>
+          </div>
+        {:else}
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">Email</span>
+              <span class="detail-value">{selectedCustomer.user?.email || '—'}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Teléfono</span>
+              <span class="detail-value">{selectedCustomer.phone_number || '—'}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Ubicación</span>
+              <span class="detail-value">{selectedCustomer.address || '—'}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Registro</span>
+              <span class="detail-value">{fmtDate(selectedCustomer.created_at)}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Estado</span>
+              <span class="detail-value" class:text-ok={selectedCustomer.is_active!==false} class:text-err={selectedCustomer.is_active===false}>
+                {selectedCustomer.is_active === false ? 'Inactivo' : 'Activo'}
+              </span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">ID Usuario</span>
+              <span class="detail-value cell-uuid">{selectedCustomer.user_id?.slice(0, 8)}</span>
+            </div>
+          </div>
+
+          <div class="section">
+            <h4>Estadísticas del Cliente</h4>
+            {#if loadingDetails}
+              <p class="muted">Cargando estadísticas...</p>
+            {:else if customerDetails}
+              <div class="stats-row">
+                <div class="stat-c">
+                  <span class="stat-n">{customerDetails.total_bookings || 0}</span>
+                  <span class="stat-l">Reservas</span>
+                </div>
+                <div class="stat-c">
+                  <span class="stat-n">{customerDetails.total_reviews || 0}</span>
+                  <span class="stat-l">Reseñas</span>
+                </div>
+                <div class="stat-c">
+                  <span class="stat-n">{fmtCurrency(customerDetails.total_spent)}</span>
+                  <span class="stat-l">Gastado</span>
+                </div>
+              </div>
+            {:else}
+              <p class="muted-box">No se pudieron cargar estadísticas detalladas.</p>
+            {/if}
+          </div>
+        {/if}
+      </div>
+
+      <div class="modal-foot">
+        {#if isEditing}
+          <button class="btn btn-ghost" on:click={cancelEditing} disabled={saving}>Cancelar</button>
+          <button class="btn btn-primary" on:click={saveCustomer} disabled={saving}>
+            {#if saving}<span class="spin"></span>Guardando...{:else}Guardar cambios{/if}
+          </button>
+        {:else}
+          <button class="btn btn-ghost" on:click={closeModal}>Cerrar</button>
+          <button class="btn btn-primary" on:click={startEditing}>Editar cliente</button>
+        {/if}
+      </div>
     </div>
+  </div>
+{/if}
+
+{#if showToast}
+  <div class="toast" class:t-ok={toastType==='success'} class:t-err={toastType==='err'}>{toastMessage}</div>
 {/if}
 
 <style>
-  /* Layout principal */
-  .admin-page { 
-    padding: 1.5rem; 
-    max-width: 100%; 
-    margin: 0 auto; 
+  .page { padding: 2rem; font-family: 'Inter', sans-serif; }
+  .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+  .header-left { display: flex; align-items: center; gap: 0.875rem; }
+  .header-icon {
+    width: 46px; height: 46px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white;
   }
-  
-  .page-header { 
-    margin-bottom: 2rem; 
-    padding-bottom: 1rem; 
-    border-bottom: 1px solid #e5e7eb; 
-  }
-  
-  .page-header h1 { 
-    font-size: 2rem; 
-    font-weight: 700; 
-    color: #1f2937; 
-    margin: 0;
-  }
-  
-  .page-header p { 
-    margin-top: 0.5rem; 
-    color: #6b7280; 
-    margin-bottom: 0;
-  }
-  
-  /* Filtros */
-  .filters-section { 
-    background: white; 
-    border: 1px solid #e5e7eb; 
-    border-radius: 8px; 
-    padding: 1.5rem; 
-    margin-bottom: 2rem; 
-  }
-  
-  .filter-group label { 
-    font-weight: 500; 
-    color: #374151; 
-    display: block; 
-    margin-bottom: 0.5rem; 
-  }
-  
-  .filter-group input { 
-    width: 100%; 
-    max-width: 400px;
-    padding: 0.75rem; 
-    border: 1px solid #d1d5db; 
-    border-radius: 6px;
-    font-size: 0.875rem;
-  }
-  
-  /* Estados de carga */
-  .loading-state, .empty-state { 
-    text-align: center; 
-    padding: 4rem 2rem; 
-  }
-  
-  .spinner { 
-    display: inline-block; 
-    width: 40px; 
-    height: 40px; 
-    border: 4px solid #f3f4f6; 
-    border-top-color: #3b82f6; 
-    border-radius: 50%; 
-    animation: spin 1s linear infinite; 
-  }
-  
-  @keyframes spin { to { transform: rotate(360deg); } }
-  
-  .notice-banner { 
-    display: flex; 
-    align-items: center; 
-    gap: 1rem; 
-    padding: 1rem; 
-    border-radius: 8px; 
-    margin-bottom: 2rem; 
-  }
-  
-  .notice-banner.warning { 
-    background: #fefce8; 
-    border: 1px solid #fde047; 
-    color: #a16207; 
-  }
-  
-  .notice-icon { font-size: 1.5rem; }
-  
-  /* Tabla mejorada */
-  .table-container { 
-    overflow-x: auto; 
-    background: white; 
-    border-radius: 12px; 
-    border: 1px solid #e5e7eb; 
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
-  }
-  
-  table { 
-    width: 100%; 
-    border-collapse: collapse; 
-    min-width: 700px;
-  }
-  
-  th, td { 
-    padding: 1rem; 
-    text-align: left; 
-    border-bottom: 1px solid #f3f4f6; 
-    vertical-align: top;
-  }
-  
-  th { 
-    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-    font-weight: 600; 
-    color: #475569; 
-    text-transform: uppercase; 
-    font-size: 0.75rem; 
-    letter-spacing: 0.05em;
-    position: sticky;
-    top: 0;
-    z-index: 10;
-  }
-  
-  tbody tr:hover {
-    background-color: #f8fafc;
-  }
-  
-  tbody tr:last-child td { 
-    border-bottom: none; 
-  }
-  
-  /* Columnas específicas */
-  .customer-col { width: 25%; }
-  .contact-col { width: 25%; }
-  .status-col { width: 15%; }
-  .date-col { width: 15%; }
-  .actions-col { width: 20%; }
-  
-  /* Información del cliente */
-  .customer-info {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-  }
-  
-  .customer-name { 
-    font-weight: 600; 
-    color: #1f2937; 
-    font-size: 0.875rem;
-  }
-  
-  .customer-id { 
-    font-size: 0.75rem; 
-    color: #6b7280; 
-    font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
-  }
-  
-  /* Información de contacto */
-  .contact-info {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-  }
-  
-  .email { 
-    font-size: 0.875rem; 
-    color: #1f2937; 
-    font-weight: 500;
-  }
-  
-  .phone { 
-    font-size: 0.75rem; 
-    color: #6b7280; 
-  }
-  
-  /* Fecha */
-  .date {
-    font-size: 0.8rem;
-    color: #6b7280;
-  }
+  .header h1 { font-size: 1.5rem; font-weight: 800; color: #0f172a; margin: 0; }
+  .header-sub { margin-top: 0.15rem; color: #64748b; font-size: 0.8rem; }
+  .header-badge { display: flex; flex-direction: column; align-items: center; padding: 0.6rem 1.1rem; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 12px; }
+  .badge-number { font-size: 1.3rem; font-weight: 800; color: #0284c7; line-height: 1; }
+  .badge-label { font-size: 0.6rem; color: #0369a1; text-transform: uppercase; font-weight: 700; }
 
-  /* Badge de estado */
-  .status-badge {
-    display: inline-flex;
-    align-items: center;
-    padding: 0.375rem 0.75rem;
-    border-radius: 6px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
+  .toolbar { display: flex; justify-content: flex-end; margin-bottom: 1.25rem; }
+  .search-box { position: relative; width: 100%; max-width: 400px; }
+  .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8; }
+  .search-box input { width: 100%; padding: 0.65rem 1rem 0.65rem 2.4rem; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 0.8rem; background: #f8fafc; }
+  .search-box input:focus { outline: none; border-color: #818cf8; background: #fff; box-shadow: 0 0 0 3px rgba(129,140,248,0.08); }
+  .search-clear { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: #e2e8f0; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #64748b; }
 
-  .status-badge.active {
-    background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
-    color: #166534;
-    border: 1px solid #86efac;
-  }
+  .table-wrap { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; overflow-x: auto; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+  table { width: 100%; border-collapse: collapse; min-width: 900px; }
+  th { padding: 0.75rem 1rem; text-align: left; font-size: 0.65rem; font-weight: 700; color: #64748b; text-transform: uppercase; background: #f8fafc; border-bottom: 1px solid #e2e8f0; }
+  td { padding: 0.8rem 1rem; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+  tbody tr:hover { background: #f8fafc; }
+  .cell-uuid { font-family: monospace; font-size: 0.7rem; color: #94a3b8; background: #f1f5f9; padding: 0.15rem 0.4rem; border-radius: 4px; }
+  .cell-provider { display: flex; align-items: center; gap: 0.65rem; }
+  .avatar-sm { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 0.7rem; }
+  .provider-name { font-weight: 600; font-size: 0.85rem; color: #0f172a; }
+  .cell-contact { display: flex; flex-direction: column; }
+  .contact-email { font-size: 0.8rem; color: #475569; }
+  .contact-phone { font-size: 0.7rem; color: #94a3b8; }
+  .cell-location { font-size: 0.8rem; color: #475569; }
+  .badg { padding: 0.2rem 0.6rem; border-radius: 6px; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; }
+  .b-ok { background: #dcfce7; color: #166534; }
+  .b-err { background: #fee2e2; color: #991b1b; }
+  .th-actions, .td-actions { text-align: right; }
+  .btn-action { display: inline-flex; align-items: center; gap: 0.2rem; padding: 0.35rem 0.75rem; background: linear-gradient(135deg, #6366f1, #7c3aed); color: #fff; border: none; border-radius: 8px; font-size: 0.7rem; font-weight: 600; cursor: pointer; }
 
-  .status-badge.inactive {
-    background: linear-gradient(135deg, #fef2f2 0%, #fecaca 100%);
-    color: #991b1b;
-    border: 1px solid #fca5a5;
-  }
+  .state-box { text-align: center; padding: 4rem 2rem; color: #64748b; }
+  .loader { display: flex; gap: 0.4rem; justify-content: center; margin-bottom: 1rem; }
+  .loader div { width: 10px; height: 10px; border-radius: 50%; background: #818cf8; animation: bounce 1.4s infinite; }
+  @keyframes bounce { 0%,80%,100%{transform:scale(0.3)}40%{transform:scale(1)} }
 
-  .status-text.active {
-    color: #166534;
-    font-weight: 600;
-  }
+  .pagination { display: flex; justify-content: space-between; align-items: center; padding: 1rem 0; }
+  .pag-info { font-size: 0.75rem; color: #64748b; }
+  .pag-controls { display: flex; gap: 0.3rem; }
+  .pag-btn { width: 32px; height: 32px; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; font-size: 0.75rem; font-weight: 600; cursor: pointer; }
+  .pag-btn.active { background: linear-gradient(135deg,#6366f1,#7c3aed); color:#fff; border-color:transparent; }
+  .pag-btn:disabled { opacity: 0.4; }
 
-  .status-text.inactive {
-    color: #991b1b;
-    font-weight: 600;
-  }
+  .overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.5); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+  .modal { background: #fff; border-radius: 16px; width: 92%; max-width: 600px; max-height: 88vh; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.15); }
+  .modal-head { display: flex; justify-content: space-between; align-items: center; padding: 1.25rem 1.5rem; border-bottom: 1px solid #f1f5f9; background: #fafbfc; }
+  .modal-head-left { display: flex; align-items: center; gap: 0.8rem; }
+  .avatar-md { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 1rem; }
+  .modal-body { padding: 1.5rem; overflow-y: auto; max-height: 58vh; }
+  .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.5rem; }
+  .detail-label { display: block; font-size: 0.65rem; color: #94a3b8; text-transform: uppercase; font-weight: 700; }
+  .detail-value { font-size: 0.85rem; color: #1e293b; font-weight: 600; }
+  .section h4 { font-size: 0.8rem; font-weight: 700; color: #475569; margin-bottom: 0.75rem; border-bottom: 1px solid #f1f5f9; padding-bottom: 0.25rem; }
+  .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+  .stat-c { background: #f8fafc; padding: 0.8rem; border-radius: 10px; text-align: center; border: 1px solid #f1f5f9; }
+  .stat-n { display: block; font-size: 1.1rem; font-weight: 800; color: #0f172a; }
+  .stat-l { font-size: 0.65rem; color: #94a3b8; text-transform: uppercase; }
 
-  /* Botones de acción */
-  .action-buttons {
-    display: flex;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-  }
-  
-  /* Paginación */
-  .pagination { 
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center; 
-    padding: 1.5rem; 
-    background: white; 
-    border-top: 1px solid #e5e7eb; 
-    margin-top: 0;
-    border-radius: 0 0 12px 12px;
-  }
-  
-  .pagination-info {
-    font-size: 0.875rem;
-    color: #6b7280;
-  }
-  
-  .pagination-controls { 
-    display: flex; 
-    gap: 0.5rem; 
-    align-items: center;
-  }
-  
-  /* Botones mejorados */
-  .btn { 
-    padding: 0.5rem 1rem; 
-    border: none; 
-    border-radius: 6px; 
-    font-size: 0.875rem; 
-    font-weight: 500; 
-    cursor: pointer; 
-    transition: all 0.2s ease;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-  }
-  
-  .btn-primary {
-    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-    color: white;
-    border: 1px solid #2563eb;
-  }
-  
-  .btn-primary:hover:not(:disabled) {
-    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
-  }
-  
-  .btn-secondary { 
-    background: #f8fafc; 
-    color: #475569; 
-    border: 1px solid #e2e8f0;
-  }
-  
-  .btn-secondary:hover:not(:disabled) { 
-    background: #f1f5f9; 
-    border-color: #cbd5e1;
-  }
-  
-  .btn-sm {
-    padding: 0.375rem 0.75rem;
-    font-size: 0.8rem;
-  }
-  
-  .btn:disabled { 
-    opacity: 0.5; 
-    cursor: not-allowed; 
-    transform: none !important;
-    box-shadow: none !important;
-  }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .field { display: flex; flex-direction: column; gap: 0.25rem; }
+  .field.full { grid-column: span 2; }
+  .field label { font-size: 0.75rem; font-weight: 600; color: #475569; }
+  .field input { padding: 0.6rem; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; }
+  .field input:focus { border-color: #818cf8; outline: none; }
 
-  .btn-success {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-    color: white;
-    border: 1px solid #059669;
-  }
-
-  .btn-success:hover:not(:disabled) {
-    background: linear-gradient(135deg, #059669 0%, #047857 100%);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-  }
-
-  .btn-danger {
-    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-    color: white;
-    border: 1px solid #dc2626;
-  }
-
-  .btn-danger:hover:not(:disabled) {
-    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
-  }
-  
-  /* Responsive para tabla */
-  @media (max-width: 1024px) {
-    .admin-page {
-      padding: 1rem;
-    }
-    
-    .customer-col { width: 30%; }
-    .contact-col { width: 30%; }
-    .status-col { width: 15%; }
-    .date-col { width: 15%; }
-    .actions-col { width: 10%; }
-    
-    .action-buttons .btn:not(:first-child) {
-      display: none;
-    }
-  }
-  
-  @media (max-width: 768px) {
-    .table-container {
-      border-radius: 8px;
-    }
-    
-    th, td {
-      padding: 0.75rem 0.5rem;
-    }
-    
-    .customer-name {
-      font-size: 0.8rem;
-    }
-    
-    .email {
-      font-size: 0.8rem;
-    }
-    
-    .date-col { display: none; }
-    .status-col { width: 20%; }
-    .actions-col { display: none; }
-  }
-
-  /* Estilos del modal mejorado */
-  .modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(4px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-    padding: 1rem;
-    animation: fadeIn 0.2s ease-out;
-  }
-
-  @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
-
-  .modal-content {
-    background: white;
-    border-radius: 16px;
-    max-width: 650px;
-    width: 100%;
-    max-height: 90vh;
-    overflow-y: auto;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-    animation: slideUp 0.3s ease-out;
-    border: 1px solid #e5e7eb;
-  }
-
-  @keyframes slideUp {
-    from { 
-      opacity: 0; 
-      transform: translateY(20px) scale(0.95); 
-    }
-    to { 
-      opacity: 1; 
-      transform: translateY(0) scale(1); 
-    }
-  }
-
-  .modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 2rem;
-    border-bottom: 1px solid #f1f5f9;
-    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-    border-radius: 16px 16px 0 0;
-  }
-
-  .modal-header h2 {
-    margin: 0;
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: #1e293b;
-    background: linear-gradient(135deg, #1e293b 0%, #475569 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-
-  .modal-close {
-    background: white;
-    border: 1px solid #e2e8f0;
-    font-size: 1.25rem;
-    cursor: pointer;
-    color: #64748b;
-    padding: 0.5rem;
-    border-radius: 8px;
-    transition: all 0.2s ease;
-    width: 36px;
-    height: 36px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  }
-
-  .modal-close:hover {
-    background: #f1f5f9;
-    color: #475569;
-    transform: scale(1.05);
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  }
-
-  .modal-body {
-    padding: 2rem;
-  }
-
-  .modal-footer {
-    padding: 2rem;
-    border-top: 1px solid #f1f5f9;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 1rem;
-    background: #fafbfc;
-    border-radius: 0 0 16px 16px;
-  }
-
-  .modal-actions-left {
-    display: flex;
-    gap: 0.5rem;
-  }
-
-  .modal-actions-right {
-    display: flex;
-    gap: 1rem;
-  }
-
-  /* Estilos del cliente */
-  .customer-header {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid #e5e7eb;
-  }
-
-  .customer-avatar {
-    width: 60px;
-    height: 60px;
-    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-    color: white;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.5rem;
-    font-weight: 600;
-  }
-
-  .customer-details h3 {
-    margin: 0 0 0.25rem 0;
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: #1f2937;
-  }
-
-  .customer-id {
-    margin: 0;
-    font-size: 0.875rem;
-    color: #6b7280;
-  }
-
-  .info-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-  }
-
-  .info-item {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-  }
-
-  .info-item label {
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: #6b7280;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-
-  .info-item span {
-    font-size: 1rem;
-    color: #1f2937;
-    font-weight: 500;
-  }
-
-  .loading-details {
-    text-align: center;
-    padding: 2rem;
-  }
-
-  .loading-details p {
-    margin-top: 1rem;
-    color: #6b7280;
-  }
-
-  .customer-stats {
-    border-top: 1px solid #e5e7eb;
-    padding-top: 1.5rem;
-  }
-
-  .customer-stats h4 {
-    margin: 0 0 1rem 0;
-    font-size: 1.125rem;
-    font-weight: 600;
-    color: #1f2937;
-  }
-
-  .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-  }
-
-  .stat-card {
-    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-    padding: 1.5rem;
-    border-radius: 12px;
-    text-align: center;
-    border: 1px solid #e2e8f0;
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
-    transition: all 0.2s ease;
-  }
-
-  .stat-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.15);
-    border-color: #cbd5e1;
-  }
-
-  .stat-number {
-    font-size: 2rem;
-    font-weight: 800;
-    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    margin-bottom: 0.5rem;
-  }
-
-  .stat-label {
-    font-size: 0.8rem;
-    color: #64748b;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-
-  .total-spent {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-    color: white;
-    padding: 2rem;
-    border-radius: 16px;
-    text-align: center;
-    box-shadow: 0 8px 25px -8px rgba(16, 185, 129, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    position: relative;
-    overflow: hidden;
-  }
-
-  .total-spent::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-  }
-
-  .total-spent h5 {
-    margin: 0 0 0.75rem 0;
-    font-size: 0.85rem;
-    font-weight: 600;
-    opacity: 0.9;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-  }
-
-  .total-spent .amount {
-    font-size: 2.25rem;
-    font-weight: 800;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  }
-
-  .no-stats {
-    text-align: center;
-    padding: 2rem;
-    color: #6b7280;
-    border-top: 1px solid #e5e7eb;
-    margin-top: 1.5rem;
-  }
-
-  /* Estilos para formulario de edición */
-  .edit-form {
-    margin-bottom: 1.5rem;
-  }
-
-  .form-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-  }
-
-  .form-item {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  .form-item label {
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: #374151;
-  }
-
-  .form-item input {
-    padding: 0.75rem;
-    border: 1px solid #d1d5db;
-    border-radius: 8px;
-    font-size: 0.875rem;
-    transition: all 0.2s ease;
-    background: white;
-  }
-
-  .form-item input:focus {
-    outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-  }
-
-  .form-item input::placeholder {
-    color: #9ca3af;
-  }
-
-  .readonly-info {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-    padding: 1rem;
-    background: #f9fafb;
-    border-radius: 8px;
-    border: 1px solid #e5e7eb;
-  }
-
-  .readonly-info .info-item {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-  }
-
-  .readonly-info .info-item label {
-    font-size: 0.75rem;
-    font-weight: 500;
-    color: #6b7280;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-
-  .readonly-info .info-item span {
-    font-size: 0.875rem;
-    color: #374151;
-    font-weight: 500;
-  }
-
-  /* Spinner pequeño para botones */
-  .spinner-sm {
-    display: inline-block;
-    width: 16px;
-    height: 16px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-top-color: white;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin-right: 0.5rem;
-  }
-
-  /* Responsive */
-  @media (max-width: 768px) {
-    .info-grid {
-      grid-template-columns: 1fr;
-    }
-    
-    .stats-grid {
-      grid-template-columns: 1fr;
-    }
-    
-    .form-grid,
-    .readonly-info {
-      grid-template-columns: 1fr;
-    }
-    
-    .modal-content {
-      margin: 1rem;
-      max-height: calc(100vh - 2rem);
-    }
-    
-    .modal-footer {
-      flex-direction: column;
-      gap: 1rem;
-      align-items: stretch;
-    }
-    
-    .modal-actions-left,
-    .modal-actions-right {
-      width: 100%;
-      justify-content: center;
-    }
-    
-    .modal-footer .btn {
-      flex: 1;
-      justify-content: center;
-    }
-  }
-</style> 
+  .modal-foot { display: flex; justify-content: flex-end; gap: 0.75rem; padding: 1.25rem; border-top: 1px solid #f1f5f9; background: #fafbfc; }
+  .btn { padding: 0.5rem 1.25rem; border: none; border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer; }
+  .btn-primary { background: linear-gradient(135deg, #6366f1, #7c3aed); color: #fff; }
+  .btn-ghost { background: #fff; border: 1px solid #e2e8f0; color: #64748b; }
+  .toast { position: fixed; bottom: 2rem; right: 2rem; padding: 0.8rem 1.5rem; border-radius: 10px; font-size: 0.85rem; font-weight: 600; z-index: 2000; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+  .t-ok { background: #ecfdf5; color: #065f46; border: 1px solid #6ee7b7; }
+  .text-ok { color: #059669; }
+  .text-err { color: #dc2626; }
+</style>

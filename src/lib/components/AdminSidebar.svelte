@@ -1,7 +1,12 @@
 <script lang="ts">
-  import { page } from '$app/stores';
-  import { goto } from '$app/navigation';
-  import { onMount } from 'svelte';
+  import { page } from "$app/stores";
+  import { goto } from "$app/navigation";
+  import { onMount } from "svelte";
+  import { 
+    LayoutDashboard, FileText, Users, Building2, 
+    Tags, Download, LogOut, Menu, X, 
+    ChevronRight, Bell, Sparkles
+  } from "lucide-svelte";
 
   export let currentUser: any = null;
 
@@ -11,37 +16,37 @@
 
   const menuItems = [
     {
-      label: 'Dashboard',
-      href: '/admin',
-      icon: '📊'
+      label: "Dashboard",
+      href: "/admin",
+      icon: LayoutDashboard,
     },
     {
-      label: 'Aplicaciones',
-      href: '/admin/provider-applications',
-      icon: '📝',
+      label: "Aplicaciones",
+      href: "/admin/provider-applications",
+      icon: FileText,
       badge: pendingApplicationsCount,
-      loadingBadge
+      loadingBadge,
     },
     {
-      label: 'Importación Masiva',
-      href: '/admin/bulk-import',
-      icon: '📊'
+      label: "Proveedores",
+      href: "/admin/providers",
+      icon: Building2,
     },
     {
-      label: 'Proveedores',
-      href: '/admin/providers',
-      icon: '🏭'
+      label: "Clientes",
+      href: "/admin/customers",
+      icon: Users,
     },
     {
-      label: 'Clientes',
-      href: '/admin/customers',
-      icon: '👤'
+      label: "Categorías",
+      href: "/admin/categories",
+      icon: Tags,
     },
     {
-      label: 'Categorías',
-      href: '/admin/categories',
-      icon: '🏷️'
-    }
+      label: "Importación Masiva",
+      href: "/admin/bulk-import",
+      icon: Download,
+    },
   ];
 
   onMount(async () => {
@@ -50,13 +55,13 @@
 
   async function loadPendingApplicationsCount() {
     try {
-      const response = await fetch('/api/provider-applications/stats');
+      const response = await fetch("/api/provider-applications/stats");
       if (response.ok) {
         const data = await response.json();
         pendingApplicationsCount = data.pending || 0;
       }
     } catch (error) {
-      console.error('Error loading pending applications count:', error);
+      console.error("Error loading pending applications count:", error);
       pendingApplicationsCount = 0;
     } finally {
       loadingBadge = false;
@@ -69,7 +74,10 @@
   }
 
   function isActive(href: string) {
-    return $page.url.pathname === href;
+    if (href === "/admin") {
+      return $page.url.pathname === "/admin";
+    }
+    return $page.url.pathname.startsWith(href);
   }
 
   function handleNavigation(href: string) {
@@ -79,11 +87,11 @@
 
   async function handleLogout() {
     try {
-      await fetch('/api/auth/logout', { method: 'POST' });
-      goto('/auth/login');
+      await fetch("/api/auth/logout", { method: "POST" });
+      goto("/auth/login");
     } catch (error) {
-      console.error('Error logging out:', error);
-      goto('/auth/login');
+      console.error("Error logging out:", error);
+      goto("/auth/login");
     }
   }
 
@@ -93,115 +101,154 @@
 </script>
 
 <!-- Mobile Menu Button -->
-<button 
-  class="lg:hidden fixed top-3 left-3 z-50 p-2 bg-primary-600 text-white rounded-md shadow-lg hover:bg-primary-700 transition-colors duration-200"
+<button
+  class="lg:hidden fixed top-4 left-4 z-50 p-2 bg-white text-slate-900 rounded-xl shadow-lg hover:bg-slate-50 transition-all duration-200 border border-slate-200 active:scale-95"
   on:click={toggleMobileMenu}
   aria-label="Toggle menu"
 >
-  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-  </svg>
+  {#if isMobileMenuOpen}
+    <X size={20} />
+  {:else}
+    <Menu size={20} />
+  {/if}
 </button>
 
 <!-- Overlay for mobile -->
 {#if isMobileMenuOpen}
-  <div 
-    class="lg:hidden fixed inset-0 bg-black/50 z-40"
+  <!-- svelte-ignore a11y-click-events-have-key-events -->
+  <div
+    class="lg:hidden fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-40 transition-opacity"
     on:click={toggleMobileMenu}
     role="button"
     tabindex="0"
-    on:keydown={(e) => e.key === 'Escape' && toggleMobileMenu()}
   ></div>
 {/if}
 
 <!-- Sidebar -->
-<aside 
-  class="fixed top-0 left-0 z-40 w-64 h-screen bg-white border-r border-secondary-200 transition-transform duration-300 ease-in-out shadow-sm"
+<aside
+  class="fixed top-0 left-0 z-[60] w-72 h-screen bg-white border-r border-slate-200 transition-transform duration-300 ease-in-out shadow-sm flex flex-col font-inter"
   class:translate-x-0={isMobileMenuOpen}
   class:-translate-x-full={!isMobileMenuOpen}
   class:lg:translate-x-0={true}
 >
-  <div class="flex flex-col h-full">
-    <!-- Header -->
-    <div class="px-4 py-3 border-b border-secondary-200 bg-gradient-to-r from-primary-50 to-primary-100">
-      <div class="flex items-center space-x-2">
-        <div class="w-7 h-7 bg-gradient-to-br from-primary-500 to-primary-600 rounded-md flex items-center justify-center shadow-sm">
-          <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 4a1 1 0 011-1h12a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1V8z" clip-rule="evenodd"></path>
-          </svg>
-        </div>
-        <div>
-          <h1 class="text-sm font-bold text-secondary-900">Domify Admin</h1>
-          <p class="text-xs text-secondary-600">Panel de Control</p>
-        </div>
+  <!-- Header Logo -->
+  <div
+    class="px-8 pt-14 pb-10 border-b border-slate-100 flex items-center space-x-3 shrink-0"
+  >
+    <div
+      class="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center shadow-lg shadow-slate-900/10 group-hover:scale-110 transition-transform"
+    >
+      <span class="text-white font-outfit font-bold text-xl leading-none">D</span>
+    </div>
+    <div class="flex flex-col">
+      <h1 class="text-xl font-bold tracking-tight text-slate-900 font-outfit leading-tight">
+        Domify<span class="text-blue-600">Admin</span>
+      </h1>
+      <div class="flex items-center gap-1 mt-0.5">
+        <Sparkles size={10} class="text-blue-500" />
+        <p class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">
+          Control Center
+        </p>
       </div>
     </div>
+  </div>
 
-    <!-- Navigation -->
-    <nav class="flex-1 px-3 py-2 space-y-0.5 overflow-y-auto">
-      {#each menuItems as item}
-        <button 
-          class="w-full flex items-center px-2 py-1.5 text-left rounded-md transition-all duration-200 group relative"
-          class:bg-primary-100={isActive(item.href)}
-          class:text-primary-700={isActive(item.href)}
-          class:border-l-3={isActive(item.href)}
-          class:border-primary-500={isActive(item.href)}
-          class:hover:bg-secondary-50={!isActive(item.href)}
-          class:text-secondary-700={!isActive(item.href)}
-          class:hover:text-secondary-900={!isActive(item.href)}
-          on:click={() => handleNavigation(item.href)}
-          aria-label={item.label}
-        >
-          <div class="flex items-center space-x-2 flex-1">
-            <span class="text-sm">{item.icon}</span>
-            <span class="font-medium text-xs">{item.label}</span>
+  <!-- Navigation -->
+  <nav
+    class="flex-1 px-4 py-10 space-y-1.5 overflow-y-auto align-content-start scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent"
+  >
+    <div
+      class="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-4 px-4"
+    >
+      Menú Principal
+    </div>
+
+    {#each menuItems as item}
+      <button
+        class="w-full flex items-center justify-between px-4 py-3 rounded-2xl transition-all duration-200 group relative outline-none mb-1"
+        class:bg-blue-50={isActive(item.href)}
+        class:text-blue-600={isActive(item.href)}
+        class:hover:bg-slate-50={!isActive(item.href)}
+        class:text-slate-500={!isActive(item.href)}
+        class:hover:text-slate-900={!isActive(item.href)}
+        on:click={() => handleNavigation(item.href)}
+        aria-label={item.label}
+      >
+        <div class="flex items-center space-x-3.5">
+          <div
+            class="transition-colors duration-200"
+            class:text-blue-600={isActive(item.href)}
+            class:text-slate-400={!isActive(item.href)}
+            class:group-hover:text-slate-600={!isActive(item.href)}
+          >
+            <svelte:component this={item.icon} size={20} strokeWidth={isActive(item.href) ? 2.5 : 2} />
           </div>
-          
-          {#if item.label === 'Aplicaciones' && (pendingApplicationsCount > 0 || loadingBadge)}
-            <span class="px-1 py-0.5 text-xs font-bold text-white bg-red-500 rounded-full min-w-[16px] text-center leading-none">
+          <span class="font-bold text-sm tracking-tight">{item.label}</span>
+        </div>
+
+        {#if item.label === "Aplicaciones" && (pendingApplicationsCount > 0 || loadingBadge)}
+          <div class="flex items-center justify-center shrink-0">
+            <span
+              class="px-2 py-0.5 text-[10px] font-bold text-white bg-blue-600 rounded-full min-w-[20px] text-center shadow-md shadow-blue-600/20"
+            >
               {#if loadingBadge}
-                <svg class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
+                <div class="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
               {:else}
-                {pendingApplicationsCount > 999 ? '999+' : pendingApplicationsCount}
+                {pendingApplicationsCount > 99
+                  ? "99+"
+                  : pendingApplicationsCount}
               {/if}
             </span>
-          {/if}
-        </button>
-      {/each}
-    </nav>
+          </div>
+        {:else if isActive(item.href)}
+             <ChevronRight size={14} class="text-blue-600/50" />
+        {/if}
+      </button>
+    {/each}
+  </nav>
 
-    <!-- User Info & Logout -->
-    <div class="p-3 border-t border-secondary-200 bg-secondary-50">
+  <!-- User Info & Logout -->
+  <div class="p-6 border-t border-slate-100 bg-slate-50/50 shrink-0">
+    <div class="bg-white border border-slate-200 rounded-[1.5rem] p-4 mb-4 shadow-sm">
       {#if currentUser}
-        <div class="mb-2">
-          <div class="flex items-center space-x-2 p-1.5 bg-white rounded-md border border-secondary-200">
-            <div class="w-6 h-6 bg-gradient-to-br from-primary-500 to-primary-600 rounded-full flex items-center justify-center text-white font-semibold text-xs">
-              {currentUser.email?.charAt(0).toUpperCase() || 'A'}
-            </div>
-            <div class="flex-1 min-w-0">
-              <p class="text-xs font-semibold text-secondary-900 truncate">
-                {currentUser.email}
-              </p>
-              <p class="text-xs text-secondary-500 capitalize">
-                {currentUser.role || 'Administrador'}
-              </p>
-            </div>
+        <div class="flex items-center space-x-3">
+          <div
+            class="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center text-white font-outfit font-bold text-lg shadow-md shrink-0"
+          >
+            {currentUser.email?.charAt(0).toUpperCase() || "A"}
+          </div>
+          <div class="flex-1 min-w-0">
+            <p
+              class="text-sm font-bold text-slate-900 truncate font-outfit"
+              title={currentUser.email}
+            >
+              {currentUser.email?.split('@')[0]}
+            </p>
+            <p
+              class="text-[10px] text-blue-600 uppercase tracking-widest font-bold flex items-center gap-1.5 mt-0.5"
+            >
+              <span class="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
+              <span>Admin</span>
+            </p>
+          </div>
+        </div>
+      {:else}
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-xl bg-slate-100 animate-pulse shrink-0"></div>
+          <div class="flex-1">
+            <div class="h-3 bg-slate-100 rounded w-3/4 mb-1.5 animate-pulse"></div>
+            <div class="h-2 bg-slate-50 rounded w-1/2 animate-pulse"></div>
           </div>
         </div>
       {/if}
-      
-      <button 
-        class="w-full flex items-center space-x-1.5 px-2 py-1.5 text-red-600 hover:bg-red-50 rounded-md transition-all duration-200 group text-xs"
-        on:click={handleLogout}
-      >
-        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
-        </svg>
-        <span class="font-medium">Cerrar Sesión</span>
-      </button>
     </div>
+
+    <button
+      class="w-full flex items-center justify-center space-x-2 px-4 py-3 text-slate-500 hover:text-red-600 bg-white hover:bg-red-50 border border-slate-200 hover:border-red-200 rounded-xl transition-all duration-200 group text-sm font-bold active:scale-95 shadow-sm"
+      on:click={handleLogout}
+    >
+      <LogOut size={16} class="text-slate-400 group-hover:text-red-500 transition-colors" />
+      <span>Cerrar Sesión</span>
+    </button>
   </div>
-</aside> 
+</aside>

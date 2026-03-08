@@ -18,22 +18,10 @@ export const GET: RequestHandler = async ({ url, locals }) => {
         // Usar el cliente de Supabase admin desde locals
         const { supabaseAdmin } = locals;
 
-        // Construir la query base incluyendo categorías
+        // Primero obtener los perfiles de proveedores
         let query = supabaseAdmin
             .from('provider_profiles')
-            .select(`
-                *,
-                provider_categories!provider_categories_provider_profile_id_fkey (
-                    category_id,
-                    categories (
-                        id,
-                        name,
-                        slug,
-                        description,
-                        icon
-                    )
-                )
-            `, { count: 'exact' })
+            .select(`*`, { count: 'exact' })
             .order('created_at', { ascending: false })
             .range(offset, offset + limit - 1);
         
@@ -49,10 +37,37 @@ export const GET: RequestHandler = async ({ url, locals }) => {
             throw new Error(error.message);
         }
 
-        // console.log removed
+        // Obtener todas las categorías para estos proveedores en una consulta separada
+        const providerIds = (providers || []).map(p => p.id);
+        let allProviderCategories: any[] = [];
+        
+        if (providerIds.length > 0) {
+            const { data: catData, error: catError } = await supabaseAdmin
+                .from('provider_categories')
+                .select(`
+                    provider_profile_id,
+                    category_id,
+                    categories (
+                        id,
+                        name,
+                        slug,
+                        description,
+                        icon
+                    )
+                `)
+                .in('provider_profile_id', providerIds);
+            
+            if (!catError && catData) {
+                allProviderCategories = catData;
+            }
+        }
 
-        // Para cada proveedor, obtener el email desde auth.users y formatear las categorías
+        // Formatear los datos combinados
         const providersWithEmail = await Promise.all((providers || []).map(async (provider: any) => {
+            // Filtrar las categorías correspondientes a este proveedor
+            const relevantCats = allProviderCategories.filter(pc => pc.provider_profile_id === provider.id);
+            
+            // Reutilizar la lógica de email existente
             let email = 'Email no disponible';
             
             try {
@@ -69,7 +84,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
             }
 
             // Formatear las categorías
-            const categories = (provider.provider_categories || []).map((pc: any) => ({
+            const categories = (relevantCats || []).map((pc: any) => ({
                 id: pc.categories?.id || pc.category_id,
                 name: pc.categories?.name || `Categoría ${pc.category_id}`,
                 slug: pc.categories?.slug || '',

@@ -492,29 +492,39 @@ Fecha de solicitud: ${new Date().toLocaleString('es-ES', { timeZone: 'America/Ma
 	</script>
 </svelte:head>
 
-<div class="min-h-screen bg-gradient-to-br from-secondary-50 to-primary-50">
+<div class="min-h-screen bg-slate-50 font-inter">
 	<!-- Hero Section -->
-	<section class="relative overflow-hidden bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800">
-		<!-- Background Pattern -->
-		<div class="absolute inset-0 opacity-10">
-			<div class="absolute inset-0" style="background-image: radial-gradient(circle at 25% 25%, white 2px, transparent 2px), radial-gradient(circle at 75% 75%, white 2px, transparent 2px); background-size: 50px 50px;"></div>
+	<section class="relative overflow-hidden bg-slate-50 pt-24 pb-16 lg:pt-32 lg:pb-24">
+		<!-- Dynamic Background -->
+		<div class="absolute inset-0 z-0">
+			<!-- Grid pattern -->
+			<div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTAgMGg0MHY0MEgwVjB6bTIwIDIwYzAgMTEuMDQ2LTguOTU0IDIwLTIwIDIwdjFDMTEuNTk4IDQxIDIxIDMxLjU5OCAyMSAyMFYwaC0xdjIweiIgZmlsbD0icmdiYSgwLCAwLCAwLCAwLjAzKSIgZmlsbC1ydWxlPSJldmVub2RkIi8+PC9zdmc+')] opacity-60"></div>
+			<!-- Glow effects -->
+			<div class="absolute top-0 right-1/4 w-[600px] h-[600px] bg-blue-200/40 rounded-full blur-[120px] pointer-events-none"></div>
+			<div class="absolute bottom-1/4 left-1/4 w-[500px] h-[500px] bg-indigo-200/40 rounded-full blur-[150px] pointer-events-none"></div>
+			<div class="absolute inset-0 bg-gradient-to-b from-transparent via-slate-50/80 to-slate-50"></div>
 		</div>
 		
-		<div class="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32">
+		<div class="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8">
 			<div class="text-center max-w-4xl mx-auto">
-				<h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
-					Encuentra el profesional
-					<span class="block text-primary-200">perfecto para tu proyecto</span>
+				<div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/60 border border-slate-200/60 backdrop-blur-md mb-8 shadow-sm">
+					<span class="flex h-2 w-2 rounded-full bg-blue-500 animate-pulse"></span>
+					<span class="text-sm font-medium text-slate-700 font-outfit">Explora nuestro catálogo</span>
+				</div>
+                
+				<h1 class="text-4xl sm:text-5xl lg:text-7xl font-bold text-slate-900 mb-6 leading-tight font-outfit tracking-tight">
+					Encuentra el experto
+					<span class="block text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600">perfecto para ti</span>
 				</h1>
-				<p class="text-xl sm:text-2xl text-primary-100 mb-8 max-w-2xl mx-auto">
-					Conectamos clientes con profesionales verificados y confiables en Nicaragua
+				<p class="text-lg sm:text-xl text-slate-600 mb-10 max-w-2xl mx-auto font-light leading-relaxed">
+					Conectamos clientes con profesionales verificados y altamente capacitados. Todo a un clic de distancia.
 				</p>
 				
 				<!-- Search Bar -->
-				<div class="max-w-2xl mx-auto mb-8">
-					<div class="relative">
-						<div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-							<svg class="h-6 w-6 text-secondary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+				<div class="max-w-2xl mx-auto mb-12">
+					<div class="relative group">
+						<div class="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none">
+							<svg class="h-6 w-6 text-slate-400 group-focus-within:text-blue-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
 							</svg>
 						</div>
@@ -523,11 +533,11 @@ Fecha de solicitud: ${new Date().toLocaleString('es-ES', { timeZone: 'America/Ma
 							bind:value={searchQuery}
 							on:keydown={handleKeydown}
 							placeholder="Buscar servicios: limpieza, plomería, electricidad..."
-							class="w-full pl-12 pr-4 py-4 text-lg bg-white rounded-2xl shadow-lg border-0 focus:ring-4 focus:ring-primary-300 focus:outline-none transition-all duration-200"
+							class="w-full pl-14 pr-32 py-5 text-lg bg-white/80 backdrop-blur-sm shadow-xl border border-slate-200 rounded-3xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 outline-none text-slate-800 placeholder:text-slate-400 font-outfit"
 						/>
 						<button
 							on:click={handleSearch}
-							class="absolute inset-y-0 right-0 px-6 flex items-center bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-r-2xl transition-colors duration-200"
+							class="absolute inset-y-2 right-2 px-8 flex items-center justify-center bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-2xl transition-all shadow-md group-hover:shadow-lg hover:shadow-slate-900/20"
 						>
 							Buscar
 						</button>
@@ -535,18 +545,18 @@ Fecha de solicitud: ${new Date().toLocaleString('es-ES', { timeZone: 'America/Ma
 				</div>
 				
 				<!-- Quick Stats -->
-				<div class="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-3xl mx-auto">
+				<div class="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-3xl mx-auto pt-8 border-t border-slate-200/60">
 					<div class="text-center">
-						<div class="text-3xl font-bold text-white mb-2">500+</div>
-						<div class="text-primary-200">Profesionales</div>
+						<div class="text-4xl font-bold text-slate-900 mb-1 font-outfit">500+</div>
+						<div class="text-slate-500 font-medium">Profesionales</div>
 					</div>
-					<div class="text-center">
-						<div class="text-3xl font-bold text-white mb-2">10+</div>
-						<div class="text-primary-200">Categorías</div>
+					<div class="text-center relative sm:before:absolute sm:before:-left-3 sm:before:top-1/2 sm:before:-translate-y-1/2 sm:before:h-12 sm:before:w-px sm:before:bg-slate-200">
+						<div class="text-4xl font-bold text-slate-900 mb-1 font-outfit">10+</div>
+						<div class="text-slate-500 font-medium">Categorías</div>
 					</div>
-					<div class="text-center">
-						<div class="text-3xl font-bold text-white mb-2">1000+</div>
-						<div class="text-primary-200">Proyectos</div>
+					<div class="text-center relative sm:before:absolute sm:before:-left-3 sm:before:top-1/2 sm:before:-translate-y-1/2 sm:before:h-12 sm:before:w-px sm:before:bg-slate-200">
+						<div class="text-4xl font-bold text-slate-900 mb-1 font-outfit">1k+</div>
+						<div class="text-slate-500 font-medium">Proyectos exitosos</div>
 					</div>
 				</div>
 			</div>
@@ -554,30 +564,30 @@ Fecha de solicitud: ${new Date().toLocaleString('es-ES', { timeZone: 'America/Ma
 	</section>
 
 	<!-- Services Section -->
-	<section id="results-section" class="py-16 lg:py-24">
+	<section id="results-section" class="py-16 lg:py-24 relative z-10">
 		<div class="container mx-auto px-4 sm:px-6 lg:px-8">
 			<!-- Section Header -->
 			<div class="text-center mb-12 lg:mb-16">
-				<h2 class="text-3xl sm:text-4xl lg:text-5xl font-bold text-secondary-900 mb-4">
+				<h2 class="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 mb-4 font-outfit tracking-tight">
 					Servicios Disponibles
 				</h2>
-				<p class="text-lg text-secondary-600 max-w-2xl mx-auto">
-					Explora nuestras categorías de servicios y encuentra el profesional que necesitas
+				<p class="text-lg text-slate-600 max-w-2xl mx-auto font-light leading-relaxed">
+					Explora nuestras categorías y encuentra el experto que buscas.
 				</p>
 			</div>
 
 			<!-- Loading State -->
 			{#if loading}
-				<div class="flex flex-col items-center justify-center py-16">
+				<div class="flex flex-col items-center justify-center py-24 bg-white rounded-3xl border border-slate-200 shadow-sm max-w-4xl mx-auto">
 					<LoadingSpinner />
-					<p class="mt-4 text-secondary-600">Cargando servicios...</p>
+					<p class="mt-4 text-slate-600 font-medium font-outfit tracking-wide">Cargando catálogo de servicios...</p>
 				</div>
 			{:else if error}
-				<div class="text-center py-16">
-					<div class="text-red-500 text-lg mb-4">{error}</div>
+				<div class="text-center py-20 bg-red-50 rounded-3xl border border-red-100 max-w-4xl mx-auto">
+					<div class="text-red-600 text-lg mb-6 font-medium font-outfit">{error}</div>
 					<button 
 						on:click={() => window.location.reload()} 
-						class="bg-primary-600 hover:bg-primary-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors duration-200"
+						class="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-xl font-semibold transition-colors duration-200 shadow-sm font-outfit"
 					>
 						Reintentar
 					</button>
@@ -588,34 +598,37 @@ Fecha de solicitud: ${new Date().toLocaleString('es-ES', { timeZone: 'America/Ma
 					{#each filteredCategories as category}
 						{@const iconData = getCategoryIcon(category.name)}
 						<button 
-							class="group bg-white rounded-2xl p-6 lg:p-8 shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer border border-secondary-100 hover:border-primary-200 text-left w-full"
+							class="group relative bg-white backdrop-blur-xl border border-slate-200 rounded-3xl p-8 hover:bg-slate-50/80 transition-all duration-500 shadow-sm hover:shadow-xl hover:-translate-y-1 block w-full text-left"
 							on:click={() => handleCategoryClick(category.slug)}
 							on:keydown={(e) => e.key === 'Enter' && handleCategoryClick(category.slug)}
 							aria-label="Ver servicios de {category.name}"
 						>
-							<!-- Icon -->
-							<div class="flex items-center justify-center w-16 h-16 rounded-xl {iconData.bgColor} mb-6 group-hover:scale-110 transition-transform duration-300">
-								<svg class="w-8 h-8 {iconData.color}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d={iconData.icon} />
-								</svg>
-							</div>
+							<div class="absolute -inset-px bg-gradient-to-b from-blue-100 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-md -z-10 rounded-3xl"></div>
 							
-							<!-- Content -->
-							<div class="text-center">
-								<h3 class="text-xl font-bold text-secondary-900 mb-3 group-hover:text-primary-600 transition-colors duration-200">
-									{category.name}
-								</h3>
-								<p class="text-secondary-600 mb-6 leading-relaxed">
-									{category.description}
-								</p>
+							<div class="relative z-10 flex flex-col h-full">
+								<!-- Icon -->
+								<div class="flex items-center justify-center w-14 h-14 rounded-2xl {iconData.bgColor} mb-6 group-hover:scale-110 transition-transform duration-500 shadow-sm border border-slate-100">
+									<svg class="w-7 h-7 {iconData.color}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d={iconData.icon} />
+									</svg>
+								</div>
 								
-								<!-- Arrow -->
-								<div class="flex justify-center">
-									<div class="w-10 h-10 rounded-full bg-primary-100 group-hover:bg-primary-200 flex items-center justify-center transition-colors duration-200">
-										<svg class="w-5 h-5 text-primary-600 group-hover:translate-x-1 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-										</svg>
-									</div>
+								<!-- Content -->
+								<div class="flex-grow">
+									<h3 class="text-xl font-bold text-slate-900 mb-3 group-hover:text-blue-600 transition-colors duration-300 font-outfit">
+										{category.name}
+									</h3>
+									<p class="text-slate-600 mb-8 leading-relaxed font-light text-sm">
+										{category.description}
+									</p>
+								</div>
+								
+								<!-- Arrow Footer -->
+								<div class="mt-auto pt-4 border-t border-slate-100 flex items-center justify-between text-blue-600 font-medium font-outfit opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+									<span>Explorar servicios</span>
+									<svg class="w-5 h-5 ml-1 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+									</svg>
 								</div>
 							</div>
 						</button>
@@ -624,17 +637,17 @@ Fecha de solicitud: ${new Date().toLocaleString('es-ES', { timeZone: 'America/Ma
 
 				<!-- No Results -->
 				{#if filteredCategories.length === 0 && searchQuery.trim()}
-					<div class="text-center py-16">
-						<div class="text-secondary-400 text-6xl mb-4">🔍</div>
-						<h3 class="text-2xl font-bold text-secondary-900 mb-4">
-							No se encontraron servicios
+					<div class="text-center py-20 bg-white rounded-3xl border border-slate-200 shadow-sm max-w-4xl mx-auto">
+						<div class="text-slate-300 text-6xl mb-6">🔍</div>
+						<h3 class="text-2xl font-bold text-slate-900 mb-4 font-outfit">
+							No se encontraron resultados
 						</h3>
-						<p class="text-secondary-600 mb-6">
-							No encontramos servicios que coincidan con "{searchQuery}"
+						<p class="text-slate-600 mb-8 max-w-md mx-auto">
+							No encontramos ningún servicio para "{searchQuery}". Intenta con otros términos o solicita la categoría.
 						</p>
 						<button 
 							on:click={clearSearch}
-							class="bg-primary-600 hover:bg-primary-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors duration-200"
+							class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-xl font-medium transition-colors duration-200 font-outfit shadow-sm"
 						>
 							Ver todos los servicios
 						</button>
@@ -645,42 +658,57 @@ Fecha de solicitud: ${new Date().toLocaleString('es-ES', { timeZone: 'America/Ma
 	</section>
 
 	<!-- Request New Category Section -->
-	<section class="py-12 bg-white">
-		<div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
-			<div class="max-w-2xl mx-auto">
-				<h3 class="text-2xl font-bold text-secondary-900 mb-4">
-					¿No encuentras tu servicio?
-				</h3>
-				<p class="text-secondary-600 mb-6">
-					Si no ves la categoría que buscas, podemos agregarla. ¡Solicítala aquí!
-				</p>
-				<button 
-					on:click={openCategoryModal}
-					class="inline-flex items-center justify-center px-6 py-3 bg-secondary-100 hover:bg-secondary-200 text-secondary-700 font-semibold rounded-xl transition-colors duration-200 shadow-md hover:shadow-lg"
-				>
-					<svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-					</svg>
-					Solicitar Nueva Categoría
-				</button>
+	<section class="py-20 relative bg-white border-y border-slate-200 z-10">
+		<div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center relative">
+			<div class="max-w-2xl mx-auto bg-slate-50 border border-slate-200 rounded-3xl p-10 lg:p-14 shadow-sm relative overflow-hidden">
+				<!-- Decorative -->
+				<div class="absolute -top-24 -right-24 w-48 h-48 bg-blue-100 rounded-full blur-[50px]"></div>
+				<div class="absolute -bottom-24 -left-24 w-48 h-48 bg-indigo-100 rounded-full blur-[50px]"></div>
+
+				<div class="relative z-10">
+					<div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
+						<span class="text-2xl">💡</span>
+					</div>
+					<h3 class="text-3xl font-bold text-slate-900 mb-4 font-outfit tracking-tight">
+						¿No encuentras lo que buscas?
+					</h3>
+					<p class="text-slate-600 mb-8 text-lg font-light leading-relaxed">
+						Estamos expandiendo constantemente nuestro catálogo. Sugiere una nueva especialidad para considerarla.
+					</p>
+					<button 
+						on:click={openCategoryModal}
+						class="inline-flex items-center justify-center px-8 py-4 bg-slate-900 hover:bg-slate-800 text-white font-medium rounded-2xl transition-all shadow-md hover:shadow-lg font-outfit group"
+					>
+						<svg class="w-5 h-5 mr-3 text-slate-300 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+						</svg>
+						Sugerir Categoría
+					</button>
+				</div>
 			</div>
 		</div>
 	</section>
 
 	<!-- CTA Section -->
-	<section class="bg-gradient-to-r from-primary-600 to-primary-700 py-16 lg:py-20">
-		<div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
-			<h2 class="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-6">
-				¿Eres un profesional?
+	<section class="relative py-24 overflow-hidden bg-slate-900 z-10">
+		<div class="absolute inset-0 z-0">
+			<!-- Glow effects -->
+			<div class="absolute top-0 right-1/4 w-[500px] h-[500px] bg-blue-600/30 rounded-full blur-[120px] pointer-events-none"></div>
+			<div class="absolute bottom-1/4 left-1/4 w-[400px] h-[400px] bg-indigo-600/30 rounded-full blur-[150px] pointer-events-none"></div>
+		</div>
+		<div class="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8 text-center mt-4">
+			<h2 class="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-6 font-outfit tracking-tight">
+				¿Eres un profesional de <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">primera</span>?
 			</h2>
-			<p class="text-xl text-primary-100 mb-8 max-w-2xl mx-auto">
-				Únete a nuestra plataforma y comienza a recibir clientes
+			<p class="text-xl text-slate-300 mb-10 max-w-2xl mx-auto font-light">
+				Únete a la plataforma que está revolucionando los servicios en Nicaragua y haz crecer tu negocio hoy mismo.
 			</p>
 			<a 
 				href="/become-provider"
-				class="inline-flex items-center justify-center px-8 py-4 bg-white text-primary-600 font-semibold rounded-xl hover:bg-primary-50 transition-colors duration-200 shadow-lg hover:shadow-xl"
+				class="inline-flex items-center justify-center px-10 py-5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-lg rounded-2xl transition-all duration-300 shadow-[0_0_30px_-5px_rgba(59,130,246,0.6)] font-outfit hover:scale-105"
 			>
-				Registrarse como Proveedor
+				Convertirse en Proveedor
+				<svg class="w-5 h-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
 			</a>
 		</div>
 	</section>

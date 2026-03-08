@@ -1,112 +1,138 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-	
-	export let number: string;
-	export let label: string;
-	export let delay: number = 0;
-	export let iconName: 'users' | 'check' | 'star' | 'clock' = 'users';
-	
-	let isVisible = false;
-	let animatedNumber = 0;
-	let finalNumber = 0;
-	
-	// Extract numeric value for animation
-	$: {
-		const numericMatch = number.match(/[\d.]+/);
-		if (numericMatch) {
-			finalNumber = parseFloat(numericMatch[0]);
-		}
-	}
-	
-	function animateNumber() {
-		if (!finalNumber || finalNumber === 0) return;
-		
-		const duration = 2000; // 2 seconds
-		const increment = finalNumber / (duration / 16); // 60fps
-		
-		const timer = setInterval(() => {
-			animatedNumber += increment;
-			if (animatedNumber >= finalNumber) {
-				animatedNumber = finalNumber;
-				clearInterval(timer);
-			}
-		}, 16);
-	}
-	
-	function formatNumber(num: number): string {
-		if (number.includes('.')) {
-			return num.toFixed(1);
-		}
-		return Math.floor(num).toString();
-	}
-	
-	function intersectionObserver(node: HTMLElement) {
-		const observer = new IntersectionObserver(
-			(entries) => {
-				entries.forEach((entry) => {
-					if (entry.isIntersecting && !isVisible) {
-						isVisible = true;
-						setTimeout(() => {
-							animateNumber();
-						}, delay);
-						observer.unobserve(node);
-					}
-				});
-			},
-			{ threshold: 0.5 }
-		);
+  import { onMount } from "svelte";
+  import { 
+    FileText, Clock, CheckCircle2, Building2, 
+    Tags, Users, TrendingUp, TrendingDown 
+  } from "lucide-svelte";
 
-		observer.observe(node);
+  export let number: string;
+  export let label: string;
+  export let delay: number = 0;
+  export let iconName: "file" | "clock" | "check" | "building" | "tag" | "users" = "file";
+  export let accent: "blue" | "amber" | "emerald" | "indigo" | "rose" = "blue";
+  export let trend: string = "";
 
-		return {
-			destroy() {
-				observer.unobserve(node);
-			}
-		};
-	}
+  let isVisible = false;
+  let animatedNumber = 0;
+  let finalNumber = 0;
+
+  // Extract numeric value for animation
+  $: {
+    const numericMatch = number.match(/[\d.]+/);
+    if (numericMatch) {
+      finalNumber = parseFloat(numericMatch[0]);
+    }
+  }
+
+  function animateNumber() {
+    if (!finalNumber || finalNumber === 0) return;
+
+    const duration = 1500; // 1.5 seconds
+    const fps = 60;
+    const totalFrames = (duration / 1000) * fps;
+    const increment = finalNumber / totalFrames;
+
+    const timer = setInterval(() => {
+      animatedNumber += increment;
+      if (animatedNumber >= finalNumber) {
+        animatedNumber = finalNumber;
+        clearInterval(timer);
+      }
+    }, 1000 / fps);
+  }
+
+  function formatNumber(num: number): string {
+    if (number.includes(".")) {
+      return num.toFixed(1).replace(/\.0$/, "");
+    }
+    return Math.floor(num).toString();
+  }
+
+  function intersectionObserver(node: HTMLElement) {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && !isVisible) {
+            isVisible = true;
+            setTimeout(() => {
+              animateNumber();
+            }, delay);
+            observer.unobserve(node);
+          }
+        });
+      },
+      { threshold: 0.1 }
+    );
+
+    observer.observe(node);
+
+    return {
+      destroy() {
+        observer.unobserve(node);
+      },
+    };
+  }
+
+  const icons = {
+    file: FileText,
+    clock: Clock,
+    check: CheckCircle2,
+    building: Building2,
+    tag: Tags,
+    users: Users,
+  };
+
+  const colors = {
+    blue: "text-blue-600 bg-blue-50 border-blue-100 shadow-blue-600/5",
+    amber: "text-amber-600 bg-amber-50 border-amber-100 shadow-amber-600/5",
+    emerald: "text-emerald-600 bg-emerald-50 border-emerald-100 shadow-emerald-600/5",
+    indigo: "text-indigo-600 bg-indigo-50 border-indigo-100 shadow-indigo-600/5",
+    rose: "text-rose-600 bg-rose-50 border-rose-100 shadow-rose-600/5",
+  };
 </script>
 
-<div 
-	class="text-center group"
-	use:intersectionObserver
+<div
+  class="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm hover:shadow-xl hover:shadow-slate-200/40 transition-all duration-500 group relative overflow-hidden flex flex-col items-center text-center sm:block sm:text-left"
+  use:intersectionObserver
 >
-	<div class="relative">
-		<!-- Background Circle Animation -->
-		<div 
-			class="absolute inset-0 bg-gradient-to-br from-primary-100 to-primary-200 rounded-full opacity-0 scale-0 transition-all duration-700 ease-out"
-			class:opacity-20={isVisible}
-			class:scale-100={isVisible}
-		></div>
-		
-		<!-- Content -->
-		<div class="relative z-10 p-6">
-			{#if iconName === 'users'}
-				<svg class="mx-auto text-primary-500 text-3xl mb-2" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m10-6.13a4 4 0 11-8 0 4 4 0 018 0zM6 7a4 4 0 118 0 4 4 0 01-8 0z"/></svg>
-			{:else if iconName === 'check'}
-				<svg class="mx-auto text-primary-500 text-3xl mb-2" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-			{:else if iconName === 'star'}
-				<svg class="mx-auto text-primary-500 text-3xl mb-2" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon stroke-linecap="round" stroke-linejoin="round" points="12 17.27 18.18 21 15.54 13.97 22 9.24 14.81 8.63 12 2 9.19 8.63 2 9.24 8.46 13.97 5.82 21 12 17.27"/></svg>
-			{:else if iconName === 'clock'}
-				<svg class="mx-auto text-primary-500 text-3xl mb-2" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2"/></svg>
-			{/if}
-			<div 
-				class="text-3xl sm:text-4xl font-bold text-primary-600 mb-2 transition-all duration-300"
-				class:animate-pulse={!isVisible}
-			>
-				{#if finalNumber > 0}
-					{formatNumber(animatedNumber)}{number.replace(/[\d.]+/, '')}
-				{:else}
-					{number}
-				{/if}
-			</div>
-			
-			<div 
-				class="text-secondary-600 font-medium transition-all duration-500 delay-200"
-				class:translate-y-2={!isVisible}
-				class:opacity-0={!isVisible}
-			>
-				{label}
-			</div>
-		</div>
-	</div>
-</div> 
+  <div class="flex items-center justify-between mb-4 w-full">
+    <div
+      class={`w-12 h-12 rounded-2xl flex items-center justify-center border transition-all duration-500 group-hover:scale-110 group-hover:rotate-3 ${colors[accent]}`}
+    >
+      <svelte:component this={icons[iconName]} size={24} />
+    </div>
+    
+    {#if trend}
+      <div class="flex items-center gap-1 bg-slate-50 border border-slate-100 px-2 py-1 rounded-full">
+        <TrendingUp size={10} class="text-emerald-500" />
+        <span class="text-[10px] font-bold text-slate-500 tracking-tight">{trend}</span>
+      </div>
+    {/if}
+  </div>
+
+  <div class="space-y-1">
+    <div
+      class="text-3xl font-bold text-slate-900 font-outfit tracking-tight transition-all duration-300"
+      class:opacity-0={!isVisible}
+      class:translate-y-2={!isVisible}
+    >
+      {#if finalNumber > 0}
+        {formatNumber(animatedNumber)}{number.replace(/[\d.]+/, "")}
+      {:else}
+        {number}
+      {/if}
+    </div>
+
+    <div
+      class="text-xs font-bold text-slate-400 uppercase tracking-widest font-inter transition-all duration-500 delay-100"
+      class:opacity-0={!isVisible}
+      class:translate-y-2={!isVisible}
+    >
+      {label}
+    </div>
+  </div>
+  
+  <!-- Decorative background element -->
+  <div class="absolute -right-2 -bottom-2 w-16 h-16 bg-slate-50 rounded-full blur-2xl group-hover:bg-slate-100/50 transition-colors"></div>
+</div>
+ 

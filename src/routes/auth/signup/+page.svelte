@@ -4,6 +4,10 @@
 	import { invalidateAll } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { supabase } from '$lib/supabase';
+	import { 
+		User, Mail, Phone, Lock, Eye, EyeOff, 
+		ArrowRight, ShieldCheck, CheckCircle2 
+	} from 'lucide-svelte';
 
 	let email = '';
 	let password = '';
@@ -48,8 +52,6 @@
 				return;
 			}
 
-			// Registrando usuario con Supabase...
-
 			const { data: signupData, error: signupError } = await supabase.auth.signUp({
 				email,
 				password,
@@ -70,9 +72,7 @@
 			}
 
 			if (signupData.user) {
-				// Registro exitoso
-				
-				success = 'Cuenta creada exitosamente. Por favor revisa tu email para confirmar tu cuenta.';
+				success = '¡Cuenta creada! Por favor revisa tu email para confirmar tu registro.';
 				
 				// Clear form
 				email = '';
@@ -108,165 +108,248 @@
 	<title>Registro - Domify</title>
 </svelte:head>
 
-<div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-600 to-primary-700 py-12 px-4 sm:px-6 lg:px-8">
-	<div class="max-w-md w-full bg-white p-8 rounded-lg shadow-xl">
+<div class="min-h-screen flex items-center justify-center bg-slate-50 relative overflow-hidden font-inter py-12 px-4 sm:px-6 lg:px-8">
+	<!-- Background Elements -->
+	<div class="absolute inset-0 z-0">
+		<div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTAgMGg0MHY0MEgwVjB6bTIwIDIwYzAgMTEuMDQ2LTguOTU0IDIwLTIwIDIwdjFDMTEuNTk4IDQxIDIxIDMxLjU5OCAyMSAyMFYwaC0xdjIweiIgZmlsbD0icmdiYSgwLCAwLCAwLCAwLjAzKSIgZmlsbC1ydWxlPSJldmVub2RkIi8+PC9zdmc+')] opacity-60"></div>
+		<div class="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-100 rounded-full blur-[120px] opacity-40 -z-10 translate-x-1/4 -translate-y-1/4"></div>
+		<div class="absolute bottom-0 left-0 w-[500px] h-[500px] bg-indigo-100 rounded-full blur-[120px] opacity-40 -z-10 -translate-x-1/4 translate-y-1/4"></div>
+	</div>
+
+	<div class="max-w-xl w-full relative z-10">
+		<!-- Brand Logo/Home Link -->
 		<div class="text-center mb-8">
-			<h1 class="text-3xl font-bold text-gray-900 mb-2">Crear Cuenta</h1>
-			<p class="text-gray-600">Únete a Domify y encuentra los mejores servicios</p>
+			<a href="/" class="inline-flex items-center gap-2 mb-6 group">
+				<div class="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+					<span class="text-white font-outfit font-bold text-2xl">D</span>
+				</div>
+				<span class="text-2xl font-bold text-slate-900 font-outfit tracking-tight">Domify</span>
+			</a>
+			<h1 class="text-4xl font-bold text-slate-900 mb-2 font-outfit tracking-tight">Crea tu cuenta</h1>
+			<p class="text-slate-500 font-light">Únete a la red de servicios más confiable de Nicaragua.</p>
 		</div>
 
-		{#if error}
-			<div class="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
-				<p class="text-sm text-red-800">{error}</p>
-			</div>
-		{/if}
+		<div class="bg-white/80 backdrop-blur-xl p-8 lg:p-10 rounded-[2.5rem] shadow-2xl border border-white">
+			{#if error}
+				<div class="mb-6 p-4 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-3 animate-shake">
+					<div class="w-5 h-5 bg-red-100 rounded-full flex items-center justify-center shrink-0 mt-0.5">
+						<span class="text-red-600 text-xs font-bold font-outfit">!</span>
+					</div>
+					<p class="text-sm text-red-700 font-medium">{error}</p>
+				</div>
+			{/if}
 
-		{#if success}
-			<div class="mb-4 p-3 bg-green-50 border border-green-200 rounded-md">
-				<p class="text-sm text-green-800">{success}</p>
-			</div>
-		{/if}
+			{#if success}
+				<div class="mb-6 p-4 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-start gap-3 animate-fade-in">
+					<div class="w-5 h-5 bg-emerald-100 rounded-full flex items-center justify-center shrink-0 mt-0.5">
+						<CheckCircle2 size={14} class="text-emerald-600" />
+					</div>
+					<p class="text-sm text-emerald-700 font-medium">{success}</p>
+				</div>
+			{/if}
 
-		<form on:submit|preventDefault={handleSignup} class="space-y-4 mb-6">
-			<div class="grid grid-cols-2 gap-4">
-				<div>
-					<label for="firstName" class="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
-					<input
-						id="firstName"
-						type="text"
-						bind:value={firstName}
-						placeholder="Tu nombre"
-						required
-						disabled={loading}
-						class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed"
-					/>
+			<form on:submit|preventDefault={handleSignup} class="space-y-5">
+				<div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+					<!-- Name Field -->
+					<div class="space-y-2">
+						<label for="firstName" class="block text-sm font-semibold text-slate-700 font-outfit ml-1">Nombre</label>
+						<div class="relative group">
+							<div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+								<User size={18} class="text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+							</div>
+							<input
+								id="firstName"
+								type="text"
+								bind:value={firstName}
+								placeholder="Tu nombre"
+								required
+								disabled={loading}
+								class="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none text-slate-800 font-outfit disabled:opacity-50"
+							/>
+						</div>
+					</div>
+
+					<!-- Last Name Field -->
+					<div class="space-y-2">
+						<label for="lastName" class="block text-sm font-semibold text-slate-700 font-outfit ml-1">Apellido</label>
+						<div class="relative group">
+							<div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+								<User size={18} class="text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+							</div>
+							<input
+								id="lastName"
+								type="text"
+								bind:value={lastName}
+								placeholder="Tu apellido"
+								required
+								disabled={loading}
+								class="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none text-slate-800 font-outfit disabled:opacity-50"
+							/>
+						</div>
+					</div>
 				</div>
 
-				<div>
-					<label for="lastName" class="block text-sm font-medium text-gray-700 mb-1">Apellido *</label>
-					<input
-						id="lastName"
-						type="text"
-						bind:value={lastName}
-						placeholder="Tu apellido"
-						required
-						disabled={loading}
-						class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed"
-					/>
+				<!-- Email Field -->
+				<div class="space-y-2">
+					<label for="email" class="block text-sm font-semibold text-slate-700 font-outfit ml-1">Correo Electrónico</label>
+					<div class="relative group">
+						<div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+							<Mail size={18} class="text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+						</div>
+						<input
+							id="email"
+							type="email"
+							bind:value={email}
+							placeholder="ejemplo@domify.com"
+							required
+							disabled={loading}
+							class="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none text-slate-800 font-outfit disabled:opacity-50"
+						/>
+					</div>
 				</div>
-			</div>
 
-			<div>
-				<label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email *</label>
-				<input
-					id="email"
-					type="email"
-					bind:value={email}
-					placeholder="tu@email.com"
-					required
+				<!-- Phone Field -->
+				<div class="space-y-2">
+					<label for="phone" class="block text-sm font-semibold text-slate-700 font-outfit ml-1">Teléfono (Opcional)</label>
+					<div class="relative group">
+						<div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+							<Phone size={18} class="text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+						</div>
+						<input
+							id="phone"
+							type="tel"
+							bind:value={phone}
+							placeholder="+505 8888-8888"
+							disabled={loading}
+							class="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none text-slate-800 font-outfit disabled:opacity-50"
+						/>
+					</div>
+				</div>
+
+				<div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+					<!-- Password Field -->
+					<div class="space-y-2">
+						<label for="password" class="block text-sm font-semibold text-slate-700 font-outfit ml-1">Contraseña</label>
+						<div class="relative group">
+							<div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+								<Lock size={18} class="text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+							</div>
+							<input
+								id="password"
+								type={showPassword ? 'text' : 'password'}
+								bind:value={password}
+								placeholder="••••••••"
+								required
+								disabled={loading}
+								class="w-full pl-11 pr-11 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none text-slate-800 font-outfit disabled:opacity-50"
+							/>
+							<button
+								type="button"
+								on:click={() => showPassword = !showPassword}
+								class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600"
+							>
+								{#if showPassword}
+									<EyeOff size={16} />
+								{:else}
+									<Eye size={16} />
+								{/if}
+							</button>
+						</div>
+					</div>
+
+					<!-- Confirm Password Field -->
+					<div class="space-y-2">
+						<label for="confirmPassword" class="block text-sm font-semibold text-slate-700 font-outfit ml-1">Confirmar</label>
+						<div class="relative group">
+							<div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+								<Lock size={18} class="text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+							</div>
+							<input
+								id="confirmPassword"
+								type={showConfirmPassword ? 'text' : 'password'}
+								bind:value={confirmPassword}
+								placeholder="••••••••"
+								required
+								disabled={loading}
+								class="w-full pl-11 pr-11 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none text-slate-800 font-outfit disabled:opacity-50"
+							/>
+							<button
+								type="button"
+								on:click={() => showConfirmPassword = !showConfirmPassword}
+								class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600"
+							>
+								{#if showConfirmPassword}
+									<EyeOff size={16} />
+								{:else}
+									<Eye size={16} />
+								{/if}
+							</button>
+						</div>
+					</div>
+				</div>
+
+				<!-- Submit Button -->
+				<button 
+					type="submit" 
 					disabled={loading}
-					class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed"
-				/>
+					class="w-full py-4 bg-slate-900 text-white font-bold rounded-2xl hover:bg-slate-800 transition-all shadow-xl hover:shadow-slate-900/20 disabled:opacity-50 disabled:cursor-wait font-outfit flex items-center justify-center gap-2 group mt-4"
+				>
+					{#if loading}
+						<svg class="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+							<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+							<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+						</svg>
+						Creando tu cuenta...
+					{:else}
+						Empezar ahora gratis
+						<ArrowRight size={18} class="group-hover:translate-x-1 transition-transform" />
+					{/if}
+				</button>
+			</form>
+
+			<div class="mt-8 pt-8 border-t border-slate-100 text-center">
+				<p class="text-slate-600 text-sm">
+					¿Ya tienes una cuenta? 
+					<a href="/auth/login" class="text-blue-600 font-bold hover:underline decoration-2 underline-offset-4 ml-1">Inicia sesión</a>
+				</p>
 			</div>
+		</div>
 
-			<div>
-				<label for="phone" class="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
-				<input
-					id="phone"
-					type="tel"
-					bind:value={phone}
-					placeholder="+505 8888-9999"
-					disabled={loading}
-					class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed"
-				/>
-			</div>
-
-			<div>
-				<label for="password" class="block text-sm font-medium text-gray-700 mb-1">Contraseña *</label>
-				<div class="relative">
-					<input
-						id="password"
-						type={showPassword ? 'text' : 'password'}
-						bind:value={password}
-						placeholder="Mínimo 6 caracteres"
-						required
-						disabled={loading}
-						class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed"
-					/>
-					<button
-						type="button"
-						on:click={() => showPassword = !showPassword}
-						class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors duration-200"
-						aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-					>
-						{#if showPassword}
-							<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
-							</svg>
-						{:else}
-							<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-							</svg>
-						{/if}
-					</button>
-				</div>
-			</div>
-
-			<div>
-				<label for="confirmPassword" class="block text-sm font-medium text-gray-700 mb-1">Confirmar Contraseña *</label>
-				<div class="relative">
-					<input
-						id="confirmPassword"
-						type={showConfirmPassword ? 'text' : 'password'}
-						bind:value={confirmPassword}
-						placeholder="Repite tu contraseña"
-						required
-						disabled={loading}
-						class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed"
-					/>
-					<button
-						type="button"
-						on:click={() => showConfirmPassword = !showConfirmPassword}
-						class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors duration-200"
-						aria-label={showConfirmPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-					>
-						{#if showConfirmPassword}
-							<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
-							</svg>
-						{:else}
-							<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-							</svg>
-						{/if}
-					</button>
-				</div>
-			</div>
-
-			<button 
-				type="submit" 
-				disabled={loading}
-				class="w-full px-4 py-2 bg-primary-600 text-white font-medium rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-			>
-				{loading ? 'Creando cuenta...' : 'Crear Cuenta'}
-			</button>
-		</form>
-
-		<div class="text-center space-y-2">
-			<p class="text-sm text-gray-600">
-				¿Ya tienes cuenta? 
-				<a href="/auth/login" class="text-primary-600 hover:text-primary-500 font-medium transition-colors duration-200">
-					Inicia sesión
-				</a>
-			</p>
-			<p class="text-xs text-gray-500">
-				Al crear una cuenta aceptas nuestros 
-				<a href="/terms" class="text-primary-600 hover:text-primary-500">Términos de Servicio</a>
+		<!-- Footer Links -->
+		<div class="mt-8 text-center space-y-4">
+			<p class="text-[10px] uppercase tracking-widest font-bold text-slate-400">
+				Al registrarte, aceptas nuestros 
+				<a href="/terms" class="text-slate-600 hover:text-slate-900 mx-1">Términos</a>
 				y 
-				<a href="/privacy" class="text-primary-600 hover:text-primary-500">Política de Privacidad</a>
+				<a href="/privacy" class="text-slate-600 hover:text-slate-900 ml-1">Privacidad</a>
 			</p>
+			
+			<div class="flex items-center justify-center gap-4 opacity-40">
+				<div class="flex items-center gap-1.5 grayscale">
+					<ShieldCheck size={14} />
+					<span class="text-[10px] font-bold uppercase tracking-widest font-outfit">Protección de Datos</span>
+				</div>
+				<div class="h-1 w-1 bg-slate-300 rounded-full"></div>
+				<span class="text-[10px] font-bold uppercase tracking-widest font-outfit">Domify © 2026</span>
+			</div>
 		</div>
 	</div>
 </div>
+
+<style>
+	@keyframes shake {
+		0%, 100% { transform: translateX(0); }
+		25% { transform: translateX(-4px); }
+		75% { transform: translateX(4px); }
+	}
+	.animate-shake {
+		animation: shake 0.4s ease-in-out;
+	}
+	@keyframes fade-in {
+		from { opacity: 0; transform: translateY(10px); }
+		to { opacity: 1; transform: translateY(0); }
+	}
+	.animate-fade-in {
+		animation: fade-in 0.3s ease-out forwards;
+	}
+</style>

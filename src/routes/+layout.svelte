@@ -7,6 +7,11 @@
 	import NotificationContainer from '$lib/components/NotificationContainer.svelte';
 	import { injectSpeedInsights } from '@vercel/speed-insights/sveltekit';
 	import { browser } from '$app/environment';
+	import { 
+		Facebook, Twitter, Instagram, Linkedin, 
+		Mail, Phone, MapPin, ExternalLink, 
+		Heart, ShieldCheck, Globe
+	} from 'lucide-svelte';
 	import '../app.css';
 
 	// Función para manejar eventos de teclado en enlaces (accesibilidad)
@@ -55,7 +60,7 @@
 		}
 	}
 
-	onMount(async () => {
+	onMount(() => {
 		// Inyectar Speed Insights
 		injectSpeedInsights();
 
@@ -144,44 +149,123 @@
 </svelte:head>
 
 <div class="flex flex-col min-h-screen bg-gray-50">
-	<Navbar {session} {user} {isProvider} {isAdmin} {handleLogout} />
+	<Navbar {session} {user} {isProvider} {isAdmin} />
 	<main class="flex-1 w-full bg-gray-50">
 		<slot />
 	</main>
 	<NotificationContainer />
-	<footer class="bg-primary-600 text-white py-12 border-t border-gray-200">
-		<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-			<div class="grid grid-cols-1 md:grid-cols-4 gap-8">
-				<div>
-					<h3 class="text-lg font-semibold mb-4">Domify</h3>
-					<p class="text-primary-100">
-						Conectando proveedores de servicios con clientes en Nicaragua.
+	<footer class="bg-white border-t border-slate-100 font-inter relative overflow-hidden">
+		<!-- Subtle decorative element -->
+		<div class="absolute top-0 right-0 w-64 h-64 bg-blue-50/50 rounded-full blur-[80px] -z-10 translate-x-1/2 -translate-y-1/2"></div>
+		
+		<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-12 relative z-10">
+			<!-- Main Footer Content -->
+			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
+				<!-- Brand & Mission -->
+				<div class="space-y-6">
+					<a href="/" class="flex items-center gap-2 group">
+						<div class="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+							<span class="text-white font-outfit font-bold text-xl">D</span>
+						</div>
+						<span class="text-xl font-bold text-slate-900 font-outfit tracking-tight">Domify</span>
+					</a>
+					<p class="text-slate-500 text-sm leading-relaxed max-w-xs">
+						La plataforma líder en Nicaragua para conectar expertos en servicios del hogar con quienes los necesitan. Excelencia, seguridad y confianza en cada clic.
 					</p>
+					<div class="flex items-center gap-3">
+						<a href="/" class="w-10 h-10 bg-slate-50 border border-slate-100 rounded-full flex items-center justify-center text-slate-400 hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all shadow-sm">
+							<Facebook size={18} />
+						</a>
+						<a href="/" class="w-10 h-10 bg-slate-50 border border-slate-100 rounded-full flex items-center justify-center text-slate-400 hover:bg-black hover:text-white hover:border-black transition-all shadow-sm">
+							<Twitter size={18} />
+						</a>
+						<a href="/" class="w-10 h-10 bg-slate-50 border border-slate-100 rounded-full flex items-center justify-center text-slate-400 hover:bg-gradient-to-tr from-yellow-500 via-red-500 to-purple-600 hover:text-white hover:border-transparent transition-all shadow-sm">
+							<Instagram size={18} />
+						</a>
+						<a href="/" class="w-10 h-10 bg-slate-50 border border-slate-100 rounded-full flex items-center justify-center text-slate-400 hover:bg-blue-700 hover:text-white hover:border-blue-700 transition-all shadow-sm">
+							<Linkedin size={18} />
+						</a>
+					</div>
 				</div>
+
+				<!-- Quick Links -->
 				<div>
-					<h4 class="text-md font-medium mb-3">Servicios</h4>
-					<ul class="space-y-2 text-primary-100">
-						<li><a href="/services" class="hover:text-white transition-colors">Explorar servicios</a></li>
-						<li><a href="/become-provider" class="hover:text-white transition-colors">Ser proveedor</a></li>
+					<h3 class="text-slate-900 font-bold font-outfit mb-6 uppercase tracking-wider text-xs">Servicios Populares</h3>
+					<ul class="space-y-4">
+						<li><a href="/services?category=limpieza" class="text-slate-500 hover:text-blue-600 text-sm transition-colors flex items-center gap-2">Limpieza Residencial</a></li>
+						<li><a href="/services?category=electricistas" class="text-slate-500 hover:text-blue-600 text-sm transition-colors flex items-center gap-2">Electricistas Expertos</a></li>
+						<li><a href="/services?category=jardineria" class="text-slate-500 hover:text-blue-600 text-sm transition-colors flex items-center gap-2">Mantenimiento de Jardines</a></li>
+						<li><a href="/services" class="text-blue-600 font-semibold text-sm hover:underline flex items-center gap-1">Ver todos los servicios <ExternalLink size={12} /></a></li>
 					</ul>
 				</div>
+
+				<!-- Company -->
 				<div>
-					<h4 class="text-md font-medium mb-3">Soporte</h4>
-					<ul class="space-y-2 text-primary-100">
-						<li><a href="/contact" class="hover:text-white transition-colors">Contacto</a></li>
-						<li><a href="/about" class="hover:text-white transition-colors">Acerca de</a></li>
+					<h3 class="text-slate-900 font-bold font-outfit mb-6 uppercase tracking-wider text-xs">Compañía</h3>
+					<ul class="space-y-4">
+						<li><a href="/about" class="text-slate-500 hover:text-blue-600 text-sm transition-colors">Quiénes somos</a></li>
+						<li><a href="/become-provider" class="text-slate-500 hover:text-blue-600 text-sm transition-colors flex items-center gap-2">Ser Proveedor <span class="bg-blue-50 text-blue-600 text-[10px] px-2 py-0.5 rounded-full font-bold">UNIRSE</span></a></li>
+						<li><a href="/contact" class="text-slate-500 hover:text-blue-600 text-sm transition-colors">Contáctanos</a></li>
+						<li><a href="/privacy" class="text-slate-500 hover:text-blue-600 text-sm transition-colors">Términos & Privacidad</a></li>
 					</ul>
 				</div>
+
+				<!-- Contact Info -->
 				<div>
-					<h4 class="text-md font-medium mb-3">Legal</h4>
-					<ul class="space-y-2 text-primary-100">
-						<li><a href="/terms" class="hover:text-white transition-colors">Términos</a></li>
-						<li><a href="/privacy" class="hover:text-white transition-colors">Privacidad</a></li>
+					<h3 class="text-slate-900 font-bold font-outfit mb-6 uppercase tracking-wider text-xs">Contacto Directo</h3>
+					<ul class="space-y-5">
+						<li class="flex items-start gap-4">
+							<div class="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600 shrink-0 mt-0.5">
+								<Mail size={16} />
+							</div>
+							<div>
+								<span class="block text-slate-400 text-[10px] font-bold uppercase tracking-tight">Soporte</span>
+								<a href="mailto:hola@domify.app" class="text-slate-900 text-sm font-medium hover:text-blue-600 transition-colors">hola@domify.app</a>
+							</div>
+						</li>
+						<li class="flex items-start gap-4">
+							<div class="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600 shrink-0 mt-0.5">
+								<Phone size={16} />
+							</div>
+							<div>
+								<span class="block text-slate-400 text-[10px] font-bold uppercase tracking-tight">Atención</span>
+								<a href="tel:+50588888888" class="text-slate-900 text-sm font-medium hover:text-blue-600 transition-colors">+505 8888-8888</a>
+							</div>
+						</li>
+						<li class="flex items-start gap-4">
+							<div class="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600 shrink-0 mt-0.5">
+								<MapPin size={16} />
+							</div>
+							<div>
+								<span class="block text-slate-400 text-[10px] font-bold uppercase tracking-tight">Ubicación</span>
+								<span class="text-slate-900 text-sm font-medium">Managua, Nicaragua</span>
+							</div>
+						</li>
 					</ul>
 				</div>
 			</div>
-			<div class="border-t border-primary-500 mt-8 pt-8 text-center text-primary-100">
-				<p>&copy; 2025 Domify. Todos los derechos reservados.</p>
+
+			<!-- Bottom Bar -->
+			<div class="pt-8 border-t border-slate-100 flex flex-col md:flex-row items-center justify-between gap-6">
+				<div class="flex items-center gap-6">
+					<div class="flex items-center gap-2 opacity-50 grayscale hover:grayscale-0 transition-all cursor-default">
+						<ShieldCheck size={16} />
+						<span class="text-[10px] font-bold uppercase tracking-widest text-slate-900">Verificado por Domify</span>
+					</div>
+					<div class="flex items-center gap-2 opacity-50 grayscale hover:grayscale-0 transition-all cursor-default">
+						<Globe size={16} />
+						<span class="text-[10px] font-bold uppercase tracking-widest text-slate-900">Nicaragua</span>
+					</div>
+				</div>
+
+				<p class="text-slate-400 text-[11px] font-medium flex items-center gap-1.5 order-last md:order-none">
+					Hecho con <Heart size={12} class="text-red-500 fill-red-500 animate-pulse" /> por <span class="text-slate-900 font-bold">Domify Team</span> © 2026
+				</p>
+
+				<div class="flex items-center gap-8 text-[11px] font-bold uppercase tracking-widest text-slate-400">
+					<a href="/terms" class="hover:text-slate-900 transition-colors">Términos</a>
+					<a href="/privacy" class="hover:text-slate-900 transition-colors">Seguridad</a>
+				</div>
 			</div>
 		</div>
 	</footer>

@@ -4,6 +4,7 @@
 	import { invalidateAll } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { supabase } from '$lib/supabase';
+	import { Mail, Lock, Eye, EyeOff, ArrowRight, ShieldCheck } from 'lucide-svelte';
 
 	let email = '';
 	let password = '';
@@ -30,8 +31,6 @@
 				return;
 			}
 
-			// Iniciando sesión con Supabase...
-
 			const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
 				email,
 				password
@@ -44,12 +43,8 @@
 			}
 
 			if (loginData.user) {
-				// Login exitoso
-				
-				// Force refresh of all data
 				await invalidateAll();
 				
-				// Redirect based on user role
 				const userRole = loginData.user.user_metadata?.role;
 				
 				if (userRole === 'admin') {
@@ -73,7 +68,7 @@
 			return 'Email o contraseña incorrectos';
 		}
 		if (message.includes('Email not confirmed')) {
-			return 'Por favor confirma tu email antes de iniciar sesión';
+			return 'Tu cuenta aún no está confirmada. Por favor verifica tu bandeja de entrada o contacta a soporte.';
 		}
 		if (message.includes('Too many requests')) {
 			return 'Demasiados intentos. Por favor espera un momento';
@@ -82,88 +77,136 @@
 	}
 </script>
 
-<div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-600 to-primary-700 py-12 px-4 sm:px-6 lg:px-8">
-	<div class="max-w-md w-full bg-white p-8 rounded-lg shadow-xl">
-		<div class="text-center mb-8">
-			<h1 class="text-3xl font-bold text-gray-900 mb-2">Iniciar Sesión</h1>
-			<p class="text-gray-600">Bienvenido de vuelta a Domify</p>
+<div class="min-h-screen flex items-center justify-center bg-slate-50 relative overflow-hidden font-inter py-12 px-4 sm:px-6 lg:px-8">
+	<!-- Background Elements -->
+	<div class="absolute inset-0 z-0">
+		<div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTAgMGg0MHY0MEgwVjB6bTIwIDIwYzAgMTEuMDQ2LTguOTU0IDIwLTIwIDIwdjFDMTEuNTk4IDQxIDIxIDMxLjU5OCAyMSAyMFYwaC0xdjIweiIgZmlsbD0icmdiYSgwLCAwLCAwLCAwLjAzKSIgZmlsbC1ydWxlPSJldmVub2RkIi8+PC9zdmc+')] opacity-60"></div>
+		<div class="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-100 rounded-full blur-[120px] opacity-40 -z-10 translate-x-1/4 -translate-y-1/4"></div>
+		<div class="absolute bottom-0 left-0 w-[500px] h-[500px] bg-indigo-100 rounded-full blur-[120px] opacity-40 -z-10 -translate-x-1/4 translate-y-1/4"></div>
+	</div>
+
+	<div class="max-w-md w-full relative z-10">
+		<!-- Brand Logo/Home Link -->
+		<div class="text-center mb-10">
+			<a href="/" class="inline-flex items-center gap-2 mb-8 group">
+				<div class="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+					<span class="text-white font-outfit font-bold text-2xl">D</span>
+				</div>
+				<span class="text-2xl font-bold text-slate-900 font-outfit tracking-tight">Domify</span>
+			</a>
+			<h1 class="text-4xl font-bold text-slate-900 mb-3 font-outfit tracking-tight">Bienvenido de vuelta</h1>
+			<p class="text-slate-500 font-light">Gestiona tus servicios y profesionales hoy mismo.</p>
 		</div>
 
-		{#if error}
-			<div class="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
-				<p class="text-sm text-red-800">{error}</p>
-			</div>
-		{/if}
-
-		<form on:submit|preventDefault={handleLogin} class="space-y-6 mb-6">
-			<div>
-				<label for="email" class="block text-sm font-medium text-gray-700 mb-2">Email</label>
-				<input
-					id="email"
-					type="email"
-					bind:value={email}
-					placeholder="tu@email.com"
-					required
-					disabled={loading}
-					class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed"
-				/>
-			</div>
-
-			<div>
-				<label for="password" class="block text-sm font-medium text-gray-700 mb-2">Contraseña</label>
-				<div class="relative">
-					<input
-						id="password"
-						type={showPassword ? 'text' : 'password'}
-						bind:value={password}
-						placeholder="Tu contraseña"
-						required
-						disabled={loading}
-						class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed"
-					/>
-					<button
-						type="button"
-						on:click={() => showPassword = !showPassword}
-						class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors duration-200"
-						aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-					>
-						{#if showPassword}
-							<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
-							</svg>
-						{:else}
-							<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-							</svg>
-						{/if}
-					</button>
+		<div class="bg-white/80 backdrop-blur-xl p-8 lg:p-10 rounded-[2.5rem] shadow-2xl border border-white">
+			{#if error}
+				<div class="mb-6 p-4 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-3 animate-shake">
+					<div class="w-5 h-5 bg-red-100 rounded-full flex items-center justify-center shrink-0 mt-0.5">
+						<span class="text-red-600 text-xs font-bold font-outfit">!</span>
+					</div>
+					<p class="text-sm text-red-700 font-medium">{error}</p>
 				</div>
+			{/if}
+
+			<form on:submit|preventDefault={handleLogin} class="space-y-6">
+				<!-- Email Field -->
+				<div class="space-y-2">
+					<label for="email" class="block text-sm font-semibold text-slate-700 font-outfit ml-1">Correo Electrónico</label>
+					<div class="relative group">
+						<div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+							<Mail size={18} class="text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+						</div>
+						<input
+							id="email"
+							type="email"
+							bind:value={email}
+							placeholder="ejemplo@domify.com"
+							required
+							disabled={loading}
+							class="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none text-slate-800 font-outfit disabled:opacity-50"
+						/>
+					</div>
+				</div>
+
+				<!-- Password Field -->
+				<div class="space-y-2">
+					<div class="flex items-center justify-between ml-1">
+						<label for="password" class="block text-sm font-semibold text-slate-700 font-outfit">Contraseña</label>
+						<a href="/auth/reset-password" class="text-xs font-semibold text-blue-600 hover:text-blue-700 font-outfit">¿Olvidaste tu contraseña?</a>
+					</div>
+					<div class="relative group">
+						<div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+							<Lock size={18} class="text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+						</div>
+						<input
+							id="password"
+							type={showPassword ? 'text' : 'password'}
+							bind:value={password}
+							placeholder="••••••••"
+							required
+							disabled={loading}
+							class="w-full pl-11 pr-12 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none text-slate-800 font-outfit disabled:opacity-50"
+						/>
+						<button
+							type="button"
+							on:click={() => showPassword = !showPassword}
+							class="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-600"
+						>
+							{#if showPassword}
+								<EyeOff size={18} />
+							{:else}
+								<Eye size={18} />
+							{/if}
+						</button>
+					</div>
+				</div>
+
+				<!-- Submit Button -->
+				<button 
+					type="submit" 
+					disabled={loading}
+					class="w-full py-4 bg-slate-900 text-white font-bold rounded-2xl hover:bg-slate-800 transition-all shadow-xl hover:shadow-slate-900/20 disabled:opacity-50 disabled:cursor-wait font-outfit flex items-center justify-center gap-2 group"
+				>
+					{#if loading}
+						<svg class="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+							<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+							<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+						</svg>
+						Iniciando sesión...
+					{:else}
+						Ingresar a mi cuenta
+						<ArrowRight size={18} class="group-hover:translate-x-1 transition-transform" />
+					{/if}
+				</button>
+			</form>
+
+			<div class="mt-8 pt-8 border-t border-slate-100 text-center">
+				<p class="text-slate-600 text-sm">
+					¿No tienes una cuenta aún? 
+					<a href="/auth/signup" class="text-blue-600 font-bold hover:underline decoration-2 underline-offset-4 ml-1">Crea una gratis</a>
+				</p>
 			</div>
+		</div>
 
-			<button 
-				type="submit" 
-				disabled={loading}
-				class="w-full px-4 py-2 bg-primary-600 text-white font-medium rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-			>
-				{loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
-			</button>
-		</form>
-
-		<div class="text-center space-y-2">
-			<p class="text-sm text-gray-600">
-				¿No tienes cuenta? 
-				<a href="/auth/signup" class="text-primary-600 hover:text-primary-500 font-medium transition-colors duration-200">
-					Regístrate
-				</a>
-			</p>
-			<p class="text-sm">
-				<a href="/auth/reset-password" class="text-primary-600 hover:text-primary-500 font-medium transition-colors duration-200">
-					¿Olvidaste tu contraseña?
-				</a>
-			</p>
+		<!-- Trust Footer -->
+		<div class="mt-8 flex items-center justify-center gap-4 opacity-50">
+			<div class="flex items-center gap-1.5 grayscale">
+				<ShieldCheck size={16} />
+				<span class="text-xs font-medium uppercase tracking-widest font-outfit">Sesión Segura</span>
+			</div>
+			<div class="h-1 w-1 bg-slate-300 rounded-full"></div>
+			<span class="text-xs font-medium uppercase tracking-widest font-outfit">Domify © 2026</span>
 		</div>
 	</div>
 </div>
 
-<!-- CSS convertido a clases de Tailwind --> 
+<style>
+	@keyframes shake {
+		0%, 100% { transform: translateX(0); }
+		25% { transform: translateX(-4px); }
+		75% { transform: translateX(4px); }
+	}
+	.animate-shake {
+		animation: shake 0.4s ease-in-out;
+	}
+</style> 

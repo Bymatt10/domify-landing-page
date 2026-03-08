@@ -3,6 +3,12 @@
 	import { goto } from '$app/navigation';
 	import SearchBox from '$lib/components/SearchBox.svelte';
 	import StatsCard from '$lib/components/StatsCard.svelte';
+	import { 
+		Zap, Droplets, Leaf, Home, 
+		Building2, LayoutGrid, CheckCircle2, 
+		ArrowRight, Search, UserCheck, 
+		Users, Star, Clock 
+	} from 'lucide-svelte';
 
 	export let data: PageData;
 
@@ -10,34 +16,35 @@
 	$: ({ session } = data);
 
 	const categories = [
-		{ id: 'electricistas', name: 'Electricistas', description: 'Instalaciones y reparaciones eléctricas', icon: '💡', gradient: 'from-blue-500 to-blue-600' },
-		{ id: 'fontaneros', name: 'Fontaneros / Plomeros', description: 'Reparación e instalación de sistemas de agua', icon: '🚰', gradient: 'from-blue-600 to-blue-700' },
-		{ id: 'jardineria', name: 'Jardinería', description: 'Cuidado y diseño de áreas verdes', icon: '🌳', gradient: 'from-blue-500 to-blue-600' },
-		{ id: 'limpieza-casas', name: 'Limpieza de Casas', description: 'Limpieza general y profunda del hogar', icon: '🏠', gradient: 'from-blue-600 to-blue-700' }
+		{ id: 'electricistas', name: 'Electricistas', description: 'Instalaciones y reparaciones eléctricas', icon: Zap, color: 'text-yellow-600', bgColor: 'bg-yellow-50' },
+		{ id: 'fontaneros', name: 'Fontaneros / Plomeros', description: 'Reparación e instalación de sistemas de agua', icon: Droplets, color: 'text-cyan-600', bgColor: 'bg-cyan-50' },
+		{ id: 'jardineria', name: 'Jardinería', description: 'Cuidado y diseño de áreas verdes', icon: Leaf, color: 'text-green-600', bgColor: 'bg-green-50' },
+		{ id: 'limpieza-casas', name: 'Limpieza de Casas', description: 'Limpieza general y profunda del hogar', icon: Home, color: 'text-blue-600', bgColor: 'bg-blue-50' }
 	];
 
 	const propertyTypes = [
 		{
 			id: 'houses',
-			name: 'Casas',
-			description: 'Servicios completos para casas unifamiliares',
+			name: 'Residencial',
+			description: 'Servicios integrales para mantener tu hogar en perfectas condiciones.',
+			icon: Home,
 			services: ['Limpieza profunda', 'Jardinería', 'Mantenimiento', 'Mudanzas']
 		},
 		{
 			id: 'apartments',
 			name: 'Apartamentos',
-			description: 'Soluciones especializadas para espacios urbanos',
+			description: 'Soluciones optimizadas para espacios urbanos y condominios.',
+			icon: Building2,
 			services: ['Limpieza regular', 'Montaje de muebles', 'Instalaciones', 'Organización']
 		},
 		{
 			id: 'commercial',
-			name: 'Plazas Comerciales',
-			description: 'Servicios corporativos y comerciales',
+			name: 'Corporativo',
+			description: 'Mantenimiento preventivo y correctivo para oficinas y plazas comerciales.',
+			icon: LayoutGrid,
 			services: ['Limpieza comercial', 'Mantenimiento', 'Logística', 'Seguridad']
 		}
 	];
-
-
 
 	const popularSlugs = [
 		{ name: 'Electricistas', slug: 'electricistas' },
@@ -57,39 +64,6 @@
 		const slug = slugMap[categoryId] || categoryId;
 		goto(`/services/${slug}`);
 	}
-
-	// Professional SVG icons mapping (Heroicons outline paths)
-	const categoryIcons: Record<string, { icon: string; color: string; bgColor: string }> = {
-		'electricistas': {
-			icon: 'M13 10V3L4 14h7v7l9-11h-7z',
-			color: 'text-yellow-600',
-			bgColor: 'bg-yellow-50'
-		},
-		'fontaneros': {
-			icon: 'M15 8a3 3 0 11-6 0 3 3 0 016 0z M19 13a4 4 0 10-8 0v3H5v6h14v-6h-4v-3z',
-			color: 'text-cyan-600',
-			bgColor: 'bg-cyan-50'
-		},
-		'jardineria': {
-			icon: 'M12 2l3.09 6.26L22 9l-5 4.87L18.18 22 12 18.27 5.82 22 7 13.87 2 9l6.91-.74L12 2z',
-			color: 'text-green-600',
-			bgColor: 'bg-green-50'
-		},
-		'limpieza-casas': {
-			icon: 'M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z',
-			color: 'text-blue-600',
-			bgColor: 'bg-blue-50'
-		},
-		'default': {
-			icon: 'M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0H8m8 0v6l-8-6',
-			color: 'text-gray-600',
-			bgColor: 'bg-gray-50'
-		}
-	};
-
-	function getCatIcon(slug: string) {
-		return categoryIcons[slug] || categoryIcons['default'];
-	}
 </script>
 
 <svelte:head>
@@ -98,35 +72,49 @@
 </svelte:head>
 
 <!-- Hero Section -->
-<section class="relative bg-gradient-to-br from-blue-50 via-white to-blue-50 min-h-screen flex items-center">
-	<!-- Background Pattern -->
-	<div class="absolute inset-0 bg-grid-pattern opacity-5 pointer-events-none"></div>
+<section class="relative bg-slate-50 min-h-screen flex items-center overflow-hidden pt-20">
+	<!-- Dynamic Background Elements -->
+	<div class="absolute inset-0 z-0">
+		<div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTAgMGg0MHY0MEgwVjB6bTIwIDIwYzAgMTEuMDQ2LTguOTU0IDIwLTIwIDIwdjFDMTEuNTk4IDQxIDIxIDMxLjU5OCAyMSAyMFYwaC0xdjIweiIgZmlsbD0icmdiYSgwLCAwLCAwLCAwLjAzKSIgZmlsbC1ydWxlPSJldmVub2RkIi8+PC9zdmc+')] opacity-60"></div>
+		<div class="absolute top-0 right-0 w-[800px] h-[800px] bg-blue-100 rounded-full blur-[150px] opacity-40 -z-10 translate-x-1/3 -translate-y-1/3"></div>
+		<div class="absolute bottom-1/4 left-0 w-[600px] h-[600px] bg-indigo-100 rounded-full blur-[130px] opacity-40 -z-10 -translate-x-1/4"></div>
+	</div>
 	
-	<div class="container mx-auto px-4 sm:px-6 lg:px-8 py-20">
-		<div class="max-w-4xl mx-auto text-center">
+	<div class="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 py-20 lg:py-32">
+		<div class="max-w-5xl mx-auto text-center">
+			<!-- Badge -->
+			<div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/60 border border-slate-200/60 backdrop-blur-md mb-8 shadow-sm animate-fade-in-up">
+				<span class="flex h-2 w-2 rounded-full bg-blue-500 animate-pulse"></span>
+				<span class="text-sm font-medium text-slate-700 font-outfit uppercase tracking-wider">Tu hogar en las mejores manos</span>
+			</div>
+
 			<!-- Main Heading -->
-			<h1 class="text-5xl sm:text-6xl lg:text-7xl font-bold text-secondary-900 mb-6 leading-tight">
-				Encuentra los mejores 
-				<span class="text-transparent bg-clip-text bg-gradient-to-r from-primary-600 to-primary-700">
-					servicios locales
+			<h1 class="text-5xl sm:text-6xl lg:text-8xl font-bold text-slate-900 mb-8 leading-[1.1] font-outfit tracking-tight">
+				La forma inteligente de <br class="hidden lg:block"/>
+				<span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600">
+					cuidar tu espacio
 				</span>
 			</h1>
 			
 			<!-- Subtitle -->
-			<p class="text-xl sm:text-2xl text-secondary-600 mb-12 max-w-3xl mx-auto leading-relaxed">
-				Conectamos personas con profesionales confiables para todas tus necesidades del hogar
+			<p class="text-xl sm:text-2xl text-slate-600 mb-12 max-w-3xl mx-auto leading-relaxed font-light">
+				Domify te conecta con los mejores profesionales locales verificados para que disfrutes de tu tiempo libre.
 			</p>
 
-			<!-- Search Box -->
-			<div class="mb-16">
-				<SearchBox {categories} />
+			<!-- Search Box Container -->
+			<div class="max-w-3xl mx-auto mb-16 relative">
+				<div class="relative group">
+					<div class="p-2 bg-white/40 backdrop-blur-xl rounded-[2.5rem] border border-slate-200/60 shadow-2xl">
+						<SearchBox {categories} />
+					</div>
+				</div>
 				
 				<!-- Popular Searches -->
-				<div class="mt-6 flex flex-wrap justify-center gap-3">
-					<span class="text-secondary-500 font-medium">Búsquedas populares:</span>
+				<div class="mt-8 flex flex-wrap justify-center items-center gap-4">
+					<span class="text-slate-400 font-medium text-sm font-outfit uppercase tracking-widest">Sugerencias:</span>
 					{#each popularSlugs as item}
 						<button
-							class="px-4 py-2 bg-primary-50 text-primary-700 rounded-full text-sm font-medium hover:bg-primary-100 transition-colors duration-200"
+							class="px-5 py-2.5 bg-white text-slate-700 border border-slate-200 rounded-2xl text-sm font-medium hover:bg-slate-50 hover:border-blue-400 hover:text-blue-600 transition-all duration-300 shadow-sm font-outfit"
 							on:click={() => goto(`/services/${item.slug}`)}
 							type="button"
 						>
@@ -137,59 +125,59 @@
 			</div>
 
 			<!-- Stats -->
-			<div class="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-4xl mx-auto">
-				<StatsCard number="500+" label="Profesionales Verificados" delay={0} iconName="users" />
-				<StatsCard number="2000+" label="Servicios Completados" delay={200} iconName="check" />
-				<StatsCard number="4.9" label="Calificación Promedio" delay={400} iconName="star" />
-				<StatsCard number="24/7" label="Soporte Disponible" delay={600} iconName="clock" />
+			<div class="grid grid-cols-2 md:grid-cols-4 gap-4 lg:gap-8 max-w-5xl mx-auto pt-16 border-t border-slate-200/60">
+				<div class="p-6 rounded-3xl bg-white/40 border border-slate-100 backdrop-blur-sm">
+					<div class="text-3xl lg:text-4xl font-bold text-slate-900 mb-1 font-outfit">500+</div>
+					<div class="text-slate-500 text-sm font-medium uppercase tracking-tighter sm:tracking-normal">Expertos Verificados</div>
+				</div>
+				<div class="p-6 rounded-3xl bg-white/40 border border-slate-100 backdrop-blur-sm">
+					<div class="text-3xl lg:text-4xl font-bold text-slate-900 mb-1 font-outfit">2k+</div>
+					<div class="text-slate-500 text-sm font-medium uppercase tracking-tighter sm:tracking-normal">Servicios Exitosos</div>
+				</div>
+				<div class="p-6 rounded-3xl bg-white/40 border border-slate-100 backdrop-blur-sm">
+					<div class="text-3xl lg:text-4xl font-bold text-slate-900 mb-1 font-outfit">4.9/5</div>
+					<div class="text-slate-500 text-sm font-medium uppercase tracking-tighter sm:tracking-normal">Satisfacción Promedio</div>
+				</div>
+				<div class="p-6 rounded-3xl bg-white/40 border border-slate-100 backdrop-blur-sm">
+					<div class="text-3xl lg:text-4xl font-bold text-slate-900 mb-1 font-outfit">24/7</div>
+					<div class="text-slate-500 text-sm font-medium uppercase tracking-tighter sm:tracking-normal">Soporte Continúo</div>
+				</div>
 			</div>
 		</div>
 	</div>
 </section>
 
-<!-- Services Section -->
-<section class="py-20 bg-white">
+<!-- Services Section (Property Types) -->
+<section class="py-24 relative bg-white border-y border-slate-200">
 	<div class="container mx-auto px-4 sm:px-6 lg:px-8">
-		<div class="text-center mb-16">
-			<h2 class="text-4xl sm:text-5xl font-bold text-secondary-900 mb-6">
-				Servicios para Todo Tipo de Propiedades
+		<div class="text-center mb-16 lg:mb-20">
+			<h2 class="text-4xl lg:text-5xl font-bold text-slate-900 mb-6 font-outfit tracking-tight">
+				Soluciones para cada <span class="text-blue-600">necesidad</span>
 			</h2>
-			<p class="text-xl text-secondary-600 max-w-3xl mx-auto">
-				Soluciones especializadas según tus necesidades
+			<p class="text-lg text-slate-600 max-w-2xl mx-auto font-light leading-relaxed">
+				Desde hogares particulares hasta espacios corporativos, tenemos la infraestructura para atenderte.
 			</p>
 		</div>
 
-		<div class="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+		<div class="grid md:grid-cols-3 gap-8 lg:gap-10 max-w-6xl mx-auto">
 			{#each propertyTypes as property}
-				<div class="group bg-white rounded-2xl p-8 shadow-soft border border-secondary-100 transition-all duration-300">
-					<div class="text-center">
+				<div class="group relative bg-slate-50 border border-slate-200 rounded-[2.5rem] p-10 hover:bg-white hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 overflow-hidden">
+					<div class="absolute -inset-px bg-gradient-to-b from-blue-100 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-md -z-10"></div>
+					
+					<div class="text-center relative z-10">
 						<!-- Icon -->
-						<div class="w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center mx-auto mb-6 transition-transform duration-300">
-							{#if property.id === 'houses'}
-								<svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
-								</svg>
-							{:else if property.id === 'apartments'}
-								<svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
-								</svg>
-							{:else}
-								<svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
-								</svg>
-							{/if}
+						<div class="w-20 h-20 bg-white shadow-sm border border-slate-100 rounded-3xl flex items-center justify-center mx-auto mb-8 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3">
+							<svelte:component this={property.icon} size={36} class="text-blue-600" />
 						</div>
 						
-						<h3 class="text-2xl font-bold text-secondary-900 mb-3">{property.name}</h3>
-						<p class="text-secondary-600 mb-6">{property.description}</p>
+						<h3 class="text-2xl font-bold text-slate-900 mb-4 font-outfit">{property.name}</h3>
+						<p class="text-slate-600 mb-8 font-light text-sm leading-relaxed">{property.description}</p>
 						
 						<!-- Services List -->
-						<div class="space-y-2">
+						<div class="space-y-3 pt-6 border-t border-slate-200/60">
 							{#each property.services as service}
-								<div class="flex items-center justify-center text-sm text-secondary-600">
-									<svg class="w-4 h-4 text-primary-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-										<path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-									</svg>
+								<div class="flex items-center justify-center text-sm text-slate-700 font-medium">
+									<CheckCircle2 size={16} class="text-blue-500 mr-2 shrink-0" />
 									{service}
 								</div>
 							{/each}
@@ -202,174 +190,139 @@
 </section>
 
 <!-- Categories Section -->
-<section class="py-20 bg-gradient-to-br from-secondary-50 to-primary-50">
-	<div class="container mx-auto px-4 sm:px-6 lg:px-8">
-		<div class="text-center mb-16">
-			<h2 class="text-4xl sm:text-5xl font-bold text-secondary-900 mb-6">
-				Nuestros Servicios
+<section class="py-24 bg-slate-50 relative overflow-hidden">
+    <!-- Decorator -->
+    <div class="absolute -bottom-24 -right-24 w-96 h-96 bg-blue-100 rounded-full blur-[80px] pointer-events-none opacity-40"></div>
+    
+	<div class="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+		<div class="text-center mb-16 lg:mb-20">
+			<h2 class="text-4xl lg:text-5xl font-bold text-slate-900 mb-6 font-outfit tracking-tight">
+				Categorías <span class="text-blue-600">Populares</span>
 			</h2>
-			<p class="text-xl text-secondary-600 max-w-3xl mx-auto">
-				Profesionales verificados en cada categoría
+			<p class="text-lg text-slate-600 max-w-2xl mx-auto font-light leading-relaxed">
+				Contamos con expertos calificados en las áreas más solicitadas por nuestros usuarios.
 			</p>
 		</div>
 
-		<div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto justify-center">
+		<div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
 			{#each categories as category}
 				<button 
-					class="group bg-white rounded-2xl p-6 shadow-soft border border-secondary-100 transition-all duration-300 text-left"
+					class="group relative bg-white border border-slate-200 rounded-[2rem] p-8 hover:bg-white hover:shadow-xl hover:-translate-y-1 transition-all duration-300 text-left overflow-hidden"
 					on:click={() => handleCategoryClick(category.id)}
 				>
-					<div class="flex flex-col items-center text-center">
-						<div class="w-16 h-16 {getCatIcon(category.id).bgColor} rounded-2xl flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-110">
-							<svg class="w-8 h-8 {getCatIcon(category.id).color}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d={getCatIcon(category.id).icon}></path>
-							</svg>
+					<div class="flex flex-col items-center text-center relative z-10">
+						<div class="w-16 h-16 {category.bgColor} rounded-2xl flex items-center justify-center mb-6 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6 shadow-sm border border-slate-100">
+							<svelte:component this={category.icon} size={28} class={category.color} />
 						</div>
-						<h3 class="text-lg font-bold text-secondary-900 mb-2">{category.name}</h3>
-						<p class="text-sm text-secondary-600 leading-relaxed">{category.description}</p>
+						<h3 class="text-xl font-bold text-slate-900 mb-3 font-outfit group-hover:text-blue-600 transition-colors">{category.name}</h3>
+						<p class="text-slate-600 text-sm leading-relaxed font-light">{category.description}</p>
 					</div>
+                    
+                    <div class="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-blue-500/20 to-transparent translate-y-full group-hover:translate-y-0 transition-transform duration-500"></div>
 				</button>
 			{/each}
 		</div>
 
 		<!-- View More Button -->
-		<div class="flex justify-center mt-8">
-			<a href="/services" class="px-8 py-4 bg-primary-600 text-white rounded-xl font-semibold hover:bg-primary-700 transition-colors duration-200">
-				Ver todos los servicios
+		<div class="flex justify-center mt-12">
+			<a href="/services" class="group inline-flex items-center justify-center px-10 py-5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-lg rounded-2xl transition-all duration-300 shadow-xl hover:shadow-slate-900/20 font-outfit">
+				Ver todas las categorías
+				<ArrowRight size={20} class="ml-2 group-hover:translate-x-1 transition-transform" />
 			</a>
 		</div>
 	</div>
 </section>
 
 <!-- How It Works Section -->
-<section class="py-20 bg-gradient-to-br from-gray-50 to-white">
+<section class="py-24 bg-white relative">
 	<div class="container mx-auto px-4 sm:px-6 lg:px-8">
-		<div class="text-center mb-16">
-			<h2 class="text-4xl sm:text-5xl font-bold text-secondary-900 mb-6">
-				¿Cómo funciona?
+		<div class="text-center mb-16 lg:mb-20">
+			<h2 class="text-4xl lg:text-5xl font-bold text-slate-900 mb-6 font-outfit tracking-tight">
+				¿Cómo funciona <span class="text-blue-600">Domify</span>?
 			</h2>
-			<p class="text-xl text-secondary-600 max-w-3xl mx-auto">
-				Encuentra y contrata servicios de forma rápida y segura
+			<p class="text-lg text-slate-600 max-w-2xl mx-auto font-light leading-relaxed">
+				Tu seguridad y satisfacción son nuestra prioridad. Así es como logramos resultados excelentes.
 			</p>
 		</div>
 
-		<div class="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-			<!-- Paso 1 -->
-			<div class="relative">
-				<!-- Línea conectora -->
-				<div class="hidden md:block absolute top-20 left-full w-full h-0.5 bg-gradient-to-r from-primary-500 to-primary-600 z-0"></div>
-				
-				<div class="relative bg-white rounded-2xl p-8 shadow-soft border border-secondary-100 text-center z-10">
-					<!-- Número del paso -->
-					<div class="w-20 h-20 bg-gradient-to-br from-primary-500 to-primary-600 rounded-full flex items-center justify-center mx-auto mb-6 text-white text-2xl font-bold shadow-lg">
-						1
+		<div class="grid md:grid-cols-3 gap-12 max-w-6xl mx-auto relative">
+			<!-- Visual Connector Line -->
+			<div class="hidden md:block absolute top-[100px] left-[15%] right-[15%] h-1 bg-slate-100 -z-0">
+				<div class="h-full w-1/3 bg-blue-500 rounded-full animate-pulse"></div>
+			</div>
+			
+			<!-- Step 1 -->
+			<div class="relative z-10 group">
+				<div class="bg-white rounded-[2.5rem] p-10 border border-slate-100 shadow-sm hover:shadow-2xl transition-all duration-500 text-center">
+					<div class="w-20 h-20 bg-blue-600 rounded-3xl flex items-center justify-center mx-auto mb-8 text-white shadow-[0_15px_30px_-5px_rgba(37,99,235,0.4)] group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-500">
+						<Search size={32} />
 					</div>
-					
-					<!-- Icono -->
-					<div class="w-16 h-16 bg-primary-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
-						<svg class="w-8 h-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-						</svg>
-					</div>
-					
-					<h3 class="text-2xl font-bold text-secondary-900 mb-4">Busca tu servicio</h3>
-					<p class="text-secondary-600 leading-relaxed">
-						Explora nuestras categorías de servicios o usa el buscador para encontrar exactamente lo que necesitas en tu área.
+					<h3 class="text-2xl font-bold text-slate-900 mb-4 font-outfit">1. Busca el servicio</h3>
+					<p class="text-slate-600 font-light text-sm leading-relaxed">
+						Usa nuestro buscador inteligente para encontrar expertos en limpieza, electricidad, plomería y más.
 					</p>
+                    <div class="mt-6 inline-flex items-center text-blue-600 font-bold font-outfit text-xs uppercase tracking-widest">Paso Inicial</div>
 				</div>
 			</div>
 
-			<!-- Paso 2 -->
-			<div class="relative">
-				<!-- Línea conectora -->
-				<div class="hidden md:block absolute top-20 left-full w-full h-0.5 bg-gradient-to-r from-primary-500 to-primary-600 z-0"></div>
-				
-				<div class="relative bg-white rounded-2xl p-8 shadow-soft border border-secondary-100 text-center z-10">
-					<!-- Número del paso -->
-					<div class="w-20 h-20 bg-gradient-to-br from-primary-500 to-primary-600 rounded-full flex items-center justify-center mx-auto mb-6 text-white text-2xl font-bold shadow-lg">
-						2
+			<!-- Step 2 -->
+			<div class="relative z-10 group">
+				<div class="bg-white rounded-[2.5rem] p-10 border border-slate-100 shadow-sm hover:shadow-2xl transition-all duration-500 text-center">
+					<div class="w-20 h-20 bg-indigo-600 rounded-3xl flex items-center justify-center mx-auto mb-8 text-white shadow-[0_15px_30px_-5px_rgba(79,70,229,0.4)] group-hover:scale-110 group-hover:rotate-3 transition-transform duration-500">
+						<UserCheck size={32} />
 					</div>
-					
-					<!-- Icono -->
-					<div class="w-16 h-16 bg-primary-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
-						<svg class="w-8 h-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-						</svg>
-					</div>
-					
-					<h3 class="text-2xl font-bold text-secondary-900 mb-4">Revisa proveedores</h3>
-					<p class="text-secondary-600 leading-relaxed">
-						Ve perfiles detallados, calificaciones, reseñas y precios de profesionales verificados en tu zona.
+					<h3 class="text-2xl font-bold text-slate-900 mb-4 font-outfit">2. Elige tu experto</h3>
+					<p class="text-slate-600 font-light text-sm leading-relaxed">
+						Compara perfiles verificados, reseñas reales y tarifas transparentes. Tú tienes el control total.
 					</p>
+                    <div class="mt-6 inline-flex items-center text-indigo-600 font-bold font-outfit text-xs uppercase tracking-widest">Confianza Total</div>
 				</div>
 			</div>
 
-			<!-- Paso 3 -->
-			<div class="relative">
-				<div class="relative bg-white rounded-2xl p-8 shadow-soft border border-secondary-100 text-center z-10">
-					<!-- Número del paso -->
-					<div class="w-20 h-20 bg-gradient-to-br from-primary-500 to-primary-600 rounded-full flex items-center justify-center mx-auto mb-6 text-white text-2xl font-bold shadow-lg">
-						3
+			<!-- Step 3 -->
+			<div class="relative z-10 group">
+				<div class="bg-white rounded-[2.5rem] p-10 border border-slate-100 shadow-sm hover:shadow-2xl transition-all duration-500 text-center">
+					<div class="w-20 h-20 bg-purple-600 rounded-3xl flex items-center justify-center mx-auto mb-8 text-white shadow-[0_15px_30px_-5px_rgba(147,51,234,0.4)] group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-500">
+						<CheckCircle2 size={32} />
 					</div>
-					
-					<!-- Icono -->
-					<div class="w-16 h-16 bg-primary-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
-						<svg class="w-8 h-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
-						</svg>
-					</div>
-					
-					<h3 class="text-2xl font-bold text-secondary-900 mb-4">Contacta y contrata</h3>
-					<p class="text-secondary-600 leading-relaxed">
-						Contacta directamente al proveedor que elijas por teléfono o WhatsApp y coordina tu servicio de forma segura.
+					<h3 class="text-2xl font-bold text-slate-900 mb-4 font-outfit">3. Contrata y relájate</h3>
+					<p class="text-slate-600 font-light text-sm leading-relaxed">
+						Coordina tu servicio y disfruta de la tranquilidad de un trabajo bien hecho por profesionales.
 					</p>
+                    <div class="mt-6 inline-flex items-center text-purple-600 font-bold font-outfit text-xs uppercase tracking-widest">Éxito Garantizado</div>
 				</div>
-			</div>
-		</div>
-
-		<!-- Call to Action -->
-		<div class="text-center mt-12">
-			<div class="bg-white rounded-2xl p-8 shadow-soft border border-secondary-100 max-w-2xl mx-auto">
-				<h3 class="text-2xl font-bold text-secondary-900 mb-4">¿Listo para empezar?</h3>
-				<p class="text-secondary-600 mb-6">
-					Únete a miles de clientes satisfechos que ya confían en Domify para sus servicios
-				</p>
-				<a 
-					href="/services" 
-					class="inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-primary-600 to-primary-700 text-white font-semibold rounded-xl hover:from-primary-700 hover:to-primary-800 transition-all duration-200 shadow-lg hover:shadow-xl"
-
-				>
-					Buscar servicios ahora
-					<svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
-					</svg>
-				</a>
 			</div>
 		</div>
 	</div>
 </section>
 
-<!-- CTA Section -->
-<section class="py-20 bg-gradient-to-r from-primary-600 to-primary-700">
-	<div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
-		<h2 class="text-4xl sm:text-5xl font-bold text-white mb-6">
-			¿Necesitas un servicio?
+<!-- Bottom CTA Section -->
+<section class="relative py-24 overflow-hidden bg-slate-900 border-t border-white/5">
+    <!-- Glows -->
+    <div class="absolute top-0 left-1/4 w-[600px] h-[600px] bg-blue-600/20 rounded-full blur-[120px] pointer-events-none"></div>
+    <div class="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-indigo-600/20 rounded-full blur-[100px] pointer-events-none"></div>
+
+	<div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+		<h2 class="text-4xl sm:text-5xl lg:text-7xl font-bold text-white mb-8 font-outfit tracking-tight leading-tight">
+			¿Listo para transformar <br class="hidden sm:block"/>
+            tu <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">experiencia</span>?
 		</h2>
-		<p class="text-xl text-primary-100 mb-8 max-w-2xl mx-auto">
-			Únete a miles de clientes satisfechos que confían en Domify
+		<p class="text-xl text-slate-300 mb-12 max-w-2xl mx-auto font-light leading-relaxed">
+			Únete a los miles de usuarios que ya simplificaron su vida con Domify. Es rápido, seguro y confiable.
 		</p>
-		<div class="flex flex-col sm:flex-row gap-4 justify-center">
+		<div class="flex flex-col sm:flex-row gap-6 justify-center items-center">
 			<a 
 				href="/services" 
-				class="inline-flex items-center justify-center px-8 py-4 bg-white text-primary-600 font-semibold rounded-xl hover:bg-primary-50 transition-colors duration-200"
+				class="w-full sm:w-auto px-12 py-5 bg-white text-slate-900 font-bold text-lg rounded-2xl hover:bg-slate-50 transition-all duration-300 shadow-xl hover:scale-105 font-outfit"
 			>
 				Explorar Servicios
 			</a>
 			<a 
 				href="/become-provider" 
-				class="inline-flex items-center justify-center px-8 py-4 bg-primary-800 text-white font-semibold rounded-xl hover:bg-primary-900 transition-colors duration-200"
+				class="w-full sm:w-auto px-12 py-5 bg-slate-800 text-white font-bold text-lg rounded-2xl border border-white/10 hover:bg-slate-700 transition-all duration-300 shadow-xl hover:scale-105 font-outfit flex items-center justify-center gap-2"
 			>
 				Quiero ser un proveedor
+                <ArrowRight size={20} />
 			</a>
 		</div>
 	</div>

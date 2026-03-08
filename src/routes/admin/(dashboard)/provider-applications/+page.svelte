@@ -2,6 +2,13 @@
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
+  import { 
+    Search, Filter, Calendar, Tag, 
+    FileText, CheckCircle2, XCircle, Clock,
+    MoreHorizontal, Edit2, Check, X,
+    ChevronLeft, ChevronRight, MapPin, Phone,
+    Briefcase, Sparkles, User
+  } from 'lucide-svelte';
 
   interface ProviderApplication {
     id: number;
@@ -239,7 +246,7 @@
       case 'in_review': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
       case 'approved': return 'bg-green-100 text-green-800 border-green-200';
       case 'rejected': return 'bg-red-100 text-red-800 border-red-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+      default: return 'bg-gray-100 text-gray-800 border-slate-700/50';
     }
   }
 
@@ -385,19 +392,29 @@
   <title>Aplicaciones de Proveedores - Domify Admin</title>
 </svelte:head>
 
-<div class="space-y-6">
+<div class="space-y-8 font-inter">
   <!-- Header -->
-  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-    <div>
-      <h1 class="text-3xl font-bold text-secondary-900">Aplicaciones de Proveedores</h1>
-      <p class="mt-2 text-secondary-600">Gestiona las solicitudes de nuevos proveedores</p>
+  <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
+    <div class="space-y-1">
+      <div class="flex items-center gap-2 mb-1">
+        <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600">
+           <FileText size={18} />
+        </div>
+        <p class="text-[10px] font-bold text-blue-600 uppercase tracking-widest">Administración</p>
+      </div>
+      <h1 class="text-3xl font-bold text-slate-900 tracking-tight font-outfit">
+        Aplicaciones de <span class="text-blue-600">Proveedores</span>
+      </h1>
+      <p class="text-slate-500 font-medium">Gestiona y revisa las solicitudes de nuevos prestadores de servicios.</p>
     </div>
-    <div class="mt-4 sm:mt-0">
-      <div class="flex items-center space-x-2 text-sm text-secondary-500">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-        </svg>
-        <span>Total: {totalApplications > 999 ? '999+' : totalApplications} aplicaciones</span>
+    
+    <div class="flex items-center gap-3 bg-white border border-slate-200 px-4 py-2.5 rounded-2xl shadow-sm">
+      <div class="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600">
+        <Sparkles size={20} />
+      </div>
+      <div>
+        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Registros</p>
+        <p class="text-lg font-bold text-slate-900 leading-none">{totalApplications > 999 ? '999+' : totalApplications}</p>
       </div>
     </div>
   </div>
@@ -420,225 +437,258 @@
   {/if}
 
   <!-- Filters -->
-  <div class="bg-white rounded-xl shadow-sm border border-secondary-200 p-6">
-    <h3 class="text-lg font-semibold text-secondary-900 mb-4">Filtros</h3>
+  <div class="bg-white rounded-[2rem] shadow-sm border border-slate-100 p-8 relative overflow-hidden group">
+    <div class="absolute right-0 top-0 w-32 h-32 bg-slate-50 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-blue-50/50 transition-colors"></div>
     
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="flex items-center gap-3 mb-6 relative z-10">
+      <div class="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400">
+        <Filter size={20} />
+      </div>
+      <h3 class="text-lg font-bold text-slate-900 font-outfit">Filtros de Búsqueda</h3>
+    </div>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 relative z-10">
       <!-- Search Filter -->
-      <div>
-        <label for="search" class="block text-sm font-medium text-secondary-700 mb-2">
-          Buscar
+      <div class="space-y-2">
+        <label for="search" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">
+          Palabra Clave
         </label>
-        <div class="relative">
+        <div class="relative group">
+          <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-blue-600 transition-colors">
+            <Search size={18} />
+          </div>
           <input
             id="search"
             type="text"
             bind:value={searchFilter}
-            placeholder="Buscar por nombre, email, título, ubicación..."
-            class="w-full pl-10 pr-4 py-2 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors duration-200"
+            placeholder="Nombre, email, ubicación..."
+            class="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-blue-50 focus:border-blue-400 transition-all font-medium"
           />
-          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <svg class="h-5 w-5 text-secondary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-            </svg>
-          </div>
         </div>
       </div>
 
       <!-- Status Filter -->
-      <div>
-        <label for="status" class="block text-sm font-medium text-secondary-700 mb-2">
-          Estado
+      <div class="space-y-2">
+        <label for="status" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">
+          Estado Solicitud
         </label>
-        <select
-          id="status"
-          bind:value={statusFilter}
-          class="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors duration-200"
-        >
-          <option value="all">Todos los estados</option>
-          <option value="submitted">Enviadas</option>
-          <option value="in_review">En Revisión</option>
-          <option value="approved">Aprobadas</option>
-          <option value="rejected">Rechazadas</option>
-        </select>
+        <div class="relative group">
+          <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-blue-600 transition-colors">
+            <Clock size={18} />
+          </div>
+          <select
+            id="status"
+            bind:value={statusFilter}
+            class="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-50 focus:border-blue-400 transition-all font-medium appearance-none"
+          >
+            <option value="all">Todos los estados</option>
+            <option value="submitted">Enviadas</option>
+            <option value="in_review">En Revisión</option>
+            <option value="approved">Aprobadas</option>
+            <option value="rejected">Rechazadas</option>
+          </select>
+        </div>
       </div>
 
       <!-- Category Filter -->
-      <div>
-        <label for="category" class="block text-sm font-medium text-secondary-700 mb-2">
-          Categoría
+      <div class="space-y-2">
+        <label for="category" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">
+           Categoría Servicio
         </label>
-        <select
-          id="category"
-          bind:value={categoryFilter}
-          class="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors duration-200"
-        >
-          <option value="all">Todas las categorías</option>
-          {#each categories as category}
-            <option value={category.id.toString()}>{category.name}</option>
-          {/each}
-        </select>
+        <div class="relative group">
+          <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-blue-600 transition-colors">
+            <Tag size={18} />
+          </div>
+          <select
+            id="category"
+            bind:value={categoryFilter}
+            class="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-50 focus:border-blue-400 transition-all font-medium appearance-none"
+          >
+            <option value="all">Todas las categorías</option>
+            {#each categories as category}
+              <option value={category.id.toString()}>{category.name}</option>
+            {/each}
+          </select>
+        </div>
       </div>
 
       <!-- Date Filter -->
-      <div>
-        <label for="date" class="block text-sm font-medium text-secondary-700 mb-2">
-          Fecha
+      <div class="space-y-2">
+        <label for="date" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">
+          Rango de Fecha
         </label>
-        <select
-          id="date"
-          bind:value={dateFilter}
-          class="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors duration-200"
-        >
-          <option value="all">Todas las fechas</option>
-          <option value="today">Hoy</option>
-          <option value="week">Esta semana</option>
-          <option value="month">Este mes</option>
-        </select>
+        <div class="relative group">
+          <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-blue-600 transition-colors">
+            <Calendar size={18} />
+          </div>
+          <select
+            id="date"
+            bind:value={dateFilter}
+            class="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-50 focus:border-blue-400 transition-all font-medium appearance-none"
+          >
+            <option value="all">Todas las fechas</option>
+            <option value="today">Hoy</option>
+            <option value="week">Esta semana</option>
+            <option value="month">Este mes</option>
+          </select>
+        </div>
       </div>
     </div>
   </div>
 
   <!-- Applications List -->
   {#if loading}
-    <div class="flex items-center justify-center py-12">
+    <div class="flex flex-col items-center justify-center py-20 bg-white rounded-[2rem] border border-slate-100 shadow-sm">
       <LoadingSpinner size="lg" color="primary" text="Cargando aplicaciones..." />
     </div>
   {:else if applications.length === 0}
-    <div class="bg-white rounded-xl shadow-sm border border-secondary-200 p-12">
-      <div class="text-center">
-        <svg class="w-16 h-16 text-secondary-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-        </svg>
-        <h3 class="text-lg font-semibold text-secondary-900 mb-2">No hay aplicaciones</h3>
-        <p class="text-secondary-600">No se encontraron aplicaciones con los filtros actuales.</p>
+    <div class="bg-white rounded-[2rem] shadow-sm border border-slate-100 p-20 flex flex-col items-center justify-center text-center">
+      <div class="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center text-slate-300 mb-6 group-hover:scale-110 transition-transform">
+        <FileText size={40} />
       </div>
+      <h3 class="text-xl font-bold text-slate-900 font-outfit mb-2">No se encontraron aplicaciones</h3>
+      <p class="text-slate-500 max-w-sm">No hay registros que coincidan con los filtros seleccionados actualmente.</p>
+      <button 
+        class="mt-8 px-6 py-3 bg-slate-900 text-white rounded-2xl font-bold hover:bg-slate-800 transition-all active:scale-95 flex items-center gap-2"
+        on:click={() => { statusFilter = 'all'; searchFilter = ''; categoryFilter = 'all'; dateFilter = 'all'; loadApplications(); }}
+      >
+        <Filter size={18} />
+        Limpiar Filtros
+      </button>
     </div>
   {:else}
-    <div class="space-y-4">
+    <div class="space-y-6">
       {#each applications as application}
-        <div class="bg-white rounded-xl shadow-sm border border-secondary-200 p-6 hover:shadow-md transition-shadow duration-200">
-          <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
-            <!-- Application Info -->
-            <div class="flex-1">
-              <div class="flex items-start justify-between mb-4">
-                <div>
-                  <h3 class="text-lg font-semibold text-secondary-900 mb-1">
-                    {application.headline}
-                  </h3>
-                  <p class="text-sm text-secondary-600">
-                    {getUserDisplayName(application)} • {application.user?.email || application.email}
-                  </p>
+        <div class="group bg-white rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-blue-600/5 transition-all duration-300 overflow-hidden">
+          <div class="flex flex-col lg:flex-row divide-y lg:divide-y-0 lg:divide-x divide-slate-50">
+            <!-- Left Side: Main Info -->
+            <div class="flex-1 p-8">
+              <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
+                <div class="flex items-center gap-4">
+                  <div class="w-14 h-14 bg-slate-900 rounded-2xl flex items-center justify-center text-white font-outfit font-bold text-xl shrink-0 group-hover:scale-110 transition-transform">
+                    {getUserDisplayName(application).charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <h3 class="text-xl font-bold text-slate-900 font-outfit group-hover:text-blue-600 transition-colors">
+                      {application.headline}
+                    </h3>
+                    <div class="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1">
+                      <p class="text-sm font-bold text-slate-500 flex items-center gap-1.5">
+                        <User size={14} class="text-slate-400" />
+                        {getUserDisplayName(application)}
+                      </p>
+                      <p class="text-sm font-medium text-slate-400 flex items-center gap-1.5">
+                        <Phone size={14} />
+                         {application.phone}
+                      </p>
+                    </div>
+                  </div>
                 </div>
-                <div class="flex items-center space-x-2">
-                  <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border {getStatusColor(application.status)}">
+                
+                <div class="flex flex-col items-end gap-2">
+                  <span class={`inline-flex items-center px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest border shadow-sm ${getStatusColor(application.status)}`}>
+                    <span class="w-1.5 h-1.5 rounded-full mr-2 animate-pulse bg-current"></span>
                     {getStatusText(application.status)}
                   </span>
+                  <div class="flex items-center gap-1 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                    <Clock size={12} />
+                    {formatDate(application.created_at)}
+                  </div>
                 </div>
               </div>
 
-              <p class="text-secondary-700 mb-4 line-clamp-2">
-                {application.bio}
-              </p>
-
-              <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                <div>
-                  <span class="text-secondary-500">Tarifa:</span>
-                  <span class="font-medium text-secondary-900 ml-1">C${application.hourly_rate}/hora</span>
-                </div>
-                <div>
-                  <span class="text-secondary-500">Experiencia:</span>
-                  <span class="font-medium text-secondary-900 ml-1">{application.experience_years} años</span>
-                </div>
-                <div>
-                  <span class="text-secondary-500">Ubicación:</span>
-                  <span class="font-medium text-secondary-900 ml-1">{application.location}</span>
-                </div>
-                <div>
-                  <span class="text-secondary-500">Fecha:</span>
-                  <span class="font-medium text-secondary-900 ml-1">{formatDate(application.created_at)}</span>
-                </div>
+              <div class="bg-slate-50/50 rounded-2xl p-5 mb-6">
+                <p class="text-slate-600 leading-relaxed text-sm line-clamp-2">
+                  {application.bio}
+                </p>
               </div>
 
-              {#if application.application_data?.provider_type}
-                <div class="mt-3">
-                  <span class="text-secondary-500 text-sm">Tipo:</span>
-                  <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ml-1"
-                        class:bg-blue-100={application.application_data.provider_type === 'individual'}
-                        class:text-blue-800={application.application_data.provider_type === 'individual'}
-                        class:bg-purple-100={application.application_data.provider_type === 'company'}
-                        class:text-purple-800={application.application_data.provider_type === 'company'}>
-                    {application.application_data.provider_type === 'individual' ? '👤 Persona Individual' : '🏢 Empresa'}
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div class="space-y-1">
+                  <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tarifa</p>
+                  <p class="text-base font-bold text-slate-900">C${application.hourly_rate}<span class="text-slate-400 text-xs font-medium">/hora</span></p>
+                </div>
+                <div class="space-y-1">
+                  <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Experiencia</p>
+                  <p class="text-base font-bold text-slate-900">{application.experience_years}<span class="text-slate-400 text-xs font-medium"> años</span></p>
+                </div>
+                <div class="space-y-1">
+                  <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Ubicación</p>
+                  <p class="text-sm font-bold text-slate-900 flex items-center gap-1">
+                    <MapPin size={14} class="text-blue-500" />
+                    {application.location}
+                  </p>
+                </div>
+                <div class="space-y-1">
+                  <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tipo</p>
+                  <span class={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide border shadow-sm ${application.application_data?.provider_type === 'company' ? 'bg-indigo-50 text-indigo-600 border-indigo-100' : 'bg-blue-50 text-blue-600 border-blue-100'}`}>
+                    {application.application_data?.provider_type === 'company' ? '🏢 Empresa' : '👤 Individual'}
                   </span>
                 </div>
-              {/if}
+              </div>
 
               {#if Array.isArray(application.categories) && application.categories.length > 0}
-                <div class="mt-3">
-                  <span class="text-secondary-500 text-sm">Categorías:</span>
-                  <div class="flex flex-wrap gap-2 mt-1">
-                    {#each application.categories as categoryId}
-                      <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-primary-100 text-primary-800">
-                        {getCategoryName(typeof categoryId === 'number' ? categoryId : ((categoryId as any).category_id || (categoryId as any).id || 0))}
-                      </span>
-                    {/each}
-                  </div>
+                <div class="mt-8 pt-6 border-t border-slate-50 flex flex-wrap gap-2">
+                  {#each application.categories as categoryId}
+                    <span class="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-100 rounded-xl text-xs font-bold text-slate-600 shadow-sm hover:border-blue-200 hover:text-blue-600 transition-colors cursor-default">
+                      <Tag size={12} class="text-blue-400" />
+                      {getCategoryName(typeof categoryId === 'number' ? categoryId : ((categoryId as any).category_id || (categoryId as any).id || 0))}
+                    </span>
+                  {/each}
                 </div>
               {/if}
             </div>
 
-            <!-- Actions -->
-            <div class="mt-4 lg:mt-0 lg:ml-6">
-              <div class="flex flex-col space-y-2">
-                {#if application.status === 'submitted' || application.status === 'in_review'}
+            <!-- Right Side: Quick Actions -->
+            <div class="w-full lg:w-48 bg-slate-50/30 p-8 flex flex-col justify-center gap-3 shrink-0">
+               {#if application.status === 'submitted' || application.status === 'in_review'}
                   <button
-                    class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    class="w-full flex items-center justify-center gap-2 py-3 bg-emerald-600 text-white rounded-2xl font-bold text-sm shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all active:scale-95 disabled:opacity-50"
                     disabled={updatingStatus.has(application.id)}
                     on:click={() => updateApplicationStatus(application.id, 'approved')}
                   >
                     {#if updatingStatus.has(application.id)}
                       <LoadingSpinner size="sm" color="white" />
                     {:else}
-                      ✓ Aprobar
+                      <Check size={18} />
+                      Aprobar
                     {/if}
                   </button>
                   
                   <button
-                    class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    class="w-full flex items-center justify-center gap-2 py-3 bg-white text-rose-600 border border-rose-100 rounded-2xl font-bold text-sm shadow-sm hover:bg-rose-50 hover:border-rose-200 transition-all active:scale-95 disabled:opacity-50"
                     disabled={updatingStatus.has(application.id)}
                     on:click={() => updateApplicationStatus(application.id, 'rejected', 'No cumple con los requisitos')}
                   >
                     {#if updatingStatus.has(application.id)}
-                      <LoadingSpinner size="sm" color="white" />
+                      <LoadingSpinner size="sm" color="primary" />
                     {:else}
-                      ✗ Rechazar
+                      <X size={18} />
+                      Rechazar
                     {/if}
                   </button>
-                {:else if application.status === 'approved'}
-                  <button
-                    class="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors duration-200 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                {:else}
+                   <button
+                    class="w-full flex items-center justify-center gap-2 py-3 bg-white text-blue-600 border border-blue-100 rounded-2xl font-bold text-sm shadow-sm hover:bg-blue-50 hover:border-blue-200 transition-all active:scale-95 disabled:opacity-50"
                     disabled={updatingStatus.has(application.id)}
                     on:click={() => updateApplicationStatus(application.id, 'in_review')}
                   >
-                    🔄 Revisar
-                  </button>
-                {:else if application.status === 'rejected'}
-                  <button
-                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                    disabled={updatingStatus.has(application.id)}
-                    on:click={() => updateApplicationStatus(application.id, 'in_review')}
-                  >
-                    🔄 Revisar
+                     <Clock size={16} />
+                     Revisar
                   </button>
                 {/if}
                 
                 <button
-                  class="px-4 py-2 bg-secondary-600 text-white rounded-lg hover:bg-secondary-700 transition-colors duration-200 text-sm font-medium"
+                  class="w-full flex items-center justify-center gap-2 py-3 bg-slate-900 text-white rounded-2xl font-bold text-sm shadow-lg shadow-slate-900/10 hover:bg-slate-800 transition-all active:scale-95"
                   on:click={() => openEditModal(application)}
                 >
-                  ✏️ Editar
+                  <Edit2 size={16} />
+                  Editar
                 </button>
-              </div>
+
+                <div class="mt-2 text-center">
+                   <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">ID: #{application.id}</p>
+                </div>
             </div>
           </div>
         </div>
@@ -647,48 +697,48 @@
 
     <!-- Pagination -->
     {#if totalPages > 1}
-      <div class="bg-white rounded-xl shadow-sm border border-secondary-200 p-4">
-        <div class="flex items-center justify-between">
-          <div class="text-sm text-secondary-600">
-            Mostrando {(currentPage - 1) * limit + 1} - {Math.min(currentPage * limit, totalApplications)} de {totalApplications > 999 ? '999+' : totalApplications} aplicaciones
-          </div>
+      <div class="bg-white rounded-[2rem] shadow-sm border border-slate-100 p-6 flex flex-col sm:flex-row items-center justify-between gap-4 mt-8">
+        <div class="text-xs font-bold text-slate-400 uppercase tracking-widest">
+          Mostrando <span class="text-slate-900">{(currentPage - 1) * limit + 1} - {Math.min(currentPage * limit, totalApplications)}</span> de <span class="text-blue-600 font-black">{totalApplications > 999 ? '999+' : totalApplications}</span>
+        </div>
+        
+        <div class="flex items-center gap-2">
+          <button
+            class="w-10 h-10 flex items-center justify-center bg-slate-50 border border-slate-100 rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-all disabled:opacity-30 disabled:cursor-not-allowed group"
+            disabled={currentPage === 1}
+            on:click={() => { currentPage = Math.max(1, currentPage - 1); loadApplications(); }}
+          >
+            <ChevronLeft size={18} class="group-hover:-translate-x-0.5 transition-transform" />
+          </button>
           
-          <div class="flex items-center space-x-2">
-            <button
-              class="px-3 py-2 border border-secondary-300 rounded-lg text-sm font-medium text-secondary-700 hover:bg-secondary-50 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={currentPage === 1}
-              on:click={() => { currentPage = Math.max(1, currentPage - 1); loadApplications(); }}
-            >
-              Anterior
-            </button>
-            
+          <div class="flex items-center gap-1.5">
             {#each Array.from({length: totalPages}, (_, i) => i + 1) as page}
               {#if page === currentPage || page === 1 || page === totalPages || (page >= currentPage - 1 && page <= currentPage + 1)}
                 <button
-                  class="px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200"
-                  class:bg-primary-600={page === currentPage}
+                  class="w-10 h-10 flex items-center justify-center rounded-xl text-sm font-bold transition-all shadow-blue-600/20"
+                  class:bg-blue-600={page === currentPage}
                   class:text-white={page === currentPage}
-                  class:border-primary-600={page === currentPage}
-                  class:border={page === currentPage}
-                  class:text-secondary-700={page !== currentPage}
-                  class:hover:bg-secondary-50={page !== currentPage}
+                  class:shadow-lg={page === currentPage}
+                  class:bg-slate-50={page !== currentPage}
+                  class:text-slate-400={page !== currentPage}
+                  class:hover:bg-slate-100={page !== currentPage}
                   on:click={() => { currentPage = page; loadApplications(); }}
                 >
                   {page}
                 </button>
               {:else if page === currentPage - 2 || page === currentPage + 2}
-                <span class="px-3 py-2 text-secondary-400">...</span>
+                <span class="w-10 text-center text-slate-300 font-bold">...</span>
               {/if}
             {/each}
-            
-            <button
-              class="px-3 py-2 border border-secondary-300 rounded-lg text-sm font-medium text-secondary-700 hover:bg-secondary-50 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={currentPage === totalPages}
-              on:click={() => { currentPage = Math.min(totalPages, currentPage + 1); loadApplications(); }}
-            >
-              Siguiente
-            </button>
           </div>
+          
+          <button
+            class="w-10 h-10 flex items-center justify-center bg-slate-50 border border-slate-100 rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-all disabled:opacity-30 disabled:cursor-not-allowed group"
+            disabled={currentPage === totalPages}
+            on:click={() => { currentPage = Math.min(totalPages, currentPage + 1); loadApplications(); }}
+          >
+            <ChevronRight size={18} class="group-hover:translate-x-0.5 transition-transform" />
+          </button>
         </div>
       </div>
     {/if}
@@ -697,233 +747,281 @@
 
 <!-- Edit Modal -->
 {#if showEditModal && editingApplication}
-  <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-    <div class="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-      <div class="p-6 border-b border-secondary-200">
-        <h3 class="text-lg font-semibold text-secondary-900">
-          Editar Aplicación - {editingApplication.headline}
-        </h3>
+  <div class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-all duration-500">
+    <div class="bg-white rounded-[2.5rem] shadow-2xl shadow-slate-900/20 max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col border border-slate-100">
+      <!-- Modal Header -->
+      <div class="p-8 border-b border-slate-50 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600">
+            <Edit2 size={24} />
+          </div>
+          <div>
+            <h3 class="text-xl font-bold text-slate-900 font-outfit">
+              Editar Aplicación
+            </h3>
+            <p class="text-sm font-medium text-slate-400 uppercase tracking-widest leading-none mt-1">
+              ID: #{editingApplication.id} • {editingApplication.headline}
+            </p>
+          </div>
+        </div>
+        <button 
+          class="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-50 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-all"
+          on:click={closeEditModal}
+        >
+          <X size={20} />
+        </button>
       </div>
       
-      <div class="p-6 space-y-6">
-        <!-- Información Personal -->
-        <div class="border-b border-secondary-200 pb-4">
-          <h4 class="text-md font-semibold text-secondary-900 mb-3">Información Personal</h4>
-          
-          <!-- Tipo de Proveedor -->
-          <div class="mb-4">
-            <label class="block text-sm font-medium text-secondary-700 mb-2">
-              Tipo de Proveedor
-            </label>
-            <div class="flex space-x-4">
-              <label class="flex items-center space-x-2 cursor-pointer">
-                <input
-                  type="radio"
-                  bind:group={editForm.provider_type}
-                  value="individual"
-                  class="w-4 h-4 text-primary-600 border-secondary-300 focus:ring-primary-500"
-                />
-                <span class="text-sm text-secondary-700">👤 Persona Individual</span>
-              </label>
-              <label class="flex items-center space-x-2 cursor-pointer">
-                <input
-                  type="radio"
-                  bind:group={editForm.provider_type}
-                  value="company"
-                  class="w-4 h-4 text-primary-600 border-secondary-300 focus:ring-primary-500"
-                />
-                <span class="text-sm text-secondary-700">🏢 Empresa</span>
-              </label>
-            </div>
+      <!-- Modal Body -->
+      <div class="p-8 space-y-10 overflow-y-auto font-inter">
+        <!-- Sección 1: Datos Personales -->
+        <div class="space-y-6">
+          <div class="flex items-center gap-2 pb-2 border-b border-slate-50">
+            <User size={18} class="text-blue-500" />
+            <h4 class="text-sm font-bold text-slate-900 uppercase tracking-widest font-outfit">Datos Personales</h4>
           </div>
           
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-secondary-700 mb-2">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="space-y-2">
+              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">
+                Tipo de Prestador
+              </span>
+              <div class="flex gap-4">
+                <label class="flex-1 flex items-center justify-center gap-2 p-3 bg-slate-50 border border-slate-100 rounded-2xl cursor-pointer hover:bg-blue-50 hover:border-blue-200 transition-all group">
+                  <input
+                    type="radio"
+                    bind:group={editForm.provider_type}
+                    value="individual"
+                    class="w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-600"
+                  />
+                  <span class="text-xs font-bold text-slate-600 group-hover:text-blue-700">Individual</span>
+                </label>
+                <label class="flex-1 flex items-center justify-center gap-2 p-3 bg-slate-50 border border-slate-100 rounded-2xl cursor-pointer hover:bg-blue-50 hover:border-blue-200 transition-all group">
+                  <input
+                    type="radio"
+                    bind:group={editForm.provider_type}
+                    value="company"
+                    class="w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-600"
+                  />
+                  <span class="text-xs font-bold text-slate-600 group-hover:text-blue-700">Empresa</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="space-y-2">
+              <label for="edit-email" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">
                 Correo Electrónico
               </label>
               <input
+                id="edit-email"
                 type="email"
                 bind:value={editForm.email}
-                class="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                class="w-full px-4 py-3 bg-slate-100 border border-slate-200 rounded-2xl text-slate-500 font-medium cursor-not-allowed"
                 readonly
               />
             </div>
-            
-            <div>
-              <label class="block text-sm font-medium text-secondary-700 mb-2">
-                Teléfono
-              </label>
-              <input
-                type="tel"
-                bind:value={editForm.phone}
-                class="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-              />
-            </div>
           </div>
-          
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-            <div>
-              <label class="block text-sm font-medium text-secondary-700 mb-2">
-                Nombre
+
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="space-y-2">
+              <label for="edit-first-name" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">
+                Nombre(s)
               </label>
               <input
+                id="edit-first-name"
                 type="text"
                 bind:value={editForm.first_name}
-                class="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                class="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-50 focus:border-blue-400 transition-all font-medium"
               />
             </div>
             
-            <div>
-              <label class="block text-sm font-medium text-secondary-700 mb-2">
-                Apellido
+            <div class="space-y-2">
+              <label for="edit-last-name" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">
+                Apellido(s)
               </label>
               <input
+                id="edit-last-name"
                 type="text"
                 bind:value={editForm.last_name}
-                class="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                class="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-50 focus:border-blue-400 transition-all font-medium"
               />
             </div>
+
+            <div class="space-y-2">
+              <label for="edit-phone" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">
+                Teléfono
+              </label>
+              <div class="relative group">
+                 <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-blue-600 transition-colors">
+                  <Phone size={16} />
+                </div>
+                <input
+                  id="edit-phone"
+                  type="tel"
+                  bind:value={editForm.phone}
+                  class="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-50 focus:border-blue-400 transition-all font-medium"
+                />
+              </div>
+            </div>
           </div>
-          
-          <div>
-            <label class="block text-sm font-medium text-secondary-700 mb-2">
-              Dirección
-            </label>
-            <input
-              type="text"
-              bind:value={editForm.address}
-              class="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-            />
-          </div>
-          
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-            <div>
-              <label class="block text-sm font-medium text-secondary-700 mb-2">
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="md:col-span-1 space-y-2">
+              <label for="edit-department" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">
                 Departamento
               </label>
               <select
+                id="edit-department"
                 bind:value={editForm.department}
                 on:change={() => editForm.city = ''}
-                class="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white"
+                class="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-50 focus:border-blue-400 transition-all font-medium appearance-none"
               >
-                <option value="">Selecciona un departamento</option>
+                <option value="">Selecciona...</option>
                 {#each departments as department}
                   <option value={department.name}>{department.name}</option>
                 {/each}
               </select>
             </div>
             
-            <div>
-              <label class="block text-sm font-medium text-secondary-700 mb-2">
+            <div class="md:col-span-1 space-y-2">
+              <label for="edit-city" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">
                 Ciudad
               </label>
               <select
+                id="edit-city"
                 bind:value={editForm.city}
                 disabled={!editForm.department}
-                class="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white disabled:bg-secondary-50 disabled:text-secondary-500"
+                class="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-50 focus:border-blue-400 transition-all font-medium appearance-none disabled:bg-slate-50 disabled:text-slate-300"
               >
-                <option value="">Selecciona una ciudad</option>
+                <option value="">Selecciona...</option>
                 {#each availableCities as city}
                   <option value={city}>{city}</option>
                 {/each}
               </select>
             </div>
-          </div>
-        </div>
 
-        <!-- Información del Servicio -->
-        <div class="border-b border-secondary-200 pb-4">
-          <h4 class="text-md font-semibold text-secondary-900 mb-3">Información del Servicio</h4>
-          
-        <div>
-          <label class="block text-sm font-medium text-secondary-700 mb-2">
-            Título del Servicio
-          </label>
-          <input
-            type="text"
-            bind:value={editForm.headline}
-            class="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-          />
-        </div>
-        
-          <div class="mt-4">
-          <label class="block text-sm font-medium text-secondary-700 mb-2">
-            Descripción
-          </label>
-          <textarea
-            bind:value={editForm.bio}
-            rows="4"
-            class="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-          ></textarea>
-        </div>
-        
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-          <div>
-            <label class="block text-sm font-medium text-secondary-700 mb-2">
-              Tarifa por Hora (C$)
-            </label>
-            <input
-              type="number"
-              bind:value={editForm.hourly_rate}
-              min="0"
-              step="50"
-              class="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-            />
-          </div>
-          
-          <div>
-            <label class="block text-sm font-medium text-secondary-700 mb-2">
-              Años de Experiencia
-            </label>
-            <input
-              type="number"
-              bind:value={editForm.experience_years}
-              min="0"
-              class="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-            />
-        </div>
-        
-        <div>
-          <label class="block text-sm font-medium text-secondary-700 mb-2">
-            Ubicación
-          </label>
-          <input
-            type="text"
-            bind:value={editForm.location}
-            class="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-          />
+             <div class="md:col-span-1 space-y-2">
+              <label for="edit-address" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">
+                Dirección Detallada
+              </label>
+              <input
+                id="edit-address"
+                type="text"
+                bind:value={editForm.address}
+                class="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-50 focus:border-blue-400 transition-all font-medium"
+              />
             </div>
           </div>
         </div>
-        
-        <!-- Categorías -->
-        <div class="border-b border-secondary-200 pb-4">
-          <h4 class="text-md font-semibold text-secondary-900 mb-3">Categorías</h4>
+
+        <!-- Sección 2: Perfil Profesional -->
+        <div class="space-y-6">
+          <div class="flex items-center gap-2 pb-2 border-b border-slate-50">
+            <Briefcase size={18} class="text-blue-500" />
+            <h4 class="text-sm font-bold text-slate-900 uppercase tracking-widest font-outfit">Perfil Profesional</h4>
+          </div>
           
-          <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {#each categories as category}
-              <label class="flex items-center space-x-2 cursor-pointer">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="md:col-span-2 space-y-2">
+              <label for="edit-headline" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">
+                Título del Servicio
+              </label>
+              <input
+                id="edit-headline"
+                type="text"
+                bind:value={editForm.headline}
+                class="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-50 focus:border-blue-400 transition-all font-medium"
+              />
+            </div>
+
+             <div class="space-y-2">
+              <label for="edit-hourly-rate" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">
+                Tarifa (C$/Hora)
+              </label>
+              <input
+                id="edit-hourly-rate"
+                type="number"
+                bind:value={editForm.hourly_rate}
+                min="0"
+                step="50"
+                class="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-50 focus:border-blue-400 transition-all font-medium"
+              />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+             <div class="space-y-2">
+              <label for="edit-experience" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">
+                Años Experiencia
+              </label>
+              <input
+                id="edit-experience"
+                type="number"
+                bind:value={editForm.experience_years}
+                min="0"
+                class="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-50 focus:border-blue-400 transition-all font-medium"
+              />
+            </div>
+
+            <div class="space-y-2">
+              <label for="edit-location-summary" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">
+                Resumen Ubicación
+              </label>
+              <input
+                id="edit-location-summary"
+                type="text"
+                bind:value={editForm.location}
+                class="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-50 focus:border-blue-400 transition-all font-medium"
+              />
+            </div>
+          </div>
+          
+          <div class="space-y-2">
+            <label for="edit-bio" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">
+              Biografía / Descripción del Servicio
+            </label>
+            <textarea
+              id="edit-bio"
+              bind:value={editForm.bio}
+              rows="4"
+              class="w-full px-4 py-4 bg-slate-50 border border-slate-100 rounded-[2rem] text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-50 focus:border-blue-400 transition-all font-medium resize-none"
+            ></textarea>
+          </div>
+        </div>
+        
+        <!-- Sección 3: Categorías -->
+        <div class="space-y-6">
+          <div class="flex items-center gap-2 pb-2 border-b border-slate-50">
+            <Tag size={18} class="text-blue-500" />
+            <h4 class="text-sm font-bold text-slate-900 uppercase tracking-widest font-outfit">Categorías de Servicio</h4>
+          </div>
+          
+          <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            {#each categories as category (category.id)}
+              <label class="group flex items-center gap-3 p-3 bg-slate-50 border border-slate-100 rounded-2xl cursor-pointer hover:bg-white hover:shadow-lg hover:shadow-blue-600/5 hover:border-blue-200 transition-all">
                 <input
                   type="checkbox"
                   bind:group={editForm.categories}
                   value={category.id}
-                  class="w-4 h-4 text-primary-600 border-secondary-300 rounded focus:ring-primary-500"
+                  class="w-5 h-5 text-blue-600 border-slate-300 rounded-lg focus:ring-blue-600"
                 />
-                <span class="text-sm text-secondary-700">{category.name}</span>
+                <span class="text-xs font-bold text-slate-600 group-hover:text-blue-700">{category.name}</span>
               </label>
             {/each}
           </div>
         </div>
 
-        <!-- Horarios de Disponibilidad -->
-        <div>
-          <h4 class="text-md font-semibold text-secondary-900 mb-3">Horarios de Disponibilidad</h4>
+        <!-- Sección 4: Disponibilidad -->
+        <div class="space-y-6">
+          <div class="flex items-center gap-2 pb-2 border-b border-slate-50">
+            <Calendar size={18} class="text-blue-500" />
+            <h4 class="text-sm font-bold text-slate-900 uppercase tracking-widest font-outfit">Horarios de Disponibilidad</h4>
+          </div>
           
-          <div class="space-y-3">
-            {#each Object.entries(editForm.availability) as [day, schedule]}
-              <div class="flex items-center space-x-4">
-                <div class="w-20 text-sm font-medium text-secondary-700 capitalize">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {#each Object.entries(editForm.availability) as [day, schedule] (day)}
+              <div class="flex items-center justify-between p-4 bg-slate-50 border border-slate-100 rounded-[1.5rem] group hover:bg-white hover:shadow-md transition-all">
+                <div class="w-24 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
                   {day === 'monday' ? 'Lunes' : 
                    day === 'tuesday' ? 'Martes' :
                    day === 'wednesday' ? 'Miércoles' :
@@ -931,30 +1029,18 @@
                    day === 'friday' ? 'Viernes' :
                    day === 'saturday' ? 'Sábado' : 'Domingo'}
                 </div>
-                <div class="flex space-x-4">
-                  <label class="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      bind:checked={schedule.morning}
-                      class="w-4 h-4 text-primary-600 border-secondary-300 rounded focus:ring-primary-500"
-                    />
-                    <span class="text-sm text-secondary-700">Mañana</span>
-          </label>
-                  <label class="flex items-center space-x-2">
-          <input
-                      type="checkbox"
-                      bind:checked={schedule.afternoon}
-                      class="w-4 h-4 text-primary-600 border-secondary-300 rounded focus:ring-primary-500"
-                    />
-                    <span class="text-sm text-secondary-700">Tarde</span>
+                <div class="flex gap-2">
+                  <label class="flex items-center gap-2 px-3 py-2 bg-white border border-slate-100 rounded-xl cursor-pointer hover:border-blue-200 transition-all">
+                    <input type="checkbox" bind:checked={schedule.morning} class="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-600" />
+                    <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Mañana</span>
                   </label>
-                  <label class="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      bind:checked={schedule.evening}
-                      class="w-4 h-4 text-primary-600 border-secondary-300 rounded focus:ring-primary-500"
-          />
-                    <span class="text-sm text-secondary-700">Noche</span>
+                  <label class="flex items-center gap-2 px-3 py-2 bg-white border border-slate-100 rounded-xl cursor-pointer hover:border-blue-200 transition-all">
+                    <input type="checkbox" bind:checked={schedule.afternoon} class="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-600" />
+                    <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Tarde</span>
+                  </label>
+                  <label class="flex items-center gap-2 px-3 py-2 bg-white border border-slate-100 rounded-xl cursor-pointer hover:border-blue-200 transition-all">
+                    <input type="checkbox" bind:checked={schedule.evening} class="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-600" />
+                    <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Noche</span>
                   </label>
                 </div>
               </div>
@@ -963,22 +1049,24 @@
         </div>
       </div>
       
-      <div class="p-6 border-t border-secondary-200 flex justify-end space-x-3">
+      <!-- Modal Footer -->
+      <div class="p-8 border-t border-slate-50 flex justify-end gap-3 shrink-0 bg-slate-50/50">
         <button
-          class="px-4 py-2 border border-secondary-300 text-secondary-700 rounded-lg hover:bg-secondary-50 transition-colors duration-200"
+          class="px-8 py-4 bg-white border border-slate-200 text-slate-600 rounded-[1.5rem] font-bold text-sm hover:bg-slate-100 transition-all active:scale-95"
           on:click={closeEditModal}
           disabled={savingEdit}
         >
-          Cancelar
+          Descartar
         </button>
         <button
-          class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          class="px-10 py-4 bg-blue-600 text-white rounded-[1.5rem] font-bold text-sm shadow-xl shadow-blue-600/20 hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2 min-w-[160px] justify-center"
           on:click={saveEdit}
           disabled={savingEdit}
         >
           {#if savingEdit}
             <LoadingSpinner size="sm" color="white" />
           {:else}
+            <Check size={18} />
             Guardar Cambios
           {/if}
         </button>

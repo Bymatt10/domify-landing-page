@@ -71,11 +71,10 @@ export const POST: RequestHandler = async ({ request, locals: { supabaseAdmin } 
 				}
 
 				// Verificar si el usuario ya existe
-				const { data: existingUser } = await supabaseAdmin.auth.admin.listUsers({
-					filter: `email.eq.${row.email}`
-				});
+				const { data: userData, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+				const existingUser = userData?.users?.find(u => u.email === row.email);
 
-				if (existingUser.users.length > 0) {
+				if (existingUser) {
 					result.details.push({
 						email: row.email,
 						status: 'skipped',
@@ -113,7 +112,7 @@ export const POST: RequestHandler = async ({ request, locals: { supabaseAdmin } 
 				}
 
 				// 4. Crear perfil del proveedor
-				const { error: profileError } = await supabaseAdmin
+				const { data: profileData, error: profileError } = await supabaseAdmin
 					.from('provider_profiles')
 					.insert({
 						user_id: user.user.id,
@@ -127,11 +126,15 @@ export const POST: RequestHandler = async ({ request, locals: { supabaseAdmin } 
 						experience_years: parseInt(row.experienceYears) || 0,
 						availability: row.availability || 'Lunes a Viernes 8AM-6PM',
 						provider_type: row.providerType || 'individual'
-					});
+					})
+					.select('id')
+					.single();
 
 				if (profileError) {
 					throw new Error(`Error creando perfil: ${profileError.message}`);
 				}
+
+				const profileId = profileData.id;
 
 				// 5. Procesar categorías si existen
 				if (row.categories) {
@@ -145,7 +148,7 @@ export const POST: RequestHandler = async ({ request, locals: { supabaseAdmin } 
 
 					if (categories && categories.length > 0) {
 						const categoryLinks = categories.map(cat => ({
-							provider_id: user.user.id,
+							provider_profile_id: profileId,
 							category_id: cat.id
 						}));
 
@@ -156,36 +159,40 @@ export const POST: RequestHandler = async ({ request, locals: { supabaseAdmin } 
 				}
 
 				// 6. Crear aplicación de proveedor (para historial)
-				await supabaseAdmin
-					.from('provider_applications')
-					.insert({
-						user_id: user.user.id,
-						headline: row.headline || 'Proveedor Importado',
-						bio: row.bio || 'Proveedor importado masivamente',
-						hourly_rate: parseFloat(row.hourlyRate) || 300,
-						location: row.department || 'Managua',
-						phone: row.phone,
-						email: row.email,
-						status: 'approved',
-						application_data: {
-							first_name: row.firstName,
-							last_name: row.lastName,
-							department: row.department || 'Managua',
-							address: row.address || '',
-							provider_type: row.providerType || 'individual',
-							experience_years: parseInt(row.experienceYears) || 0,
-							availability: row.availability || 'Lunes a Viernes 8AM-6PM',
-							business_name: row.businessName || '',
-							portfolio: row.portfolio || '',
-							references: row.references || '',
-							certifications: row.certifications || '',
-							licenses: row.licenses || '',
-							import_source: 'bulk_import'
-						},
-						admin_notes: 'Importado masivamente desde Google Sheets',
-						reviewed_at: new Date().toISOString(),
-						reviewed_by: 'bulk_import_system'
-					});
+				try {
+					await supabaseAdmin
+						.from('provider_applications')
+						.insert({
+							user_id: user.user.id,
+							headline: row.headline || 'Proveedor Importado',
+							bio: row.bio || 'Proveedor importado masivamente',
+							hourly_rate: parseFloat(row.hourlyRate) || 300,
+							location: row.department || 'Managua',
+							phone: row.phone,
+							email: row.email,
+							status: 'approved',
+							application_data: {
+								first_name: row.firstName,
+								last_name: row.lastName,
+								department: row.department || 'Managua',
+								address: row.address || '',
+								provider_type: row.providerType || 'individual',
+								experience_years: parseInt(row.experienceYears) || 0,
+								availability: row.availability || 'Lunes a Viernes 8AM-6PM',
+								business_name: row.businessName || '',
+								portfolio: row.portfolio || '',
+								references: row.references || '',
+								certifications: row.certifications || '',
+								licenses: row.licenses || '',
+								import_source: 'bulk_import'
+							},
+							admin_notes: 'Importado masivamente desde Google Sheets',
+							reviewed_at: new Date().toISOString(),
+							reviewed_by: 'bulk_import_system'
+						});
+				} catch (appErr) {
+					console.warn('⚠️ No se pudo crear el registro en provider_applications (Bulk):', appErr);
+				}
 
 				result.success++;
 				result.details.push({
