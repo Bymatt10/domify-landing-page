@@ -1,14 +1,16 @@
-
 FROM node:18-alpine AS builder
 
 WORKDIR /app
 
+# Usamos wildcard para asegurar que tome package.json y package-lock.json si existe
 COPY package*.json ./
 
+# Cambiamos a npm install para mayor flexibilidad en el servidor
 RUN npm install
 
 COPY . .
 
+# Argumentos necesarios para SvelteKit durante el build
 ARG PUBLIC_SUPABASE_URL
 ARG PUBLIC_SUPABASE_ANON_KEY
 ARG PRIVATE_SUPABASE_SERVICE_ROLE_KEY
@@ -18,6 +20,7 @@ ARG SMTP_USER
 ARG SMTP_PASS
 ARG FROM_EMAIL
 
+# Inyección de variables para el proceso de compilación
 ENV PUBLIC_SUPABASE_URL=$PUBLIC_SUPABASE_URL
 ENV PUBLIC_SUPABASE_ANON_KEY=$PUBLIC_SUPABASE_ANON_KEY
 ENV PRIVATE_SUPABASE_SERVICE_ROLE_KEY=$PRIVATE_SUPABASE_SERVICE_ROLE_KEY
@@ -30,13 +33,13 @@ ENV PORT=4000
 ENV HOST=0.0.0.0
 
 RUN npm run build:prod
-RUN ls -la /app/build || echo "Build directory not found, checking current directory:"
-RUN ls -la /app/ || echo "App directory contents:"
 
+# --- ETAPA DE PRODUCCIÓN ---
 FROM node:18-alpine AS production
 
 RUN apk add --no-cache curl
 
+# Configuración de usuario no-root para seguridad
 RUN addgroup -g 1001 -S nodejs
 RUN adduser -S svelte -u 1001
 
@@ -44,14 +47,15 @@ WORKDIR /app
 
 COPY package*.json ./
 
-RUN npm ci --omit=dev && npm cache clean --force
+# SOLUCIÓN AL ERROR: Cambiamos 'npm ci' por 'npm install'
+RUN npm install --omit=dev && npm cache clean --force
 
-# Copy the build output (adapter-node structure)
+# Copiamos el output del build (SvelteKit con adapter-node genera index.js y carpetas)
 COPY --from=builder --chown=svelte:nodejs /app/build ./
-COPY --from=builder --chown=svelte:nodejs /app/static ./static
+# Si tu proyecto usa archivos estáticos fuera del build
 COPY --from=builder --chown=svelte:nodejs /app/package.json ./package.json
 
-
+# Re-declaramos las variables para el tiempo de ejecución (Runtime)
 ARG PUBLIC_SUPABASE_URL
 ARG PUBLIC_SUPABASE_ANON_KEY
 ARG PRIVATE_SUPABASE_SERVICE_ROLE_KEY
@@ -76,8 +80,9 @@ USER svelte
 
 EXPOSE 4000
 
+# Healthcheck usando el puerto configurado
 HEALTHCHECK --interval=60s --timeout=30s --start-period=120s --retries=5 \
   CMD curl -f http://localhost:4000/api/debug/server-status || exit 1
 
-# Start the application directly
+# SvelteKit con adapter-node arranca con node index.js
 CMD ["node", "index.js"]
