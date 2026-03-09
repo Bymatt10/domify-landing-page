@@ -29,10 +29,7 @@ ENV SMTP_PASS=$SMTP_PASS
 ENV FROM_EMAIL=$FROM_EMAIL
 ENV NODE_ENV=production
 
-# CAMBIO CLAVE: Inyectamos las variables directamente en el comando de ejecución
-RUN PUBLIC_SUPABASE_URL=${PUBLIC_SUPABASE_URL} \
-  PUBLIC_SUPABASE_ANON_KEY=${PUBLIC_SUPABASE_ANON_KEY} \
-  npm run build
+RUN npm run build
 
 # --- ETAPA DE PRODUCCIÓN ---
 FROM node:20-alpine AS production
