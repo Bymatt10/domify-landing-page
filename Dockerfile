@@ -1,16 +1,18 @@
+# --- ETAPA DE CONSTRUCCIÓN (BUILDER) ---
 FROM node:18-alpine AS builder
 
 WORKDIR /app
 
-# Usamos wildcard para asegurar que tome package.json y package-lock.json si existe
+# Copiamos archivos de dependencias
 COPY package*.json ./
 
-# Cambiamos a npm install para mayor flexibilidad en el servidor
+# Usamos 'install' para evitar errores si no hay lockfile en el servidor
 RUN npm install
 
+# Copiamos el resto del código fuente
 COPY . .
 
-# Argumentos necesarios para SvelteKit durante el build
+# Argumentos requeridos por SvelteKit durante el build
 ARG PUBLIC_SUPABASE_URL
 ARG PUBLIC_SUPABASE_ANON_KEY
 ARG PRIVATE_SUPABASE_SERVICE_ROLE_KEY
@@ -20,7 +22,7 @@ ARG SMTP_USER
 ARG SMTP_PASS
 ARG FROM_EMAIL
 
-# Inyección de variables para el proceso de compilación
+# Inyectamos variables al entorno del proceso de compilación
 ENV PUBLIC_SUPABASE_URL=$PUBLIC_SUPABASE_URL
 ENV PUBLIC_SUPABASE_ANON_KEY=$PUBLIC_SUPABASE_ANON_KEY
 ENV PRIVATE_SUPABASE_SERVICE_ROLE_KEY=$PRIVATE_SUPABASE_SERVICE_ROLE_KEY
@@ -29,33 +31,35 @@ ENV SMTP_PORT=$SMTP_PORT
 ENV SMTP_USER=$SMTP_USER
 ENV SMTP_PASS=$SMTP_PASS
 ENV FROM_EMAIL=$FROM_EMAIL
-ENV PORT=4000
-ENV HOST=0.0.0.0
+ENV NODE_ENV=production
 
-RUN npm run build:prod
+# Ejecutamos el build (SvelteKit analiza las rutas aquí)
+RUN npm run build
 
 # --- ETAPA DE PRODUCCIÓN ---
 FROM node:18-alpine AS production
 
+# Instalamos curl para el Healthcheck
 RUN apk add --no-cache curl
 
-# Configuración de usuario no-root para seguridad
+# Configuración de usuario de sistema por seguridad
 RUN addgroup -g 1001 -S nodejs
 RUN adduser -S svelte -u 1001
 
 WORKDIR /app
 
+# Copiamos solo los archivos necesarios para ejecutar
 COPY package*.json ./
 
-# SOLUCIÓN AL ERROR: Cambiamos 'npm ci' por 'npm install'
+# Instalamos solo dependencias de producción (sin devDependencies)
 RUN npm install --omit=dev && npm cache clean --force
 
-# Copiamos el output del build (SvelteKit con adapter-node genera index.js y carpetas)
-COPY --from=builder --chown=svelte:nodejs /app/build ./
-# Si tu proyecto usa archivos estáticos fuera del build
+# Copiamos el output generado por adapter-node
+# Importante: adapter-node genera la carpeta 'build' por defecto
+COPY --from=builder --chown=svelte:nodejs /app/build ./build
 COPY --from=builder --chown=svelte:nodejs /app/package.json ./package.json
 
-# Re-declaramos las variables para el tiempo de ejecución (Runtime)
+# Re-declaramos variables para el tiempo de ejecución (Runtime)
 ARG PUBLIC_SUPABASE_URL
 ARG PUBLIC_SUPABASE_ANON_KEY
 ARG PRIVATE_SUPABASE_SERVICE_ROLE_KEY
@@ -73,16 +77,18 @@ ENV SMTP_PORT=$SMTP_PORT
 ENV SMTP_USER=$SMTP_USER
 ENV SMTP_PASS=$SMTP_PASS
 ENV FROM_EMAIL=$FROM_EMAIL
-ENV PORT=4000
+
+# Configuramos el puerto interno (SvelteKit usa 3000 por defecto en adapter-node)
+ENV PORT=3000
 ENV HOST=0.0.0.0
 
 USER svelte
 
-EXPOSE 4000
+EXPOSE 3000
 
-# Healthcheck usando el puerto configurado
+# Validación de salud del contenedor
 HEALTHCHECK --interval=60s --timeout=30s --start-period=120s --retries=5 \
-  CMD curl -f http://localhost:4000/api/debug/server-status || exit 1
+  CMD curl -f http://localhost:3000/ || exit 1
 
-# SvelteKit con adapter-node arranca con node index.js
-CMD ["node", "index.js"]
+# Comando de inicio para adapter-node
+CMD ["node", "build/index.js"]
