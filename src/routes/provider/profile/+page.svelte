@@ -75,7 +75,7 @@
 			formData = {
 				business_name: profile.business_name || '',
 				headline: profile.headline || '',
-				bio: profile.bio || '',
+				bio: profile.description || '',
 				hourly_rate: profile.hourly_rate || 0,
 				phone: profile.phone || '',
 				location: profile.location || '',
@@ -104,8 +104,7 @@
 				.from('provider_profiles')
 				.update({
 					business_name: formData.business_name,
-					headline: formData.headline,
-					bio: formData.bio,
+					description: formData.bio,
 					hourly_rate: formData.hourly_rate,
 					phone: formData.phone,
 					location: formData.location,

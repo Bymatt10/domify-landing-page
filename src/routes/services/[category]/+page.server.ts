@@ -15,8 +15,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 				id,
 				user_id,
 				business_name,
-				headline,
-				bio,
+				description,
 				hourly_rate,
 				location,
 				phone,
@@ -32,7 +31,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 			// Procesar los proveedores para agregar información faltante
 			providers = (providerProfiles || []).map((provider: any) => ({
 				...provider,
-				description: provider.bio || 'Sin descripción',
+				description: provider.description || 'Sin descripción',
 				rating: 0,
 				average_rating: 0,
 				photo_url: '/img/avatars/307ce493-b254-4b2d-8ba4-d12c080d6651.jpg', // Usar la imagen por defecto

@@ -59,9 +59,9 @@ export const POST: RequestHandler = async ({ request, locals: { supabaseAdmin } 
 						.insert({
 							user_id: user.user.id,
 							business_name: `${appData.first_name} ${appData.last_name}`,
-							headline: application.headline,
+							description: application.description || '',
 							phone: application.phone,
-							status: 'active'
+							is_active: true
 						});
 
 					if (profileError) {

@@ -44,7 +44,7 @@ export const load: ServerLoad = async ({ params, locals }) => {
     const providerSEOData = {
       name: provider.business_name,
       business_name: provider.business_name,
-      bio: provider.bio,
+      bio: provider.description,
       location: provider.location,
       hourly_rate: provider.hourly_rate,
       average_rating: averageRating,
@@ -57,8 +57,8 @@ export const load: ServerLoad = async ({ params, locals }) => {
     };
 
     // Generar metadatos SEO
-    const seoData = generateProviderMetaTags(providerSEOData, id);
-    const jsonLd = generateProviderJSONLD(providerSEOData, id);
+    const seoData = generateProviderMetaTags(providerSEOData, id as string);
+    const jsonLd = generateProviderJSONLD(providerSEOData, id as string);
 
     return {
       provider,

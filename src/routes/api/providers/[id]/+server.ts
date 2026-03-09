@@ -51,7 +51,7 @@ import {
  *       500:
  *         description: Internal server error
  */
-export async function GET({ params }) {
+export const GET: RequestHandler = async ({ params }) => {
 	try {
 		const id = params.id;
 		
@@ -89,7 +89,7 @@ export async function GET({ params }) {
 			phone: provider.phone,
 			total_reviews: provider.total_reviews || 0,
 			provider_type: provider.provider_type,
-			bio: provider.bio,
+			bio: provider.description,
 			settings: provider.settings,
 			portfolio: provider.portfolio || [],
 			users: provider.users,
@@ -405,11 +405,16 @@ export const DELETE: RequestHandler = async ({ params, request, locals }) => {
         }
 
         // Check if provider has active services
-        const { data: services } = await locals.supabase
+        const { data: services, error: servicesError } = await locals.supabase
             .from('services')
             .select('id')
             .eq('provider_profile_id', params.id)
             .is('deleted_at', null);
+
+        if (servicesError && servicesError.code !== 'PGRST205') {
+             const errorResponse = ExceptionHandler.handle(servicesError);
+             return json(errorResponse, { status: errorResponse.error.statusCode });
+        }
 
         if (services && services.length > 0) {
             throw new ValidationException('Cannot delete provider with active services');

@@ -107,6 +107,14 @@ export const GET: RequestHandler = async ({ url, locals }) => {
             .range(offset, offset + limit - 1);
 
         if (error) {
+            // Si la tabla no existe aún, devolvemos una lista vacía
+            if (error.code === 'PGRST205') {
+                const emptyResponse = ExceptionHandler.createSuccessResponse(
+                    { services: [], total: 0 },
+                    'Services retrieved successfully'
+                );
+                return json(emptyResponse);
+            }
             const errorResponse = ExceptionHandler.handle(error);
             return json(errorResponse, { status: errorResponse.error.statusCode });
         }
